@@ -1,0 +1,17 @@
+node_modules/
+dist/
+test-results/
+playwright-report/
+.DS_Store
+.npm-cache/
+.browser-build-*/
+
+# Local reference material: recordings, stems, transcriptions, conversions.
+# Other people's music never enters the repository (G4).
+reference/
+*.mid
+*.midi
+*.wav
+*.webm
+*.mp3
+*.flac

@@ -1,0 +1,29 @@
+# Decisions
+
+What is settled. Each entry says when and why. Ghost Notes inherits ODM's
+decisions where its code is inherited; they are listed in ODM's
+`docs/decisions.md` (D1–D40 as of 2026-11-12) and are re-examined, not assumed,
+when this app departs from them.
+
+- **G1 (2026-11-12) A separate app, forked from ODM, with ODM's editors.** The
+  owner chose to bring ODM's document model, import, generation, score sheet
+  and editors rather than a plain text editor. Drift from ODM is accepted: no
+  shared package, no syncing. A fork or a file copy are both fine.
+- **G2 (2026-11-12) No saving in the app.** The user copies their Strudel out
+  and keeps it themselves. Reference files are opened from local disk each
+  session and never stored.
+- **G3 (2026-11-12) Links travel in the copied text.** Each section's source
+  file and bar ranges, and each instrument's stem, are written into ODM's
+  existing metadata comments (`/*@odm-part {...}*/`, `/*@odm-pattern {...}*/`)
+  and read back on paste. They hold names and bar numbers, never notes.
+- **G4 (2026-11-12) Other people's music stays out of the repository,** as ODM
+  D13: recordings, stems, MIDI, transcriptions and conversions of them. Tests
+  use a local path or music written for the project. Documentation refers to
+  the first test session by song number only.
+- **G5 (2026-11-12) MIDI-to-Strudel conversion is a feature.** Both the literal
+  conversion and structure-finding belong in the app, built on the research in
+  `research/`.
+- **G6 (2026-11-12) Hosted on AWS,** as its own stack in the Fire Lake Labs
+  account, set up later and only with the owner's approval at the time.
+- **G7 (2026-11-12) A design study comes before code,** run with the owner
+  present. Its outcomes become decisions here.
