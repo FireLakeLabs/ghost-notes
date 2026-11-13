@@ -416,25 +416,51 @@ the pinned versions and plays the expected events, measured as in step 3.
 
 ## 11. Simplify
 
-The limits are user settings (G16). Drums come first; every instrument is in
-scope (G30).
+**Part 1 (logic and measurements): done in #28.** Part 2, timeline controls,
+remains in #9 after step 7 part 3. Limits and match criteria are session user
+settings (G16/G21/G23); every instrument is included (G30).
 
-1. **Drums:** cluster near-identical bars, then use `arrange` with run
-   lengths. On song 3 that measured 44 → 26 distinct bars and 40% shorter
-   code.
-2. **Bass and keys,** which showed almost no whole-bar repeats:
-   - cleaning (stray notes, split notes, octave errors);
-   - matching riffs by their intervals, so transposed repeats count;
-   - scale degrees;
-   - Euclidean rhythm fits;
-   - phrase-level repeats.
+`src/simplify/` proposes drum bar templates with `arrange` and run lengths,
+three independent cleaning operations (stray/split/octave), transposed interval
+riffs, scale degrees with chromatic exceptions, exact Euclidean fits and
+2/4/8-bar phrases. [The API](simplify.md) preserves source lineage through the
+converter's merges and extends its change shape with dropped/added (G31).
+Each candidate reports source retention, proposal precision, counts and complete
+UTF-8 program bytes; longer candidates remain explicitly labelled.
 
-Each suggestion reports the share of original notes it keeps, the share of its
-notes that match the original, and which notes it moved, dropped or added,
-drawn with the same marks as the timeline.
+Measured after #26 on the default **4 steps per beat**, chosen 1× bar grid:
+all six songs, 36 stems, 216 applicable default proposals. Each emitted program
+was queried through pinned Strudel and its pitch, gain, onset and effective end
+compared with the claimed notes. Default match: ±50 ms, quiet notes included,
+exact pitch. These shares include converter movements and merges. Drum summary:
 
-**Done when:** each instrument type has a simplify that reports these numbers
-on a fixture, and on the real session from a local path.
+| Input                      | Original / proposed / matched | Kept / match % | Literal → proposal bytes |
+| -------------------------- | ----------------------------: | -------------: | -----------------------: |
+| first test session, song 1 |               405 / 372 / 315 |  77.78 / 84.68 |            27609 → 20512 |
+| first test session, song 2 |               806 / 796 / 733 |  90.94 / 92.09 |            54838 → 37517 |
+| first test session, song 3 |               645 / 644 / 531 |  82.33 / 82.45 |            46150 → 30791 |
+| first test session, song 4 |               858 / 852 / 775 |  90.33 / 90.96 |            54141 → 42033 |
+| diversity-1                |               944 / 889 / 766 |  81.14 / 86.16 |            70275 → 45836 |
+| diversity-2                |               561 / 545 / 496 |  88.41 / 91.01 |            39822 → 29289 |
+
+[Full per-song, per-technique tables](simplify-measurements.md) include bass,
+keys/other pitched stems, M/X/S/G/D/A marks and limit trials. The velocity-32
+cleaning default made no extra repairs on these six songs; 48/64 trials quantify
+more aggressive proposals. No listening, perceived quality or timeline controls
+were verified. Expanded candidates are not a measured improvement.
+
+The onset-only structure study was separately repeated on all six detected
+maps. On the first test session, song 3, the current Python script and TypeScript
+reproduction agree on **44 → 24 bars, 4,655 → 2,645 characters (43.2% shorter)**.
+The historical written result, 26 bars / 2,772 characters, could not be
+reproduced on the current corpus. It omitted duration and velocity and excluded
+uncovered edges; it is not the full-note result above.
+
+Proof: `npm test -- tests/simplify.test.ts tests/simplify-pitched.test.ts`;
+`GHOST_SIMPLIFY_ROOT="$HOME/projects/ghost-notes/reference" npm test -- tests/simplify-local.test.ts --silent=false`.
+The local proof skips when absent; CI uses invented fixtures. Decisions G77–G80
+are in [simplify decisions](decisions/simplify.md). Part 2 still owns applying
+proposals, session controls and drawing their marks in the timeline.
 
 ## 12. Hosting on AWS
 
