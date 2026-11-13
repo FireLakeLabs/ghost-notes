@@ -52,7 +52,7 @@ owns it, so this is a **file copy** of ODM `main` at a recorded commit.
   unchanged copy, before any Ghost Notes change, and the ODM commit is
   recorded in the README.
 
-## 3. Prove the Strudel assumptions
+## 3. Prove the Strudel assumptions: done
 
 Several decisions rest on Strudel behaviour nobody has checked at the pinned
 versions. Check each in Node and in the browser suite before building on it.
@@ -72,6 +72,53 @@ Each check compares the events Strudel schedules, never how anything sounds.
 
 **Done when:** each item has a test, or a recorded fallback. If tempo per
 place fails, the fallback is one editable tempo, the song's average (G28).
+
+### Step 3 results (2026-11-13)
+
+- **Tempo per place: works.** Core 1.2.6 queries and web 1.3.0 scheduled
+  triggers agree for two bars at factor 0.75, then one at 1.25 (1.5 and 1.25
+  cycles), over two loops: 24 events, <0.000001 ms schedule error at cpm 120.
+  Step 10 can use `arrange([n*f, part.slow(f)], ...)`.
+- **Live `.cps()` changes: do not work cleanly for following the band
+  (G36).** Queried chord onsets coincide, but browser triggers split by
+  40 ms on the drift fixture and by 120 ms after three 1.56 s bars change
+  to a 1.60 s bar. Cyclist applies the new cps against the old phase anchor.
+  This fails the 50 ms beat-map tolerance: one scheduler window, below half
+  the measured 110 ms minimum trigger lead. A single voice's 1.026 ms
+  bar-clock error hides the defect. **In-app following the band remains to
+  be implemented and measured through beat-map time warping in step 9:**
+  query in cycles and schedule each onset at the map's audio-context time,
+  keeping chords simultaneous. That mechanism is untested here. The
+  one-average-tempo fallback applies only if step 9 measures that warping
+  cannot meet tolerance. Constant-tempo controls preserve chords but do not
+  prove alignment with stems. The copy retains editable per-section tempos,
+  proven by the fractional tempo-place check above (G28).
+- **Pickup: works with limit first traversal (G37).** A quarter-cycle pickup
+  schedules `c3` at zero and the following four notes at cycles 0.25–1.25,
+  unchanged in duration. On the second lap its first note becomes `d3`:
+  fractional `arrange` retains global phase. Steps 6/9/10 must treat the pickup
+  as a once-only prefix or explicitly reset it before replay.
+- **Samples: works with network access.** Online checks register each of the
+  seven default banks separately, decode one representative file, and check
+  its scheduled events: tidal-drum-machines, piano, Dirt-Samples, EmuSP12,
+  vcsl, mridangam and full Dirt. This does not validate every file in a bank.
+  General MIDI needs `@strudel/soundfonts` 1.3.0 (G38): no peer dependencies,
+  exact core 1.2.6 / webaudio 1.3.0 dependencies. The seam bridges its registry
+  and context into the web bundle and preloads pitches. Offline CI checks two
+  synthetic pitch zones before scheduling; `online` checks real `gm_piano`.
+  Other presets/variants remain unverified. The remaining in-app time-warping
+  implementation and proof belong to step 9.
+
+Proof: `src/strudel/assumptions*.test.ts`, `tests/browser/assumptions.spec.ts`
+(serial audio project) and `npm run test:browser:online` (network only).
+Local whole-session check: set `GHOST_BEATS_ROOT` to the first test session's
+output root and run `npm test -- src/strudel/assumptions-local.test.ts --silent=false`.
+It queries all complete four-beat bars: 132/292/320/328 events from
+136/295/324/331 beats, with ideal-bar maximum errors 730/530/35/260 ms in
+song order, starting at each first downbeat (beat offsets 0/0/1/1).
+No notes or audio are imported; incomplete final bars are excluded.
+Absent local material skips; CI uses the synthetic map. No speaker timing or
+perceived output was measured.
 
 ## 4. Move the transcription tool: done
 
@@ -129,7 +176,8 @@ model.
 - **Beats:**
   - Map seconds to beats with the beat map, piecewise between detected beats.
   - Bar 1 is the first detected downbeat; anything before it is bar 0 (G15).
-  - Keep each bar's tempo for playback and for the copy (G28).
+  - Keep each bar's tempo for the copy and its beat positions for playback
+    time warping (G28, G36).
   - Mark uneven stretches and where the map stops.
 - **Stems:** one instrument per stem (G25). Keep stem names, and the stem
   levels used to flag possible bleed.
@@ -213,13 +261,18 @@ reference restores every link and tempo.
 
 - A speaker on every row decides what Play plays, with presets for Recording,
   Mine and Both (G20).
-- The user's parts follow the band's beat map, and the stem audio plays as
-  recorded (G28).
+- The user's parts follow the beat map through time warping in our own
+  scheduler: query patterns in cycles and schedule each event at the beat
+  map's audio-context time for its cycle position. Chords stay simultaneous;
+  stem audio plays as recorded (G20, G28, G36). Do not use live `.cps()` changes.
 - Synths and samples per instrument (G19).
 
-**Done when:** for a fixture beat map with tempo changes, the scheduled times
-of the user's notes are within a set tolerance of the beat map's times across
-the whole song. This is a measured check; nobody judges by ear.
+**Done when:** every scheduled event, including simultaneous chords, stays
+within a stated tolerance of the beat map across a whole synthetic song,
+with a local real-material check and timing errors reported (G36). Only if
+measured time warping cannot meet that bound does G28's one editable
+song-average fallback apply; disclose the resulting stem misalignment.
+Nobody judges by ear.
 
 ## 10. Copy out and the app shell
 

@@ -15,9 +15,9 @@ Strudel conversion, and the user's own arrangement, one above the other.
 
 ## Current phase
 
-Steps 1 and 2 of [next steps](docs/next-steps.md) are done: the design study,
-and ODM's code copied in with the constellation and spiral removed (G17).
-Step 3 (prove the Strudel assumptions) is next; start it only when asked.
+Steps 1–4 of [next steps](docs/next-steps.md) are done. Step 3's measured
+results and limits are in [next steps](docs/next-steps.md#step-3-results-2026-11-13).
+Step 9 owns the implementation and timing proof of beat-map time warping (G36).
 `npm run check` and `npm run test:browser` must pass before any commit.
 
 ## Skills
@@ -33,7 +33,7 @@ the principles it links.
 - Use the Node version in `.node-version` and npm.
 - Strudel stays pinned as in ODM: `@strudel/core`,
   `@strudel/mini`, `@strudel/tonal`, `@strudel/transpiler` at 1.2.6;
-  `@strudel/web`, `@strudel/webaudio`, `superdough` at 1.3.0.
+  `@strudel/web`, `@strudel/webaudio`, `@strudel/soundfonts`, `superdough` at 1.3.0.
 - Never bind a fixed port. Dev servers and browser tests take a free one.
 - The browser suite holds a machine-wide lock, so suites started in parallel
   worktrees queue rather than disturb each other's timing tests.

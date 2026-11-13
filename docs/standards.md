@@ -51,3 +51,7 @@ canaries can need more; report the actual size and keep features separate.
 Report what was measured separately from what was seen; no agent can hear, never
 describe how something sounds. Browser assertions are checks, not visual review.
 D13 applies: third-party music stays out unless redistribution permission is recorded.
+
+Timing review distinguishes mechanisms from goals: a `.cps()` failure rejects
+that mechanism, not beat-map playback. Claims and canary names must identify
+what ran; step 9 must separately prove time-warped scheduling (G36).
