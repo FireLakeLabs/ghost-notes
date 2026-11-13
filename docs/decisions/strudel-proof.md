@@ -27,3 +27,16 @@
   prove an explicit phase reset before offering a continuous pickup loop.
   G29's short section remains the representation. No visible design changes
   are made in this proof.
+- **G38 (2026-11-13) Pin `@strudel/soundfonts` 1.3.0 for General MIDI.**
+  The published manifest has no peer dependencies; its exact dependencies
+  are core 1.2.6 and webaudio 1.3.0, deduplicated with our pins. The web
+  bundle has synths but does not register General MIDI. Keep the import in
+  `src/strudel/`, using the pinned `fontloader.mjs` submodule: its package
+  entry also mutates `Pattern.prototype.soundfont` and imports an unrelated
+  SF2 parser. A seam adapter shares the web bundle's audio context, bridges
+  the standalone sound entry into its registry, and preloads each pitch and
+  variant before scheduling. Offline CI supplies an authored WAV in two
+  synthetic font zones; actual preset downloads run only in `online`.
+  This proves `gm_piano`, not every General MIDI preset or variant. The
+  upstream loader evaluates preset JavaScript from its fixed HTTPS host;
+  custom soundfont hosts are not exposed by this seam.

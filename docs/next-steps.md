@@ -52,7 +52,7 @@ owns it, so this is a **file copy** of ODM `main` at a recorded commit.
   unchanged copy, before any Ghost Notes change, and the ODM commit is
   recorded in the README.
 
-## 3. Prove the Strudel assumptions
+## 3. Prove the Strudel assumptions: proven locally; review and merge pending
 
 Several decisions rest on Strudel behaviour nobody has checked at the pinned
 versions. Check each in Node and in the browser suite before building on it.
@@ -99,8 +99,12 @@ place fails, the fallback is one editable tempo, the song's average (G28).
   seven default banks separately, decode one representative file, and check
   its scheduled events: tidal-drum-machines, piano, Dirt-Samples, EmuSP12,
   vcsl, mridangam and full Dirt. This does not validate every file in a bank.
-  General MIDI is absent from the web bundle; the separate soundfonts pin
-  and integration are the remaining step-3 work.
+  General MIDI needs `@strudel/soundfonts` 1.3.0 (G38): no peer dependencies,
+  exact core 1.2.6 / webaudio 1.3.0 dependencies. The seam bridges its registry
+  and context into the web bundle and preloads pitches. Offline CI checks two
+  synthetic pitch zones before scheduling; `online` checks real `gm_piano`.
+  Other presets/variants remain unverified. All assumption checks are complete
+  locally; required Opus approval and merging remain blocked by its API limit.
 
 Proof: `src/strudel/assumptions*.test.ts`, `tests/browser/assumptions.spec.ts`
 (serial audio project) and `npm run test:browser:online` (network only).

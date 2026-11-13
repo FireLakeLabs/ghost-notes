@@ -60,6 +60,7 @@ check:docs`); when a topic file fills, start a new one.
 
 - G36: bar-by-bar `.cps()` splits simultaneous notes; use G28's editable average fallback.
 - G37: a fractional pickup is a once-only prefix; restart before replay.
+- G38: pin soundfonts 1.3.0; bridge General MIDI through the Strudel seam.
 
 ## [Transcription](decisions/transcription.md)
 

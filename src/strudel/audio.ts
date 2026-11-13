@@ -142,6 +142,16 @@ export async function createAudio({
     key(value) {
       const name = soundName(value),
         sound = getSound(name);
+      if (name.startsWith('gm_') && value && typeof value === 'object') {
+        return (
+          name +
+          JSON.stringify([
+            'note' in value ? value.note : undefined,
+            'freq' in value ? value.freq : undefined,
+            'n' in value ? value.n : undefined,
+          ])
+        );
+      }
       try {
         return (
           name + (sound?.data.type === 'sample' ? getSampleInfo(value, sound.data.samples).url : '')
@@ -151,8 +161,25 @@ export async function createAudio({
       }
     },
     async check(value) {
-      const name = soundName(value),
-        sound = getSound(name);
+      const name = soundName(value);
+      if (name.startsWith('gm_')) {
+        const { prepareGeneralMidi } = await import('./soundfonts');
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        try {
+          await Promise.race([
+            prepareGeneralMidi(name, value, context),
+            new Promise<never>((_, reject) => {
+              timer = setTimeout(
+                () => reject(Error('General MIDI download timed out; check your connection')),
+                7000,
+              );
+            }),
+          ]);
+        } finally {
+          clearTimeout(timer);
+        }
+      }
+      const sound = getSound(name);
       if (!sound)
         throw Error(
           `Unknown sound "${name}". Register it with samples(...).${unavailable ? ' Default collections could not load (offline or network error).' : ''}`,

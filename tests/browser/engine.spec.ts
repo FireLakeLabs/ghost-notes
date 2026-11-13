@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import { test } from './helpers';
 import { installEngineSignals, signal } from './helpers';
 import { expect } from '@playwright/test';
@@ -220,3 +221,70 @@ test('canary: web bundle registry, REPL capture, final output gain and failed sa
   expect(result.playing).toBe(false);
   expect(result.errors.length).toBeGreaterThan(0);
 });
+
+test('G19: General MIDI bridges the web registry/context and preloads every pitch', async ({
+  page,
+}) => {
+  await page.route(
+    (url) => url.protocol === 'https:',
+    (route) => route.abort('internetdisconnected'),
+  );
+  const wav = await readFile('tests/fixtures/sounds/burst.wav');
+  // This fixture is authored for the project; fontloader expects WebAudioFont JS.
+  // Use disjoint pitch zones so missing pitch preflight cannot reuse the first buffer.
+  const file = wav.toString('base64');
+  let loads = 0;
+  await page.route('https://felixroos.github.io/webaudiofontdata/sound/**', (route) => {
+    loads++;
+    return route.fulfill({
+      contentType: 'text/javascript',
+      body: `var fixture={zones:[{keyRangeLow:0,keyRangeHigh:60,originalPitch:6000,coarseTune:0,fineTune:0,sampleRate:48000,loopStart:0,loopEnd:0,file:"${file}"},{keyRangeLow:62,keyRangeHigh:127,originalPitch:7200,coarseTune:0,fineTune:0,sampleRate:48000,loopStart:0,loopEnd:0,file:"${file}"}]};`,
+    });
+  });
+  await page.addInitScript(() => {
+    window.gmDecodes = 0;
+    const decode = AudioContext.prototype.decodeAudioData;
+    AudioContext.prototype.decodeAudioData = function (...args) {
+      window.gmDecodes++;
+      return decode.apply(this, args);
+    };
+  });
+  await page.addInitScript(installEngineSignals);
+  await page.goto('/harness/engine.html');
+  await page.getByRole('button').click();
+  await signal(() => page.evaluate(() => window.odm.error || !!window.odm.engine)).toBe(true);
+  const measured = await page.evaluate(async () => {
+    const e = window.odm.engine!;
+    window.odmProfileEngine(e);
+    await e.play('setcps(1); note("c4 c5").s("gm_piano")');
+    const ready = e.sounds();
+    const decodedBeforeScheduling = window.gmDecodes;
+    await window.odmUntil(
+      e,
+      () => window.odm.events.filter((t) => t.type === 'trigger').length >= 2,
+    );
+    const triggers = window.odm.events
+      .filter((t): t is Extract<EngineEvent, { type: 'trigger' }> => t.type === 'trigger')
+      .slice(0, 2);
+    const errors = window.odm.events.filter((t) => t.type === 'error');
+    e.stop();
+    return { ready, triggers, errors, decodedBeforeScheduling };
+  });
+  expect(loads).toBe(1);
+  expect(measured.decodedBeforeScheduling).toBe(2);
+  expect(measured.ready).toEqual([{ name: 'gm_piano', state: 'ready' }]);
+  expect(measured.errors).toEqual([]);
+  expect(measured.triggers.map((t) => t.value)).toEqual([
+    { note: 'c4', s: 'gm_piano' },
+    { note: 'c5', s: 'gm_piano' },
+  ]);
+  expect(measured.triggers.map((t) => t.cycle)).toEqual([0, 0.5]);
+  expect(measured.triggers[1].time - measured.triggers[0].time).toBeCloseTo(0.5, 8);
+  console.log('GENERAL MIDI OFFLINE MEASURED', JSON.stringify(measured));
+});
+
+declare global {
+  interface Window {
+    gmDecodes: number;
+  }
+}

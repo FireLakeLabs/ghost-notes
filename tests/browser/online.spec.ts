@@ -1,6 +1,7 @@
-import { scoreReady, play, openProgram } from './helpers';
+import { scoreReady, play, openProgram, installEngineSignals, signal } from './helpers';
 import { expect, test } from '@playwright/test';
 import type {} from '../../src/app/main';
+import type {} from '../../src/engine/harness';
 import type {} from '../../src/strudel/assumptions-harness';
 
 test.use({ launchOptions: { args: ['--autoplay-policy=no-user-gesture-required'] } });
@@ -91,3 +92,32 @@ for (const [bank, name] of [
     expect(events[0].value).toMatchObject({ s: name });
     console.log('ONLINE BANK MEASURED', JSON.stringify({ bank, name, ...decoded }));
   });
+
+test('online General MIDI: pinned soundfonts loads a real preset and schedules two pitches', async ({
+  page,
+}) => {
+  test.skip(process.env.ODM_BROWSER_MODE !== 'online' || !!process.env.CI, 'Online only; never CI');
+  await page.addInitScript(installEngineSignals);
+  await page.goto('/harness/engine.html');
+  await page.getByRole('button').click();
+  await signal(() => page.evaluate(() => window.odm.error || !!window.odm.engine)).toBe(true);
+  const result = await page.evaluate(async () => {
+    const e = window.odm.engine!;
+    window.odmProfileEngine(e);
+    await e.play('setcps(1); note("c4 c5").s("gm_piano")');
+    const ready = e.sounds();
+    await window.odmUntil(
+      e,
+      () => window.odm.events.filter((t) => t.type === 'trigger').length >= 2,
+    );
+    const triggers = window.odm.events.filter((t) => t.type === 'trigger').slice(0, 2);
+    const errors = window.odm.events.filter((t) => t.type === 'error');
+    e.stop();
+    return { ready, triggers, errors };
+  });
+  expect(result.ready).toEqual([{ name: 'gm_piano', state: 'ready' }]);
+  expect(result.errors).toEqual([]);
+  expect(result.triggers.map((t) => t.cycle)).toEqual([0, 0.5]);
+  expect(result.triggers[1].time - result.triggers[0].time).toBeCloseTo(0.5, 8);
+  console.log('GENERAL MIDI ONLINE MEASURED', JSON.stringify(result));
+});
