@@ -103,3 +103,56 @@ export function combinedTiming(proofs: ReturnType<typeof roundTripProof>[]): Tim
     beats: distribution(proofs.flatMap((p) => p.beats)),
   };
 }
+
+/** Prove emitted events against written endpoints, then account for every source
+ * through an event or an explicit many-to-one merge. Original notes stay private. */
+export function gridRoundTripProof(
+  song: ReferenceSong,
+  conversion: ConvertedInstrument,
+  expected: readonly ReferenceNote[],
+  result: EventResult,
+) {
+  const records = conversion.notes;
+  if (
+    records.length !== expected.length ||
+    new Set(records.map((n) => n.sourceIndex)).size !== expected.length
+  )
+    throw Error('Source accounting mismatch');
+  for (const n of records) {
+    if (n.source !== expected[n.sourceIndex]) throw Error('Source identity mismatch');
+    if (n.mergedInto === null) continue;
+    const representative = records.find((r) => r.sourceIndex === n.mergedInto);
+    const merge = conversion.changes.find(
+      (c) =>
+        c.kind === 'merged' &&
+        c.noteIndices[0] === n.mergedInto &&
+        c.noteIndices.includes(n.sourceIndex),
+    );
+    if (
+      !representative ||
+      representative.mergedInto !== null ||
+      !merge ||
+      merge.written.length !== 1 ||
+      merge.noteIndices.length !== merge.original.length ||
+      representative.spanIndex !== n.spanIndex ||
+      representative.step !== n.step ||
+      representative.source.pitch !== n.source.pitch ||
+      representative.written.startSeconds !== n.written.startSeconds ||
+      representative.written.endSeconds !== n.written.endSeconds ||
+      representative.velocity !== n.velocity
+    )
+      throw Error('Unrecorded or inconsistent merge');
+  }
+  const emitted = records
+    .filter((n) => n.mergedInto === null)
+    .map((n) => ({ ...n.source, ...n.written, velocity: n.velocity }));
+  const proof = roundTripProof(song, conversion, emitted, result);
+  if (
+    proof.missing ||
+    proof.duplicated ||
+    proof.timing.milliseconds.max > 1e-5 ||
+    proof.durationMaxMs > 1e-5
+  )
+    throw Error('Queried events disagree with written endpoints');
+  return { once: proof.once, merged: records.length - emitted.length };
+}

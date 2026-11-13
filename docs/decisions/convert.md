@@ -24,3 +24,33 @@
   reserve those record kinds for later transformations. Emit an ODM instrument
   boundary so bars and the five drum lanes import as one instrument. Sound
   choices remain editable (G19); the baseline pitched preset is `triangle`.
+
+Issue #23 extends G57/G59 for chosen musical grids; exact mode keeps both.
+Decided for the owner on 2026-11-13:
+
+- **G67: default to four steps per beat (sixteenths).** Offer 1, 2, 3, 4, 6, 8,
+  16 and exact, as a session-only converter argument (G23). All six songs and
+  every stem were queried at each option; [measurements](../convert-grid-measurements.md)
+  include errors, merges and bytes. Four gives 16 steps in a full four-beat bar.
+  ODM's rhythm editor requires 20 px per mouse target or 44 px for touch: 16
+  steps fit in 320/704 px; 64 need 1280/2816 px and otherwise zoom to one part.
+  Coarser settings merge substantially more source notes; finer grids retain
+  timing detail at the cost of smaller targets and longer text. This chooses
+  an editable starting point, not musical ground truth. Keep exact available.
+- **G68: snap within the source bar; shorten without extending.** Nearest
+  onset step, ties later, clamped before the end, including the last 5% (G57).
+  Pickup uses its own observed beat count. Shift the end by the same seconds,
+  then floor it to its destination bar's grid only when still after the onset.
+  Retain sub-step/zero lengths and uncovered ends; do not extend a note to fit.
+  Uncovered onsets always use exact mode (G58). Record final moved/shortened
+  endpoints and sustain-end boundary crossings (G31). No reference data changes.
+- **G69: merge same pitch at the same written step explicitly.** Within one
+  span, lowest source index represents the group, highest velocity and longest
+  snapped tail win. Keep one result record per original with its representative
+  index, and one merge change listing all originals and the single outcome.
+  Distinct pitches remain simultaneous voices. Grid text uses ordinary note or
+  sample sequences with aligned gain and legato patterns, editable through ODM.
+  Exact mode retains separate duplicates and seconds durations (G59). The proof
+  counts emitted-once plus recorded-as-merged and queries both original and
+  ODM-regenerated text. This is literal quantization; structure finding remains
+  step 11, and changing Notes must not overwrite Mine (G13).

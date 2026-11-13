@@ -285,6 +285,32 @@ stays visible, including song 4's ten holes; no missing beats were guessed by
 the converter. Playback scheduling, speaker timing and perceived output remain
 unmeasured here (step 9). Decisions G57–G59; API and reproduction: [convert](convert.md).
 
+### Chosen musical grid (#23, 2026-11-13)
+
+The full [eight-option table](convert-grid-measurements.md) includes every song,
+36 stems and 14,047 notes per option. Default grid: four steps per beat.
+M/B/S/G count moved, sustain-end bar crossings, shortened notes and merge groups;
+records overlap. “Merged” counts extra contributors, beyond emitted events.
+Errors are median / p95 / maximum against notes JSON.
+
+| Input                      | Once + merged | M / B / S / G           | Moved % | Error ms                   | Error beats                    |  Code B |
+| -------------------------- | ------------: | ----------------------- | ------: | -------------------------- | ------------------------------ | ------: |
+| first test session, song 1 |     1357 + 76 | 1384 / 77 / 235 / 67    |   96.58 | 38.300 / 185.000 / 495.000 | 0.044643 / 0.133429 / 0.249884 |  91,002 |
+| first test session, song 2 |     2184 + 19 | 2114 / 151 / 884 / 19   |   95.96 | 20.000 / 64.400 / 182.500  | 0.040000 / 0.123846 / 0.249000 | 148,325 |
+| first test session, song 3 |      1804 + 1 | 1677 / 159 / 1439 / 1   |   92.91 | 20.000 / 80.000 / 98.700   | 0.052632 / 0.200000 / 0.249737 | 111,626 |
+| first test session, song 4 |     3257 + 25 | 3209 / 201 / 1802 / 25  |   97.78 | 20.000 / 64.700 / 129.400  | 0.040385 / 0.124444 / 0.248846 | 169,298 |
+| diversity-1                |    3821 + 126 | 3919 / 533 / 2028 / 126 |   99.29 | 22.700 / 140.000 / 230.400 | 0.035156 / 0.218750 / 0.249844 | 246,085 |
+| diversity-2                |     1344 + 33 | 1279 / 78 / 195 / 33    |   92.88 | 20.000 / 95.600 / 184.600  | 0.027027 / 0.124079 / 0.249324 |  99,070 |
+
+All options passed emitted-once plus recorded-merge accounting, with zero missing
+or duplicated events, before and after ODM import/generation. Exact retains
+1 ms / 1/1024-beat onset tolerance and seconds durations. Grid settings deliberately
+trade timing detail for an editable rhythm; clamping the last step can approach
+one step of error. Uncovered edges stay exact. G67–G69 extend G57/G59; API details
+and reproduction are in [convert](convert.md). The setting is an argument for the
+session UI to own; no control or section creation is implemented here. Playback
+alignment, musical correctness and perceived output remain unmeasured.
+
 ## 7. Timeline and the lens
 
 **Part 1: done.** The recording timeline has optional audio above MIDI per stem,

@@ -25,7 +25,7 @@ test('warped queries follow every beat through pickup, tempo changes, drift, gap
       ),
     },
   ];
-  const conversion = convertInstrument({ song, stemId: 'bass' });
+  const conversion = convertInstrument({ grid: 'exact', song, stemId: 'bass' });
   const time = songTime(song);
   const original = await evaluatedPattern(conversion.source);
   const warped = warpPattern(original, time);

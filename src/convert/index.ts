@@ -1,6 +1,7 @@
 import type { ReferenceBar, ReferenceSong, ReferenceStem } from '../reference/types';
 import { conversionSpans, cycleToSeconds, secondsToBeat, secondsToCycle } from './grid';
 import type {
+  ConversionGrid,
   ConvertedInstrument,
   ConversionChange,
   ConversionSpan,
@@ -8,6 +9,7 @@ import type {
   TimingError,
   WrittenNote,
 } from './types';
+import { conversionGrids, defaultConversionGrid } from './types';
 export * from './types';
 export { conversionSpans, cycleToSeconds, secondsToCycle } from './grid';
 
@@ -62,13 +64,16 @@ export function convertInstrument({
   stemId,
   range,
   includeUncovered = true,
+  grid = defaultConversionGrid,
 }: {
   song: ReferenceSong;
   bars?: readonly ReferenceBar[];
   stemId: string;
   range?: { fromBar: number; toBar: number };
   includeUncovered?: boolean;
+  grid?: ConversionGrid;
 }): ConvertedInstrument {
+  if (!conversionGrids.includes(grid)) throw Error('Unsupported conversion grid');
   const stem = song.stems.find((s) => s.id === stemId);
   if (!stem) throw Error('Unknown conversion stem');
   if (
@@ -100,10 +105,13 @@ export function convertInstrument({
   const notes: WrittenNote[] = [];
   const changes: ConversionChange[] = [];
   const resolutions = grouped.map((entries, spanIndex) => {
-    let resolution = 16;
+    const span = selected[spanIndex];
+    const musical = grid !== 'exact' && span.bar !== null;
+    let resolution =
+      grid !== 'exact' && span.bar ? (span.bar.endBeat - span.bar.startBeat) * grid : 16;
     // Adapt by measured residual, not by density. Clamp within the owning bar,
     // even when the nearest grid point would be the following downbeat.
-    for (;;) {
+    for (; !musical;) {
       const acceptable = entries.every(({ note }) => {
         const step = stepFor(song, allSpans, selected[spanIndex], note.startSeconds, resolution);
         const seconds = cycleToSeconds(
@@ -129,22 +137,66 @@ export function convertInstrument({
         startSeconds,
         endSeconds: note.endSeconds + (startSeconds - note.startSeconds),
       };
+      let endCycle = secondsToCycle(song, allSpans, written.endSeconds);
+      if (musical) {
+        // Floor the shifted end on its own bar's grid. Keep sub-step tails rather
+        // than extending a note or reducing it to zero. Uncovered ends stay exact.
+        const endSpan = allSpans.find(
+          (s) => written.endSeconds > s.startSeconds && written.endSeconds <= s.endSeconds,
+        );
+        if (endSpan?.bar) {
+          const count = (endSpan.bar.endBeat - endSpan.bar.startBeat) * grid;
+          const width = endSpan.endCycle - endSpan.startCycle;
+          const endStep = Math.floor(((endCycle - endSpan.startCycle) / width) * count + 1e-9);
+          const candidate = snappedCycle(endSpan, endStep, count);
+          if (candidate > originalCycle && candidate < endCycle - 1e-10) {
+            endCycle = candidate;
+            written.endSeconds = cycleToSeconds(song, allSpans, endCycle);
+          }
+        }
+      }
       notes.push({
         sourceIndex,
         source: note,
         spanIndex,
         step,
         startCycle: originalCycle - offset,
-        endCycle: secondsToCycle(song, allSpans, written.endSeconds) - offset,
+        endCycle: endCycle - offset,
+        velocity: note.velocity,
+        mergedInto: null,
         written,
       });
-      if (startSeconds !== note.startSeconds)
+    }
+    if (musical) {
+      const groups = new Map<string, WrittenNote[]>();
+      for (const n of notes.filter((n) => n.spanIndex === spanIndex)) {
+        const key = `${n.step}:${n.source.pitch}`;
+        const group = groups.get(key) ?? [];
+        group.push(n);
+        groups.set(key, group);
+      }
+      for (const group of groups.values()) {
+        if (group.length < 2) continue;
+        const first = group[0];
+        const endCycle = Math.max(...group.map((n) => n.endCycle));
+        const endSeconds = Math.max(...group.map((n) => n.written.endSeconds));
+        const velocity = Math.max(...group.map((n) => n.velocity));
+        for (const n of group) {
+          n.endCycle = endCycle;
+          n.written = { ...first.written, endSeconds };
+          n.velocity = velocity;
+          n.mergedInto = n === first ? null : first.sourceIndex;
+        }
         changes.push({
-          kind: 'moved',
-          noteIndices: [sourceIndex],
-          original: [{ startSeconds: note.startSeconds, endSeconds: note.endSeconds }],
-          written: [written],
+          kind: 'merged',
+          noteIndices: group.map((n) => n.sourceIndex),
+          original: group.map((n) => ({
+            startSeconds: n.source.startSeconds,
+            endSeconds: n.source.endSeconds,
+          })),
+          written: [first.written],
         });
+      }
     }
     return resolution;
   });
@@ -154,8 +206,20 @@ export function convertInstrument({
     ),
   );
   for (const n of notes) {
+    const original = [{ startSeconds: n.source.startSeconds, endSeconds: n.source.endSeconds }];
+    if (Math.abs(n.written.startSeconds - n.source.startSeconds) > 1e-10)
+      changes.push({ kind: 'moved', noteIndices: [n.sourceIndex], original, written: [n.written] });
     if (
-      n.written.startSeconds !== n.source.startSeconds &&
+      n.written.endSeconds - n.written.startSeconds <
+      n.source.endSeconds - n.source.startSeconds - 1e-10
+    )
+      changes.push({
+        kind: 'shortened',
+        noteIndices: [n.sourceIndex],
+        original,
+        written: [n.written],
+      });
+    if (
       [...boundaries].some(
         (boundary) => n.source.endSeconds <= boundary !== n.written.endSeconds <= boundary,
       )
@@ -167,8 +231,16 @@ export function convertInstrument({
         written: [n.written],
       });
   }
+  const expression = instrumentSource(
+    stem,
+    spans,
+    resolutions,
+    notes.filter((n) => n.mergedInto === null),
+    grid,
+  );
   return {
     stemId,
+    quantization: grid,
     spans,
     grid: allSpans.map((span) => ({
       ...span,
@@ -178,9 +250,9 @@ export function convertInstrument({
     resolutions,
     notes,
     changes,
-    expression: instrumentSource(stem, spans, resolutions, notes),
+    expression,
     // An explicit ODM instrument boundary keeps all bars and drum lanes in one row.
-    source: `/*@odm-shared {"purpose":"instrument","nameSource":"generated"}*/ const literalInstrument = ${instrumentSource(stem, spans, resolutions, notes)};
+    source: `/*@odm-shared {"purpose":"instrument","nameSource":"generated"}*/ const literalInstrument = ${expression};
 $: literalInstrument;`,
   };
 }
@@ -189,11 +261,50 @@ function instrumentSource(
   spans: readonly ConversionSpan[],
   resolutions: readonly number[],
   notes: readonly WrittenNote[],
+  grid: ConversionGrid,
 ): string {
   function barSource(index: number, pitch?: number): string {
     const span = spans[index];
     const resolution = resolutions[index];
     const width = span.endCycle - span.startCycle;
+    const selected = notes.filter(
+      (n) => n.spanIndex === index && (pitch === undefined || n.source.pitch === pitch),
+    );
+    if (grid !== 'exact' && span.bar && selected.length) {
+      // Pack different steps into a voice; simultaneous pitches need extra voices.
+      // Legato retains overlaps independently of the next onset in that voice.
+      const voices: (WrittenNote | undefined)[][] = [];
+      for (const n of selected) {
+        let voice = voices.find((v) => !v[n.step]);
+        if (!voice) {
+          voice = Array.from({ length: resolution });
+          voices.push(voice);
+        }
+        voice[n.step] = n;
+      }
+      const lanes = voices.map((slots) => {
+        const rhythm = slots
+          .map((n) =>
+            n
+              ? pitch === undefined
+                ? String(n.source.pitch)
+                : (drumLanes.find((d) => d.pitch === pitch)?.sample ?? '')
+              : '~',
+          )
+          .join(' ');
+        // Values on rests are neutral: replacing a rest in ODM enables a note.
+        const gains = slots.map((n) => (n ? n.velocity / 127 : 1)).join(' ');
+        const lengths = slots
+          .map((n) => {
+            const length = n ? ((n.endCycle - n.startCycle) * resolution) / width : 1;
+            return Math.abs(length - Math.round(length)) < 1e-9 ? Math.round(length) : length;
+          })
+          .join(' ');
+        return `${pitch === undefined ? 'note' : 's'}(${JSON.stringify(rhythm)}).gain(${JSON.stringify(gains)}).legato(${JSON.stringify(lengths)})`;
+      });
+      const pattern = lanes.length === 1 ? lanes[0] : `stack(${lanes.join(', ')})`;
+      return `[${width}, ${width === 1 ? pattern : `(${pattern}).slow(${width})`}]`;
+    }
     const parts = notes
       .filter((n) => n.spanIndex === index && (pitch === undefined || n.source.pitch === pitch))
       .map((n) => {
@@ -209,7 +320,7 @@ function instrumentSource(
           pitch === undefined
             ? `note(${JSON.stringify(rhythm)})`
             : `s(${JSON.stringify(rhythm.replace('x', drumLanes.find((d) => d.pitch === pitch)?.sample ?? ''))})`;
-        return `${base}.gain(${n.source.velocity}/127).legato(${((n.endCycle - n.startCycle) * resolution) / width})`;
+        return `${base}.gain(${n.velocity}/127).legato(${((n.endCycle - n.startCycle) * resolution) / width})`;
       });
     const pattern = !parts.length
       ? 'silence'

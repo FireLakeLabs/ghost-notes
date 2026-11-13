@@ -38,7 +38,7 @@ test.skipIf(!root || !existsSync(root))(
           moved = 0,
           uncovered = 0;
         for (const stem of song.stems) {
-          const conversion = convertInstrument({ song, stemId: stem.id });
+          const conversion = convertInstrument({ grid: 'exact', song, stemId: stem.id });
           const end = conversion.spans.at(-1)?.endCycle ?? 0;
           const result = await queryEventsNode(conversion.source, 0, end, { timeoutMs: 15000 });
           const proof = roundTripProof(song, conversion, stem.notes, result);

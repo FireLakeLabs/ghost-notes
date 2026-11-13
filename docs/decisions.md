@@ -88,6 +88,10 @@ check:docs`); when a topic file fills, start a new one.
 - G58: preserve uncovered edge notes in explicit, unnumbered sections.
 - G59: retain separate notes, seconds durations, velocity and one ODM instrument boundary.
 
+- G67: session musical grids, default four steps per beat; exact stays available.
+- G68: bar-owned onset snapping and end flooring without extending notes.
+- G69: explicit same-pitch merges and editable sequences, with every source accounted for.
+
 ## [Whole-song timeline](decisions/timeline.md)
 
 - G61: draw the chosen grid; uncovered edges remain unnumbered.
