@@ -10,8 +10,19 @@ declare module '@strudel/core' {
     constructor(span: TimeSpan, controls?: Record<string, unknown>);
     span: TimeSpan;
     controls: Record<string, unknown>;
+    setSpan(span: TimeSpan): State;
   }
-  export interface Hap {
+  export class Hap {
+    constructor(
+      whole: TimeSpan | null,
+      part: TimeSpan,
+      value: unknown,
+      context?: unknown,
+      stateful?: boolean,
+    );
+    context: unknown;
+    stateful: boolean;
+    duration: unknown;
     whole: TimeSpan | null;
     part: TimeSpan;
     value: unknown;
