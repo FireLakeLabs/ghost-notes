@@ -1,5 +1,8 @@
 # Standards
 
+> From ODM at `26c3689` (2026-11-13). D-numbers and "decisions" here mean
+> ODM's; Ghost Notes' own decisions are G-numbers in [decisions](decisions.md).
+
 Logic runs in Node with vitest against real Strudel: document operations, import,
 generation, event comparisons, and pure drawing geometry. Browser tests cover
 browser behavior against a built copy. No jsdom is needed for plain logic.

@@ -1,5 +1,8 @@
 # The model
 
+> From ODM at `26c3689` (2026-11-13). D-numbers and "decisions" here mean
+> ODM's; Ghost Notes' own decisions are G-numbers in [decisions](decisions.md).
+
 One page. If the code and this page disagree, one of them is a bug.
 
 ## How Strudel works

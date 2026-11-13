@@ -16,24 +16,33 @@ For each instrument you see three rows on one timeline:
 
 When you are done you copy your Strudel out. The app does not save anything.
 
-Status: **ODM's code is in (step 2).** The design study is done; see
-[the idea](docs/idea.md), then [next steps](docs/next-steps.md).
-
-ODM's code was copied from `main` at commit
-`26c3689f7f23b24fede19be8c9bf7f4a6332fc8f` (2026-11-13).
+Status: **step 2 of [next steps](docs/next-steps.md) done.** The design study
+is finished and ODM's code is in; the Ghost Notes features come next. Start
+with [the idea](docs/idea.md).
 
 Ghost Notes starts as a fork of
 [Order Doesn't Matter](https://github.com/FireLakeLabs/order-doesnt-matter)
 (ODM), a visual instrument for Strudel. It keeps ODM's score sheet and editors
-and is free to drift from them.
+and is free to drift from them. ODM's code was copied from `main` at commit
+`26c3689f7f23b24fede19be8c9bf7f4a6332fc8f` on 2026-11-13; ODM's Now
+constellation and Watch spiral were then removed (G17).
 
 ## Layout
 
 ```
-docs/          the idea, decisions, next steps
+src/           the app (from ODM): document, import, generate, sheet, editors, engine
+tests/         Node tests (vitest) and browser tests (Playwright)
+scripts/       check, browser-suite, docs, boundary and licence scripts
+harness/       one page per part of the app, for browser tests
+corpus/        Strudel programs the tests import (G33)
+docs/          the idea, decisions, next steps; ODM's model, standards, lessons
 design-study/  the design study: brief, sketches, outcomes
 research/      evidence gathered before the repo existed, with scripts
 ```
+
+`npm ci`, then `npm run check` (format, lint, types, Node tests, docs,
+boundaries, build) and `npm run test:browser`. `npm run dev` serves the app on
+a free port.
 
 ## Licence
 

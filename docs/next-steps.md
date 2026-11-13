@@ -14,7 +14,20 @@ usability test on the prototype and reported no issues.
 Still worth doing, and not blocking: the same five tasks with someone new to
 the design.
 
-## 2. Bring in ODM's code
+## 2. Bring in ODM's code: done
+
+Done on 2026-11-13. Copied from ODM `main` at `26c3689`, with the whole corpus
+(G33). On the unchanged copy `npm run check` passed (544 Node tests) and the
+browser suite passed 64 with 3 skipped. Then the constellation and spiral were
+removed (G17) and the app renamed: 489 Node tests and 56 browser tests pass,
+1 skipped.
+
+Known flaky: the browser test "Kiln live: split removal, undo, literal marks
+and evenly spread drum hits" (`tests/browser/rhythm.spec.ts`) failed 2 of 5
+runs here, each time seeing 3 of 4 expected bass triggers in the measured
+cycle. It passed in ODM's own checkout on its one run. Not yet investigated.
+
+What was planned:
 
 GitHub does not allow forking a repository into the organisation that already
 owns it, so this is a **file copy** of ODM `main` at a recorded commit.

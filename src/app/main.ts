@@ -5,14 +5,12 @@ import { createPanel } from '../editor/panel';
 import { createApp } from './controller';
 import { examples } from './examples';
 import { sheetModel, mountSheet, setPlayhead, setCurrentSection } from '../sheet';
-import { liveModel, mountLivePanel, updateLivePanel } from '../live';
-import { createSpiral } from '../spiral';
 import { aboutControls, mountAbout } from './about';
 import './style.css';
 
 const app = createApp();
 document.body.innerHTML = `
-  <header class="topbar"><h1>Order Doesn't Matter</h1><div class="transport">
+  <header class="topbar"><h1>Ghost Notes</h1><div class="transport">
     <button id="play" disabled>Play</button><button id="stop" disabled>Stop</button>
     <output id="tempo" aria-label="Tempo">Tempo —</output>
     <button id="undo" disabled>Undo</button><button id="redo" disabled>Redo</button>
@@ -26,8 +24,8 @@ document.body.innerHTML = `
       <p id="load-error" role="alert"></p>
     </section>
     <details id="notes" hidden><summary>Notes</summary><ul></ul></details>
-    <div class="score-toolbar"><h2>The score</h2><button id="follow" aria-pressed="true">Follow</button><button id="watch" disabled>Watch</button><output id="window"></output></div>
-    <div id="score-workspace"><div id="score"><p class="welcome">Paste a Strudel program or choose an original to see its score. Press Play when you're ready.</p></div><aside id="live" aria-label="Now" hidden></aside><aside id="editor" hidden></aside></div>
+    <div class="score-toolbar"><h2>The score</h2><button id="follow" aria-pressed="true">Follow</button><output id="window"></output></div>
+    <div id="score-workspace"><div id="score"><p class="welcome">Paste a Strudel program or choose an original to see its score. Press Play when you're ready.</p></div><aside id="editor" hidden></aside></div>
   </main><footer>Read the score. Follow the cycles.</footer>`;
 const aboutDialog = mountAbout();
 const get = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id)! as T;
@@ -37,26 +35,6 @@ const paste = get<HTMLButtonElement>('paste'),
   panel = get('paste-panel');
 const play = get<HTMLButtonElement>('play'),
   stop = get<HTMLButtonElement>('stop');
-const watch = get<HTMLButtonElement>('watch');
-const watchDialog = document.createElement('dialog');
-watchDialog.className = 'spiral-dialog';
-watchDialog.setAttribute('aria-labelledby', 'watch-title');
-watchDialog.innerHTML = `<div class="spiral-toolbar"><h2 id="watch-title">Watch</h2><button id="watch-play">Play</button><button id="watch-stop">Stop</button><button id="watch-close">Close</button></div><p class="spiral-message" role="status"></p><div id="spiral"></div>`;
-document.body.append(watchDialog);
-const spiral = createSpiral(get('spiral'));
-watch.onclick = () => {
-  app.setWatch(true);
-  watchDialog.showModal();
-  spiral.update(app.watchInput(app.engine?.now() ?? null));
-  get('watch-close').focus();
-};
-get('watch-close').onclick = () => watchDialog.close();
-watchDialog.addEventListener('close', () => {
-  app.setWatch(false);
-  watch.focus({ preventScroll: true });
-});
-get('watch-play').onclick = () => void app.play();
-get('watch-stop').onclick = () => app.stop();
 const follow = get<HTMLButtonElement>('follow');
 paste.onclick = () => {
   panel.hidden = !panel.hidden;
@@ -86,7 +64,6 @@ let editNotice: { doc: unknown; text: string } | undefined;
 let targetId: string | null = null,
   selectedSession: typeof app.editor;
 let origin: { id: string; control?: string; row?: string } | null = null;
-let liveOrigin: string | null = null;
 function originCell() {
   return Array.from(score.querySelectorAll<HTMLElement>('[data-editor-target]')).find(
     (n) =>
@@ -98,11 +75,7 @@ function originCell() {
 function closeEditor() {
   targetId = null;
   renderEditor();
-  (
-    Array.from(get('live').querySelectorAll<HTMLElement>('[data-live-id]')).find(
-      (n) => n.dataset.liveId === liveOrigin,
-    ) ?? originCell()
-  )?.focus();
+  originCell()?.focus();
 }
 const renderPanel = createPanel(get('editor'), closeEditor);
 function renderEditor() {
@@ -184,7 +157,7 @@ function openEditor(id: string, cell: HTMLElement) {
   origin = {
     id,
     control: cell.dataset.control,
-    row: cell.dataset.liveId ?? cell.closest<HTMLElement>('tr')?.dataset.nodeId,
+    row: cell.closest<HTMLElement>('tr')?.dataset.nodeId,
   };
   targetId = id;
   renderEditor();
@@ -204,7 +177,7 @@ function openEditor(id: string, cell: HTMLElement) {
 get('undo').onclick = () => app.editor?.undo();
 get('redo').onclick = () => app.editor?.redo();
 document.addEventListener('keydown', (event) => {
-  if (watchDialog.open || aboutDialog.open) return;
+  if (aboutDialog.open) return;
   if (event.key === 'Escape' && targetId) {
     event.preventDefault();
     closeEditor();
@@ -219,7 +192,6 @@ document.addEventListener('keydown', (event) => {
     else app.editor?.undo();
   }
 });
-let previousLiveRows = '';
 let previousNotes: unknown;
 let previousSheet: unknown[] = [];
 app.subscribe((state) => {
@@ -227,14 +199,6 @@ app.subscribe((state) => {
     targetId = null;
     selectedSession = app.editor;
   }
-  watch.disabled = !state.doc;
-  get<HTMLButtonElement>('watch-play').disabled = !app.canPlay || state.playing;
-  get<HTMLButtonElement>('watch-stop').disabled =
-    !state.playing && !state.message.includes('Preparing');
-  watchDialog.querySelector('.spiral-message')!.textContent = state.message;
-  watchDialog.querySelector<HTMLElement>('.spiral-message')!.dataset.kind = app.warning
-    ? 'warning'
-    : 'error';
   play.disabled = !app.canPlay || state.playing;
   stop.disabled = !state.playing && !state.message.includes('Preparing');
   get('tempo').textContent =
@@ -285,41 +249,10 @@ app.subscribe((state) => {
           if (!('ok' in next)) app.editor?.apply(next, {}, id);
         },
         onSelect: (id) => app.select(id),
-        onEdit: (id, _summary, cell) => {
-          liveOrigin = null;
-          openEditor(id, cell);
-        },
+        onEdit: (id, _summary, cell) => openEditor(id, cell),
       },
     );
   }
-  const liveRows = JSON.stringify(state.rows.map((r) => r.id));
-  if (previousLiveRows !== liveRows) {
-    previousLiveRows = liveRows;
-    get('live').hidden = !state.doc;
-    mountLivePanel(
-      get('live'),
-      liveModel({
-        ...state,
-        playhead: app.engine?.now() ?? null,
-        outputLatency: app.engine?.outputLatency() ?? 0,
-      }),
-      {
-        onEdit: (id, line) => {
-          if (targetId) return;
-          liveOrigin = id;
-          openEditor(id, line);
-        },
-      },
-    );
-  }
-  updateLivePanel(
-    get('live'),
-    liveModel({
-      ...state,
-      playhead: app.engine?.now() ?? null,
-      outputLatency: app.engine?.outputLatency() ?? 0,
-    }),
-  );
   renderEditor();
 });
 function revealEditedRow() {
@@ -347,11 +280,6 @@ window.addEventListener('resize', () => {
 function frame() {
   const now = app.frame(),
     { fromCycle, toCycle, sections } = app.state;
-  updateLivePanel(
-    get('live'),
-    liveModel({ ...app.state, playhead: now, outputLatency: app.engine?.outputLatency() ?? 0 }),
-  );
-  if (watchDialog.open) spiral.update(app.watchInput(now));
   setPlayhead(score, now === null ? null : ((now - fromCycle) / (toCycle - fromCycle)) * 100);
   const last = sections.at(-1);
   setCurrentSection(score, now, last ? last.start + last.cycles : 0);
@@ -360,10 +288,9 @@ function frame() {
 requestAnimationFrame(frame);
 // Opt-in diagnostics. Bounded event history; no engine is created by inspection.
 if (new URLSearchParams(location.search).has('inspect'))
-  Object.defineProperties(window, { odmApp: { value: app }, odmSpiral: { value: spiral } });
+  Object.defineProperties(window, { odmApp: { value: app } });
 declare global {
   interface Window {
     odmApp: typeof app;
-    odmSpiral: typeof spiral;
   }
 }

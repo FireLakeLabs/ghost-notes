@@ -2,7 +2,7 @@ import strudelLogo from './assets/strudel.svg?url';
 
 declare const __BUILD_SHA__: string | null;
 export const buildSha = __BUILD_SHA__;
-const repository = 'https://github.com/FireLakeLabs/order-doesnt-matter';
+const repository = 'https://github.com/FireLakeLabs/ghost-notes';
 const external = 'target="_blank" rel="noopener"';
 
 export const aboutControls = `
@@ -21,8 +21,8 @@ export function mountAbout() {
   dialog.className = 'about-dialog';
   dialog.setAttribute('aria-labelledby', 'about-title');
   dialog.innerHTML = `
-    <h2 id="about-title">About Order Doesn't Matter</h2>
-    <p>A visual instrument for Strudel. Read and edit a program's score, and follow its cycles.</p>
+    <h2 id="about-title">About Ghost Notes</h2>
+    <p>Arrange a transcribed recording into Strudel: the evidence on top, your arrangement underneath.</p>
     <p>Made by Fire Lake Labs. Our own source code is MIT licensed. This app includes
     Strudel and other software under AGPL-3.0-or-later and other licences.
     The app as distributed is provided under the AGPL terms. You may use, share and

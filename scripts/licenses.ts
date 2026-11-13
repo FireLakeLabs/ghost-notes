@@ -67,9 +67,9 @@ export function generateLicenses(moduleIds: Iterable<string>) {
   }
   return (
     [
-      "Order Doesn't Matter — licences and third-party notices",
+      'Ghost Notes — licences and third-party notices',
       'Our source is MIT. The app as distributed includes AGPL-3.0-or-later software.\nNo warranty. See About for corresponding source and the deployed commit.',
-      `Order Doesn't Matter — MIT\n${read(resolve('LICENSE'))}`,
+      `Ghost Notes — MIT\n${read(resolve('LICENSE'))}`,
       vendored('assets.txt'),
       vendored('Octicons.txt'),
       `AGPL-3.0 full text\n${vendored('AGPL-3.0.txt')}`,

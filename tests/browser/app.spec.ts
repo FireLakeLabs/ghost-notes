@@ -19,18 +19,18 @@ test('page: original arrangement → rows → measured synth PCM → pinned sect
   await page.goto('/?inspect');
   await expect(page.getByRole('link', { name: 'Source on GitHub', exact: true })).toHaveAttribute(
     'href',
-    'https://github.com/FireLakeLabs/order-doesnt-matter',
+    'https://github.com/FireLakeLabs/ghost-notes',
   );
   await expect(page.getByRole('link', { name: 'Strudel', exact: true })).toHaveAttribute(
     'href',
     'https://strudel.cc',
   );
   await page.getByRole('button', { name: 'About', exact: true }).click();
-  const about = page.getByRole('dialog', { name: "About Order Doesn't Matter" });
+  const about = page.getByRole('dialog', { name: 'About Ghost Notes' });
   await expect(about).toBeVisible();
   await expect(about.getByRole('link', { name: 'Source for this version' })).toHaveAttribute(
     'href',
-    `https://github.com/FireLakeLabs/order-doesnt-matter/tree/${deployedCommit() ?? 'main'}`,
+    `https://github.com/FireLakeLabs/ghost-notes/tree/${deployedCommit() ?? 'main'}`,
   );
   const licences = await page.request.get('/licenses.txt');
   expect(licences.ok()).toBe(true);

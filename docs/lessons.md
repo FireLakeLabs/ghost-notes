@@ -1,5 +1,8 @@
 # Lessons
 
+> From ODM at `26c3689` (2026-11-13). D-numbers and "decisions" here mean
+> ODM's; Ghost Notes' own decisions are G-numbers in [decisions](decisions.md).
+
 What four phases of building this taught us about how to work, beyond what
 [decisions](decisions.md) and [standards](standards.md) already say. Each is
 something that went wrong at least once. Written 2026-11-12.

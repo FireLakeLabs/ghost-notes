@@ -132,7 +132,3 @@ export interface SheetInput {
   sounds: SheetSoundState[];
   playhead: number | null;
 }
-
-/* ---- Live views: src/live/ ---- */
-
-export type { LiveInput, LiveInstrument, LiveRoom, LiveModel, TurnNote } from './live/model';

@@ -44,7 +44,6 @@ test('Kiln: live deletion removes row, planet and a full cycle of triggers; Undo
     `Deleted ${before.row.name}. Undo to bring it back.`,
   );
   await expect(page.locator(`tr[data-node-id="${before.row.id}"]`)).toHaveCount(0);
-  await expect(page.locator(`[data-live-id="${before.row.id}"]`)).toHaveCount(0);
   await appSignal(page, () => {
     const h = window.odmApp.history,
       b = h.findLast((e) => e.type === 'swapped');
@@ -67,7 +66,6 @@ test('Kiln: live deletion removes row, planet and a full cycle of triggers; Undo
   await swap(page, () => page.getByRole('button', { name: 'Undo', exact: true }).click());
   expect(await page.evaluate(() => window.odmApp.state.doc)).toEqual(before.doc);
   await expect(page.locator(`tr[data-node-id="${before.row.id}"]`)).toHaveCount(1);
-  await expect(page.locator(`[data-live-id="${before.row.id}"]`)).toHaveCount(1);
   await signal(() =>
     page.evaluate(() => {
       const h = window.odmApp.history,
