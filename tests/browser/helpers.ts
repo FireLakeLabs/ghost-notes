@@ -85,13 +85,15 @@ export async function scoreReady(page: Page) {
 }
 export async function swap(page: Page, action: () => Promise<unknown>) {
   return test.step('ODM:swap', async () => {
+    // History is capped: an old swap can leave while a newer one arrives.
     const before = await page.evaluate(
-      () => window.odmApp.history.filter((e) => e.type === 'swapped').length,
+      () => window.odmApp.history.findLast((e) => e.type === 'swapped')?.revision ?? 0,
     );
     await action();
     await appSignal(
       page,
-      (count) => window.odmApp.history.filter((e) => e.type === 'swapped').length > count,
+      (revision) =>
+        window.odmApp.history.some((e) => e.type === 'swapped' && e.revision > revision),
       before,
     );
   });
