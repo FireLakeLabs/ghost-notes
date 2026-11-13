@@ -61,3 +61,8 @@ check:docs`); when a topic file fills, start a new one.
 - G40: version 1 song folders with explicit relative paths and every stem.
 - G41: cache by source content, bounds, settings, models, dependencies and code.
 - G42: expose beat coverage and tempo doubt without changing detected beats.
+
+## [Reference import](decisions/reference.md)
+
+- G45: preserve uncertain timing in queryable reference coordinates.
+- G46: notes JSON first, MIDI second through pinned midi-file.
