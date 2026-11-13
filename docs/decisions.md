@@ -27,3 +27,10 @@ when this app departs from them.
   account, set up later and only with the owner's approval at the time.
 - **G7 (2026-11-12) A design study comes before code,** run with the owner
   present. Its outcomes become decisions here.
+- **G8 (2026-11-12) Our code is MIT; the hosted app meets Strudel's AGPL.**
+  The Strudel packages (`@strudel/*`, `superdough`) are AGPL-3.0-or-later. The
+  built app bundles them and serves them to every visitor, which counts as
+  distributing them, so the app as served must meet AGPL terms. It does that
+  by keeping this repository's source public and showing a notice in the app:
+  it uses Strudel under AGPL-3.0-or-later, with a link to the source of the
+  deployed commit. The same position as ODM D43.

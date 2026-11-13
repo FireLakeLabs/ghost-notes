@@ -34,5 +34,6 @@ research/      evidence gathered before the repo existed, with scripts
 
 ## Licence
 
-MIT; see [LICENSE](LICENSE). Strudel itself is AGPL-3.0, and that question is
-open: see [next steps](docs/next-steps.md#licence).
+Our code is MIT; see [LICENSE](LICENSE). The app uses Strudel, which is
+AGPL-3.0-or-later; the hosted app meets those terms by keeping this source
+public and saying so in the app (decision G8).

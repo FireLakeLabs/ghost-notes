@@ -57,7 +57,7 @@ path (G4).
     General MIDI soundfonts (not pinned in ODM)?
 
 **Done when:** sketches are in `design-study/sketches/`, outcomes are in
-`design-study/outcomes.md`, the decisions are G8 onward in
+`design-study/outcomes.md`, the decisions are G9 onward in
 [decisions](decisions.md), and steps 2–10 below are revised to match.
 
 ## 2. Bring in ODM's code
@@ -151,6 +151,8 @@ reference restores every link.
 - Within the current section, draw the MIDI and converted notes faintly behind
   the user's own. Mind ODM's 200-events-per-cell drawing cap.
 - Add the Copy button.
+- Add the licence notice (G8): the app uses Strudel under AGPL-3.0-or-later,
+  with a link to the source of the deployed commit.
 
 ## 9. Simplify
 
@@ -179,7 +181,6 @@ cleaning steps first.
 
 ## Licence
 
-This repository is MIT, but the Strudel packages it will depend on
-(`@strudel/*`, `superdough`) are AGPL-3.0-or-later. ODM has the same
-dependency, and neither repository records a position on it. Check what that
-means for a hosted app before step 10.
+Settled by G8: our code stays MIT, and the hosted app meets Strudel's AGPL
+through public source and an in-app notice. The notice is part of step 8 (the
+app shell) and must be live before step 10 publishes anything.
