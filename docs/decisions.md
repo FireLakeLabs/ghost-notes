@@ -81,3 +81,9 @@ check:docs`); when a topic file fills, start a new one.
 - G54: explain each inference and preserve gaps, edges and tempo uncertainty.
 - G55: add level-switch reporting to version 1; read old folders unchanged.
 - G56: show grid counts and ask once when tempo is flagged.
+
+## [Literal conversion](decisions/convert.md)
+
+- G57: adaptive onset snapping within 1 ms and 1/1024 beat, never across a bar line.
+- G58: preserve uncovered edge notes in explicit, unnumbered sections.
+- G59: retain separate notes, seconds durations, velocity and one ODM instrument boundary.
