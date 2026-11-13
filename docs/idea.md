@@ -21,8 +21,7 @@ recording ──► stems ──► MIDI + beat map ──► literal Strudel �
              (Python tool: audio-to-midi)    (converter)         (Ghost Notes)
 ```
 
-1. **Transcribe.** A local Python tool (ODM's `tools/audio-to-midi`, to move
-   here) splits a recording into stems, finds beats and downbeats, and
+1. **Transcribe.** A local Python tool (`tools/audio-to-midi`) splits a recording into stems, finds beats and downbeats, and
    transcribes each stem. It writes MIDI, `notes.json` (every note as start,
    end, pitch, velocity, in seconds) and `beats.json`.
 2. **Open.** The user opens the song's folder from their own disk: the stem
