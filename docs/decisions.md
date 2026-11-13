@@ -55,3 +55,9 @@ check:docs`); when a topic file fills, start a new one.
 - G33: ODM's corpus comes in whole.
 - G34: TypeScript 7 and Oxlint.
 - G35: decisions are an index plus topic files, each under a word budget.
+
+## [Transcription](decisions/transcription.md)
+
+- G40: version 1 song folders with explicit relative paths and every stem.
+- G41: cache by source content, bounds, settings, models, dependencies and code.
+- G42: expose beat coverage and tempo doubt without changing detected beats.

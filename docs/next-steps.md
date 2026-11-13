@@ -73,7 +73,32 @@ Each check compares the events Strudel schedules, never how anything sounds.
 **Done when:** each item has a test, or a recorded fallback. If tempo per
 place fails, the fallback is one editable tempo, the song's average (G28).
 
-## 4. Move the transcription tool
+## 4. Move the transcription tool: done
+
+Copied from ODM `26c3689`; the [tool README](../tools/audio-to-midi/README.md)
+defines the version 1 song-folder contract (G40–G42). Standard-library Python
+tests run in a separate two-minute CI job without models. Cache keys include
+source bytes, settings, models, bounds, dependencies and code; beat coverage and
+tempo doubt are explicit. Audio cuts publish only on success.
+
+Measured locally on CPU, 2026-11-13: the first test session and two diversity
+inputs, six songs total. Six stem WAVs and six stem MIDIs per song, plus combined
+MIDI, notes and beats. Durations and detected-map endpoints in seconds:
+
+| Input                      | Duration | Beats | Map stops | Tempo review                |
+| -------------------------- | -------: | ----: | --------: | --------------------------- |
+| First test session, song 1 |  123.979 |   136 |   112.700 | possible half, 69.77 BPM    |
+| First test session, song 2 |  166.000 |   295 |   150.500 | no range flag, 120.00 BPM   |
+| First test session, song 3 |  142.000 |   324 |   123.600 | no range flag, 157.89 BPM   |
+| First test session, song 4 |  140.524 |   331 |   128.220 | possible double, 214.29 BPM |
+| Diversity input 1, song 1  |  310.747 |   487 |   310.120 | no range flag, 93.75 BPM    |
+| Diversity input 2, song 1  |  160.670 |   253 |   160.320 | possible half, 78.95 BPM    |
+
+These are detected beats, not a judgement of musical accuracy. Every map has
+uncovered edges recorded in `beats.json`; no notes or audio enter git (G4).
+The app importer is step 5; opening these folders in the app is not yet measured.
+
+What was planned:
 
 Move `tools/audio-to-midi` from ODM to here. That is one PR in each repo. Fix
 what the first run showed:

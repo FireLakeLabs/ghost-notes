@@ -49,3 +49,9 @@ a free port.
 Our code is MIT; see [LICENSE](LICENSE). The app uses Strudel, which is
 AGPL-3.0-or-later; the hosted app meets those terms by keeping this source
 public and saying so in the app (decision G8).
+
+## Transcription
+
+The local [audio-to-midi tool](tools/audio-to-midi/README.md) writes versioned
+song folders under git-ignored `reference/`. Copied from ODM at `26c3689`;
+recordings and model weights stay local.
