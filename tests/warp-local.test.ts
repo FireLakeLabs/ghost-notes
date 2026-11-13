@@ -33,7 +33,7 @@ test.skipIf(!root || !existsSync(root))(
         let chords = 0,
           maxSplitMs = 0;
         for (const stem of song.stems) {
-          const conversion = convertInstrument({ song, stemId: stem.id });
+          const conversion = convertInstrument({ grid: 'exact', song, stemId: stem.id });
           const pattern = await evaluatedPattern(conversion.source);
           const original = query(pattern, 0, timing.toCycle(timing.end))
             .filter((h) => h.hasOnset())
