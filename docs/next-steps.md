@@ -31,6 +31,13 @@ selected cycles in its bass-free ending (cycle 30 was traced); its old
 pending edits settle. Exact trigger counts and all time budgets remain strict.
 The PR for #14 records the loaded repetition counts and before/after failures.
 
+Issue #22 traced the deletion timeout to the browser helper counting swaps in a
+rolling 1,000-event history: an old swap could leave as the new one arrived,
+so playback advanced but the count never increased. The helper now compares
+revision numbers; a real-trigger rollover regression covers the race. No
+playback change, retry or timeout increase was needed. The PR for #22 records
+loaded before/after failure rates and the full-suite proof.
+
 What was planned:
 
 GitHub does not allow forking a repository into the organisation that already
