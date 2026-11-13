@@ -234,6 +234,32 @@ reuse the GPL converter's code. Fix its known faults:
 **Done when:** every MIDI note appears exactly once, which the first study
 already measured as possible (9,008 of 9,008), with the timing error reported.
 
+### Step 6 measurements (2026-11-13, detected grids)
+
+All six local version 1 songs, every stem (36 total), queried through the pinned
+Strudel Node seam. 14,047/14,047 source notes appear once; missing and duplicated
+are both zero. Values are absolute onset errors: median / p95 / maximum.
+Code size is the sum of six standalone instrument programs, in bytes.
+
+| Input                      | Notes / once | Missing | Duplicated | Error (ms)            | Error (beats)                  | Code (B) |
+| -------------------------- | -----------: | ------: | ---------: | --------------------- | ------------------------------ | -------: |
+| First test session, song 1 |  1433 / 1433 |       0 |          0 | 0.291 / 0.792 / 0.977 | 0.000355 / 0.000916 / 0.000972 |   98,639 |
+| First test session, song 2 |  2203 / 2203 |       0 |          0 | 0.273 / 0.469 / 0.947 | 0.000547 / 0.000937 / 0.000975 |  152,080 |
+| First test session, song 3 |  1805 / 1805 |       0 |          0 | 0.174 / 0.352 / 0.406 | 0.000452 / 0.000925 / 0.000975 |  126,996 |
+| First test session, song 4 |  3282 / 3282 |       0 |          0 | 0.164 / 0.469 / 0.527 | 0.000470 / 0.000901 / 0.000975 |  220,532 |
+| diversity-1                |  3947 / 3947 |       0 |          0 | 0.250 / 0.600 / 0.880 | 0.000391 / 0.000937 / 0.000977 |  263,989 |
+| diversity-2                |  1377 / 1377 |       0 |          0 | 0.306 / 0.700 / 0.756 | 0.000514 / 0.000925 / 0.000972 |   97,637 |
+
+Maximum duration residual was below 0.000001 ms; gain was matched for every
+note. MIDI pitch/gain multiplicity also matched exactly on every stem. Timing
+precision above is against notes JSON (G46); MIDI tick/tempo serialization differs.
+265 notes outside detected coverage were retained in marked edge sections
+(G58). No real notes, source names or generated programs are stored.
+[Converter API and reproduction](convert.md). Synthetic fixtures prove pickup,
+tempo changes, boundaries, overlap, chords, drums, gain and ODM round trips.
+The consistent-grid rerun from #19 is still required before completion. Playback
+time warping, exported tempo fidelity and perceived output were not measured.
+
 ## 7. Timeline and the lens
 
 The whole-song view, with the section sheet as a lens inside it (G9). This
