@@ -20,6 +20,14 @@ and ODM's code copied in with the constellation and spiral removed (G17).
 Step 3 (prove the Strudel assumptions) is next; start it only when asked.
 `npm run check` and `npm run test:browser` must pass before any commit.
 
+## Skills
+
+Project skills live in `.agents/skills/`. [.agents/README.md](.agents/README.md)
+routes requests to them ("full send", "full stop", "orchestrate", "review loop",
+PR work) and sets the reviewer policy. For TypeScript work, apply
+[typescript-best-practices](.agents/skills/typescript-best-practices/SKILL.md) and
+the principles it links.
+
 ## Working rules
 
 - Use the Node version in `.node-version` and npm.

@@ -11,3 +11,6 @@ infra/cdk.out/
 
 # Design canvas source, in the canvas format (see design-study/sketches/README.md)
 design-study/sketches/canvas/
+
+# Vendored agent skills keep their upstream formatting (hashes in .agents/skills-lock.json)
+.agents/
