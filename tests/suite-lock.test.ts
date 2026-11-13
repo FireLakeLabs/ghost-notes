@@ -29,22 +29,29 @@ describe.runIf(process.platform === 'linux')('browser suite lock', () => {
     const holder = `
       const { acquireSuiteLock } = await import(${JSON.stringify(new URL('../scripts/suite-lock.mjs', import.meta.url).href)});
       const release = await acquireSuiteLock({ name: ${JSON.stringify(name)}, pollMs: 5, log: () => {} });
-      const enter = performance.timeOrigin + performance.now();
+      const enter = String(process.hrtime.bigint());
       await new Promise((resolve) => setTimeout(resolve, 40));
-      const leave = performance.timeOrigin + performance.now();
+      const leave = String(process.hrtime.bigint());
       release();
       console.log(JSON.stringify([enter, leave]));`;
+    // process.hrtime reads the system-wide monotonic clock, so readings from
+    // different processes compare; performance.timeOrigin is set per process
+    // and differed by about a millisecond between processes on CI.
     const run = () =>
-      new Promise<[number, number]>((resolve, reject) => {
+      new Promise<[bigint, bigint]>((resolve, reject) => {
         const child = spawn(process.execPath, ['--input-type=module', '-e', holder]);
         let out = '';
         child.stdout.on('data', (chunk) => (out += chunk));
         child.once('error', reject);
         child.once('exit', (code) =>
-          code ? reject(Error(`exit ${code}`)) : resolve(JSON.parse(out)),
+          code
+            ? reject(Error(`exit ${code}`))
+            : resolve((JSON.parse(out) as [string, string]).map(BigInt) as [bigint, bigint]),
         );
       });
-    const spans = (await Promise.all(Array.from({ length: 8 }, run))).sort((a, b) => a[0] - b[0]);
+    const spans = (await Promise.all(Array.from({ length: 8 }, run))).sort((a, b) =>
+      a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0,
+    );
     for (let i = 1; i < spans.length; i++)
       expect(spans[i][0]).toBeGreaterThanOrEqual(spans[i - 1][1]);
   });
