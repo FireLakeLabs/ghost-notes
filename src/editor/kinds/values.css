@@ -1,0 +1,14 @@
+.values-lane svg {
+  display: block;
+  width: 100%;
+  height: 60px;
+  background: var(--canvas);
+}
+.values-lane rect {
+  stroke: var(--panel);
+  stroke-width: 2px;
+}
+.values-lane p {
+  font-size: 13px;
+  color: var(--muted);
+}

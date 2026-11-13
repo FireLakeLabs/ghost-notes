@@ -1,0 +1,96 @@
+
+> check
+> node check.mjs
+
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+🌀 @strudel/core loaded 🌀
+{
+  "total": 85,
+  "ok": 83,
+  "intendedFailures": 2,
+  "unexpectedFailures": [],
+  "missingIntendedFailures": []
+}

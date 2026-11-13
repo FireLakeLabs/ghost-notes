@@ -16,8 +16,11 @@ For each instrument you see three rows on one timeline:
 
 When you are done you copy your Strudel out. The app does not save anything.
 
-Status: **design study.** No application code yet. Start with
+Status: **ODM's code is in (step 2).** The design study is done; see
 [the idea](docs/idea.md), then [next steps](docs/next-steps.md).
+
+ODM's code was copied from `main` at commit
+`26c3689f7f23b24fede19be8c9bf7f4a6332fc8f` (2026-11-13).
 
 Ghost Notes starts as a fork of
 [Order Doesn't Matter](https://github.com/FireLakeLabs/order-doesnt-matter)

@@ -72,15 +72,15 @@ simplification tools.
 
 ## What is new
 
-| Piece | What it does |
-| --- | --- |
-| Reference import | Reads MIDI or `notes.json` + `beats.json`; maps to beats and cycles; names instruments by stem. |
-| Literal converter | Writes the selected notes as Strudel on a chosen grid, in TypeScript. |
-| Timeline | Whole-song view: three rows per instrument, zoom, range selection. |
-| Make section from range | One document edit: a section with its source bars. |
-| The lens | The open section grows in place inside the timeline, with the MIDI and converted notes drawn behind the user's own (G9, G10). |
-| Simplify | Proposes shorter, structured Strudel for a section under user-set error limits. |
-| Copy out | The whole arrangement as Strudel text, with section and stem links in comments. |
+| Piece                   | What it does                                                                                                                  |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Reference import        | Reads MIDI or `notes.json` + `beats.json`; maps to beats and cycles; names instruments by stem.                               |
+| Literal converter       | Writes the selected notes as Strudel on a chosen grid, in TypeScript.                                                         |
+| Timeline                | Whole-song view: three rows per instrument, zoom, range selection.                                                            |
+| Make section from range | One document edit: a section with its source bars.                                                                            |
+| The lens                | The open section grows in place inside the timeline, with the MIDI and converted notes drawn behind the user's own (G9, G10). |
+| Simplify                | Proposes shorter, structured Strudel for a section under user-set error limits.                                               |
+| Copy out                | The whole arrangement as Strudel text, with section and stem links in comments.                                               |
 
 ## Out of scope for now
 

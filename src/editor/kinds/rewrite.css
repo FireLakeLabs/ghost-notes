@@ -1,0 +1,39 @@
+.rewrite-editor pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+.rewrite-editor ol {
+  padding-left: 24px;
+}
+.rewrite-editor li {
+  margin-bottom: 8px;
+}
+.rewrite-editor [aria-current] {
+  outline: 2px solid var(--selection);
+  outline-offset: -3px;
+}
+.rewrite-choice {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.rewrite-editor figure {
+  margin: 12px 0;
+}
+.rewrite-editor figcaption {
+  margin-bottom: 8px;
+}
+.rewrite-editor svg {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  background: var(--canvas);
+  border-radius: 4px;
+}
+.rewrite-editor rect {
+  fill: var(--accent);
+}
+.rewrite-editor figure:first-of-type rect {
+  fill: var(--selection);
+}
