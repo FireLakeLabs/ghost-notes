@@ -1,4 +1,5 @@
 import { Pattern } from '@strudel/core';
+import { playheadCycle, query } from './index';
 import type { Hap, State, Scheduler } from './index';
 import {
   MAX_WINDOW_STARTS,
@@ -73,4 +74,19 @@ export function schedulingBoundary(scheduler: Scheduler, state: State) {
   if (!Number.isFinite(cycle) || !Number.isFinite(time))
     throw Error('Strudel scheduling boundary must have finite cycle and audio time');
   return { cycle, time };
+}
+
+// Cyclist advances lastEnd even when a late callback skips queryArc. Its latency
+// means some skipped onsets still have future audio deadlines. Recover those on
+// the next query, never notes whose deadlines passed. Create this at commit so a
+// new revision cannot replay windows already scheduled by its predecessor.
+export function recoverSkipped(pattern: Pattern, scheduler: Scheduler): Pattern {
+  let through = scheduler.lastEnd;
+  return new Pattern((state: State) => {
+    const begin = Number(state.span.begin);
+    const from =
+      through < begin ? Math.min(begin, Math.max(through, playheadCycle(scheduler))) : begin;
+    through = Number(state.span.end);
+    return query(pattern, from, through, state.controls);
+  });
 }

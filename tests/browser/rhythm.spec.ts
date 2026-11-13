@@ -214,9 +214,25 @@ test('Kiln live: split removal, undo, literal marks and evenly spread drum hits'
   await swap(page, () => page.getByLabel('hits', { exact: true }).press('Enter'));
   await expect(page.getByLabel('hits', { exact: true })).toBeFocused();
   await expect(page.getByLabel('out of', { exact: true })).toHaveValue('8');
-  const boundary = await page.evaluate(() =>
-    Math.ceil(window.odmApp.history.filter((e) => e.type === 'swapped').at(-1)!.cycle),
-  );
+  await waitForPending(page);
+  // A swap can land exactly at a cycle start or after the playhead has left
+  // Kiln's bass section. Choose a whole, not-yet-scheduled cycle in either bass-playing section.
+  const boundary = await page.evaluate(() => {
+    const { sections } = window.odmApp.state;
+    const section = sections[1];
+    const end = sections[2].start + sections[2].cycles;
+    const last = sections.at(-1)!;
+    const length = last.start + last.cycles;
+    const latest = Math.max(
+      window.odmApp.engine!.now()!,
+      ...window.odmApp.history.flatMap((e) => (e.type === 'trigger' ? [e.cycle] : [])),
+    );
+    let cycle = Math.floor(latest) + 1;
+    const phase = cycle % length;
+    if (phase < section.start) cycle += section.start - phase;
+    else if (phase >= end) cycle += length - phase + section.start;
+    return cycle;
+  });
   await throughCycle(page, boundary + 1);
   const bassStarts = await page.evaluate(
     (c) =>

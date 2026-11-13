@@ -20,6 +20,7 @@ declare module '@strudel/core' {
   export class Pattern {
     constructor(query: (state: State) => Hap[]);
     query(state: State): Hap[];
+    fast(factor: number): Pattern;
     queryArc(begin: number, end: number): Hap[];
   }
   export function isPattern(value: unknown): value is Pattern;
@@ -28,7 +29,7 @@ declare module '@strudel/core' {
   export class Cyclist {
     constructor(options: {
       getTime: () => number;
-      setInterval?: () => number;
+      setInterval?: (callback: () => void, delay: number) => number;
       clearInterval?: () => void;
       onTrigger?: (
         hap: Hap,
