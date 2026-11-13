@@ -103,3 +103,10 @@ check:docs`); when a topic file fills, start a new one.
 ## [Playback](decisions/playback.md)
 
 - G72: fixed-clock onset and sustain warping through the chosen grid; 1 ms additional scheduling tolerance.
+
+## [Simplify](decisions/simplify.md)
+
+- G77: report one-to-one source onset/pitch matches with explicit denominators.
+- G78: independent deterministic proposals, including those that expand.
+- G79: conservative session limits; record their measured effects.
+- G80: retain source lineage and converter-shaped changes through suggestions.

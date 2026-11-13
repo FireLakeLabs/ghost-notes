@@ -1,5 +1,6 @@
 // Pinned packages ship no declarations; describe only the surface exercised here.
 declare module '@strudel/core' {
+  export function bjorklund(pulses: number, steps: number): number[];
   export function getSoundIndex(n: unknown, count: number): number;
   export class TimeSpan {
     constructor(begin: number, end: number);
