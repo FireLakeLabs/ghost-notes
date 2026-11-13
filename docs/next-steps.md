@@ -22,12 +22,14 @@ browser suite passed 64 with 3 skipped. Then the constellation and spiral were
 removed (G17) and the app renamed: 489 Node tests and 56 browser tests pass,
 1 skipped.
 
-Known flaky: the browser test "Kiln live: split removal, undo, literal marks
-and evenly spread drum hits" (`tests/browser/rhythm.spec.ts`) failed 2 of 5
-runs here, each time seeing 3 of 4 expected bass triggers in the measured
-cycle. It passed in ODM's own checkout on its one run. Not yet investigated. After the
-toolchain update (G34, Playwright 1.65 with Chromium 158) it passed 3 of 3 runs;
-too few to call it fixed.
+Issue #14 investigated the two intermittent trigger-count failures. Cyclist
+advanced past late query windows even when their notes still had future audio
+deadlines. Playback now recovers those onsets on the next query, without
+replaying expired or previously scheduled notes. The fast Kiln rhythm test also
+selected cycles in its bass-free ending (cycle 30 was traced); its old
+`ceil(swap)` boundary could include a partially scheduled cycle. It now observes a whole future cycle in a bass-playing section after
+pending edits settle. Exact trigger counts and all time budgets remain strict.
+The PR for #14 records the loaded repetition counts and before/after failures.
 
 What was planned:
 

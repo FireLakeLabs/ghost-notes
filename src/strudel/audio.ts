@@ -17,7 +17,7 @@ import type { AudioBackend, Dispatch, SilentWindow } from '../engine';
 import { soundName } from '../engine/logic';
 import { createTap } from './audio-tap';
 import { instrumentIdentity } from './instrument-identity';
-import { guarded, schedulingBoundary } from './audio-pattern';
+import { guarded, schedulingBoundary, recoverSkipped } from './audio-pattern';
 
 export const defaultCollections = [
   ...['tidal-drum-machines', 'piano', 'Dirt-Samples', 'EmuSP12', 'vcsl', 'mridangam'].map(
@@ -108,15 +108,6 @@ export async function createAudio({
       if (!candidate) throw Error('Strudel evaluation produced no pattern');
       const pattern = candidate;
       inspect?.(pattern, cps);
-      const wrapped = guarded(
-        pattern,
-        failed,
-        (hap) => revisions.set(hap, revision),
-        (state) => {
-          const { cycle, time } = schedulingBoundary(repl.scheduler, state);
-          silent(revision, cycle, time);
-        },
-      );
       return {
         values: [],
         async commit() {
@@ -125,6 +116,15 @@ export async function createAudio({
           committing = [];
           try {
             repl.setCps(cps);
+            const wrapped = guarded(
+              recoverSkipped(pattern, repl.scheduler),
+              failed,
+              (hap) => revisions.set(hap, revision),
+              (state) => {
+                const { cycle, time } = schedulingBoundary(repl.scheduler, state);
+                silent(revision, cycle, time);
+              },
+            );
             await repl.setPattern(wrapped, true);
             await Promise.all(committing);
             installed = wrapped;

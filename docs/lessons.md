@@ -54,6 +54,7 @@ something that went wrong at least once. Written 2026-11-12.
   was excluding a note starting exactly at cycle zero. Re-running hid it twice.
 - **Wait on signals, never on time,** and keep a hard budget per test and per
   suite (D27). The budget is what made slow tests visible.
+- **A swap is not a complete cycle.** Observe beyond the scheduling horizon, in a section where the asserted instrument actually plays.
 - **Strudel's web bundle carries its own scheduler.** Patching `@strudel/core`
   alone changes nothing in playback.
 
