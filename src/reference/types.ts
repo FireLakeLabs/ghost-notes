@@ -7,6 +7,8 @@ export type Coverage = {
   trailing_seconds: number;
   gaps: readonly (readonly [number, number])[];
   gap_threshold_median_multiple: number;
+  /** Additive v1: persistent interval runs at another metrical level. */
+  level_switches?: readonly (readonly [number, number])[];
 };
 export type TempoReview = {
   flagged: boolean;
@@ -19,6 +21,19 @@ export type TempoReview = {
     detected_beats: number;
     review_bpm_range: readonly number[];
   };
+};
+export type GridInference = {
+  kind: 'merge-short-bars' | 'split-long-bar' | 'fill-beat' | 'thin-beat';
+  seconds: number;
+  /** The evidence interval affected by this inference, in original seconds. */
+  source: readonly [number, number];
+};
+export type GridMultiplier = 0.5 | 1 | 2;
+export type BeatGrid = {
+  multiplier: GridMultiplier;
+  map: BeatMap;
+  bars: readonly ReferenceBar[];
+  inferences: readonly GridInference[];
 };
 export type BeatMap = {
   beats: readonly number[];
@@ -43,6 +58,8 @@ export type ReferenceBar = {
   partial: boolean;
   /** Tool-marked intervals; never interpreted as a missing-beat count. */
   gaps: Coverage['gaps'];
+  /** Added/removed lines and beats; original timing remains in detectedBars. */
+  inferences?: readonly GridInference[];
 };
 export type ReferenceNote = {
   startSeconds: number;
@@ -67,6 +84,9 @@ export type ReferenceSong = {
   durationSeconds: number;
   pickupBeats: number;
   beatMap: BeatMap;
+  detectedBeatMap: BeatMap;
+  detectedBars: readonly ReferenceBar[];
+  grid: BeatGrid;
   bars: readonly ReferenceBar[];
   stems: readonly ReferenceStem[];
 };

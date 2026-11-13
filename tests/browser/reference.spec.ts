@@ -44,6 +44,11 @@ test('real OPFS directory picker, session reopen and retained handle on reload',
   await expect(status).toContainText('Invented pickup — 1 stem; 3 bars + pickup; 48.00–120.00 BPM');
   await expect(status).toContainText('gaps: 4.5–6.5 s');
   await expect(status).toContainText('Tempo doubt: synthetic review');
+  await expect(status).toContainText('Grid: 1×; 0 bar lines inferred');
+  await page.getByRole('button', { name: '2×', exact: true }).click();
+  await expect(status).toContainText('Grid: 2×; 1 bar lines inferred');
+  await expect(page.locator('[data-tempo]')).toBeHidden();
+  expect(await page.evaluate(() => window.ghostReference.current!.song.grid.multiplier)).toBe(2);
   const pcm = await page.evaluate(() => {
     const audio = window.ghostReference.current!.audio.get('bass')!;
     return {

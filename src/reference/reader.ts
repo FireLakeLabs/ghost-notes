@@ -1,6 +1,7 @@
 import type {
   BeatMap,
   Coverage,
+  GridMultiplier,
   ReferenceNote,
   ReferenceSong,
   ReferenceStem,
@@ -10,6 +11,8 @@ import type {
 import * as v from './validate';
 import { referenceBars, secondsToPosition } from './beats';
 import { midiNotes } from './midi';
+import { deriveGrid } from './grid';
+import { classifyIntervals } from './intervals';
 
 async function json(files: SongFiles, path: string) {
   let value: unknown;
@@ -51,6 +54,16 @@ function beatMap(doc: Record<string, unknown>): BeatMap {
     }),
     gap_threshold_median_multiple: v.number(c.gap_threshold_median_multiple, 'gap threshold', 0),
   };
+  if (c.level_switches !== undefined) {
+    coverage.level_switches = v.array(c.level_switches, 'level switches').map((row) => {
+      const pair = v.array(row, 'level switch');
+      if (pair.length !== 2) v.invalid('level switch');
+      const a = v.number(pair[0], 'switch start', 0, durationSeconds),
+        b = v.number(pair[1], 'switch end', a, durationSeconds);
+      if (!beats.includes(a) || !beats.includes(b) || a === b) v.invalid('switch endpoints');
+      return [a, b] as const;
+    });
+  }
   if (
     coverage.first_beat_seconds !== (beats[0] ?? null) ||
     coverage.last_beat_seconds !== (beats.at(-1) ?? null)
@@ -99,9 +112,33 @@ export function referenceNote(map: BeatMap, row: unknown): ReferenceNote {
     end: secondsToPosition(map, endSeconds),
   };
 }
-export async function readReference(files: SongFiles): Promise<ReferenceSong> {
+export async function readReference(
+  files: SongFiles,
+  multiplier: GridMultiplier = 1,
+): Promise<ReferenceSong> {
   const doc = await json(files, 'song.json');
-  const map = beatMap(await json(files, v.relativePath(doc.beats)));
+  const detectedBeatMap = beatMap(await json(files, v.relativePath(doc.beats)));
+  const coverage = detectedBeatMap.coverage;
+  const intervals =
+    coverage.level_switches === undefined ? classifyIntervals(detectedBeatMap.beats) : null;
+  const workingMap: BeatMap = intervals
+    ? {
+        ...detectedBeatMap,
+        coverage: {
+          ...coverage,
+          ...intervals,
+          status: !detectedBeatMap.beats.length
+            ? 'missing'
+            : coverage.first_beat_seconds === 0 &&
+                coverage.last_beat_seconds === detectedBeatMap.durationSeconds &&
+                !intervals.gaps.length
+              ? 'complete'
+              : 'partial',
+        },
+      }
+    : detectedBeatMap;
+  const grid = deriveGrid(workingMap, multiplier),
+    map = grid.map;
   const durationSeconds = v.number(doc.duration_seconds, 'duration', 0);
   if (Math.abs(durationSeconds - map.durationSeconds) > 0.0001) v.invalid('inconsistent duration');
   const notesPath = v.relativePath(doc.notes);
@@ -137,14 +174,20 @@ export async function readReference(files: SongFiles): Promise<ReferenceSong> {
   }
   if (!stems.length) v.invalid('no stems');
   const pickupBeats = v.integer(doc.pickup_beats, 'pickup beats');
-  if (pickupBeats !== map.beats.filter((b) => b < (map.downbeats[0] ?? 0)).length)
+  if (
+    pickupBeats !==
+    detectedBeatMap.beats.filter((b) => b < (detectedBeatMap.downbeats[0] ?? 0)).length
+  )
     v.invalid('pickup count');
   return {
     name: v.string(doc.name, 'song name'),
     durationSeconds,
     pickupBeats,
     beatMap: map,
-    bars: referenceBars(map),
+    detectedBeatMap,
+    detectedBars: referenceBars(detectedBeatMap),
+    grid,
+    bars: grid.bars,
     stems,
   };
 }

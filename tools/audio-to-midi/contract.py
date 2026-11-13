@@ -29,6 +29,32 @@ def detected_pickup(beats: list[float], downbeats: list[float]) -> int:
     return sum(beat < downbeats[0] for beat in beats) if downbeats else 0
 
 
+def classify_intervals(beats: list[float]) -> dict:
+    """Sustained runs are level evidence; isolated large holes remain gaps.
+
+    Timestamp-only evidence cannot distinguish a deliberate exact octave tempo
+    change from a tracking switch. Both stay separate from missing coverage.
+    """
+    intervals = [b - a for a, b in zip(beats, beats[1:])]
+    baseline = median(intervals) if intervals else 0
+    gaps, switches = [], []
+    i = 0
+    while i < len(intervals):
+        end = i + 1
+        while end < len(intervals) and abs(intervals[end] / intervals[i] - 1) <= .15:
+            end += 1
+        neighbors = intervals[max(0, i-4):i] + intervals[end:end+4]
+        local = median(neighbors) if neighbors else baseline
+        previous = intervals[i-1] if i else None
+        if end-i >= 2 and (intervals[i] > 1.5 * baseline or
+                (previous and any(abs(intervals[i] / previous / f - 1) <= .15 for f in [.5, 2]))):
+            switches.append([beats[i], beats[end]])
+        if end-i == 1 and intervals[i] > 1.5 * local and intervals[i] > 1.5 * baseline:
+            gaps.append([beats[i], beats[end]])
+        i = end
+    return {'gaps': gaps, 'level_switches': switches}
+
+
 def beat_document(beats: list[float], downbeats: list[float], duration: float, per_bar: int) -> dict:
     """Keep observations, expose their limits, and suggest a tempo review, never choose."""
     intervals = [b - a for a, b in zip(beats, beats[1:])]
@@ -36,7 +62,8 @@ def beat_document(beats: list[float], downbeats: list[float], duration: float, p
         raise ValueError('Beats must increase within the audio duration')
     interval = median(intervals) if intervals else None
     bpm = round(60 / interval, 2) if interval else None
-    gaps = [[a, b] for a, b in zip(beats, beats[1:]) if interval and b - a > 1.5 * interval]
+    interval_report = classify_intervals(beats)
+    gaps = interval_report['gaps']
     first, last = (beats[0], beats[-1]) if beats else (None, None)
     reasons = []
     if bpm is None:
@@ -53,7 +80,7 @@ def beat_document(beats: list[float], downbeats: list[float], duration: float, p
             'first_beat_seconds': first, 'last_beat_seconds': last,
             'leading_seconds': first if beats else duration,
             'trailing_seconds': round(duration - last, 4) if beats else duration,
-            'gaps': gaps, 'gap_threshold_median_multiple': 1.5,
+            **interval_report, 'gap_threshold_median_multiple': 1.5,
         },
         'tempo_review': {
             'flagged': bool(reasons), 'reasons': reasons, 'selected_multiplier': 1,

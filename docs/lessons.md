@@ -37,6 +37,8 @@ something that went wrong at least once. Written 2026-11-12.
 
 ## Measuring
 
+- **Check derived data on every real song before building on it.**
+
 - **Measure the thing the person experiences.** "364 ms from edit to sound"
   timed the first note of the new code, which could belong to another
   instrument. Timed to the edited instrument's own note it was about 700 ms on

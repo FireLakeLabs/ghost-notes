@@ -74,3 +74,10 @@ check:docs`); when a topic file fills, start a new one.
 - G46: notes JSON first, MIDI second through pinned midi-file.
 - G47: one decoded song, sequential stems, retained PCM and min/max peaks.
 - G48: persist only the last folder handle; source folders use a song selector.
+
+## [Consistent bar grid](decisions/grid.md)
+
+- G53: use the derived 1× grid by default; tempo choices select grids.
+- G54: explain each inference and preserve gaps, edges and tempo uncertainty.
+- G55: add level-switch reporting to version 1; read old folders unchanged.
+- G56: show grid counts and ask once when tempo is flagged.

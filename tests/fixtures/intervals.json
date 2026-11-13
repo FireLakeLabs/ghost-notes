@@ -1,0 +1,25 @@
+[
+  { "case": "steady", "beats": [0, 0.5, 1, 1.5, 2], "gaps": [], "level_switches": [] },
+  {
+    "case": "half-level run",
+    "beats": [0, 0.25, 0.5, 0.75, 1, 1.5, 2, 2.5, 3, 3.25, 3.5, 3.75, 4],
+    "gaps": [],
+    "level_switches": [
+      [1, 3],
+      [3, 4]
+    ]
+  },
+  { "case": "true hole", "beats": [0, 0.5, 1, 3, 3.5, 4], "gaps": [[1, 3]], "level_switches": [] },
+  {
+    "case": "deliberate non-octave change",
+    "beats": [0, 0.5, 1, 1.5, 2, 2.7, 3.4, 4.1, 4.8],
+    "gaps": [],
+    "level_switches": []
+  },
+  {
+    "case": "drift",
+    "beats": [0, 0.5, 1.01, 1.53, 2.06, 2.6, 3.15],
+    "gaps": [],
+    "level_switches": []
+  }
+]

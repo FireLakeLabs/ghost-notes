@@ -86,8 +86,14 @@ downbeats, falling back to four; it is an estimate, not a meter-change map.
 
 `coverage` records `status` (`complete`, `partial`, `missing`),
 `first_beat_seconds`, `last_beat_seconds` (null if absent), `leading_seconds`,
-`trailing_seconds`, and `gaps` as `[start, end]` pairs whose interval exceeds
-`gap_threshold_median_multiple` (1.5) times the median. Complete means detected
+`trailing_seconds`, and `gaps` as `[start, end]` pairs for isolated holes exceeding
+`gap_threshold_median_multiple` (1.5) times both the song median and the
+median of four neighboring intervals either side. Additive version 1 field
+`level_switches` holds sustained interval runs at another level, separately
+from gaps. A run contains at least two intervals within 15% of its first; a
+run above 1.5 times the song median, or near half/double its predecessor, is
+reported. Exact octave tempo changes cannot be distinguished from tracking
+switches by timestamps alone. Old version 1 folders remain valid. Complete means detected
 beats reach both endpoints and have no such gaps. Usually the map is partial:
 the app must show exactly where evidence starts/stops, including ordinary
 fractions of a beat at the edges. **No detected beats are invented.** MIDI
@@ -133,3 +139,13 @@ non-commercial share-alike: personal use only; never ship them.** The PyTorch
 port declares no licence. Distribution needs permission or a replacement model.
 Weights stay in the user's model cache and are never included in this repo,
 CI, or the app build. Keep this restriction when moving or packaging the tool.
+
+Recheck existing exports without models, separation, transcription or writes:
+
+```sh
+python3 tools/audio-to-midi/measure_beats.py ~/projects/ghost-notes/reference
+```
+
+This reassembles beat metadata from exported detections, printing only anonymous
+counts and whether the detected arrays stayed identical. It reads no manifests
+or source paths. Normal pipeline runs retain G41's complete cache keys.
