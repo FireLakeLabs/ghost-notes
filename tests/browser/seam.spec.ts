@@ -32,7 +32,7 @@ test('real house: instrument, rewrite, signal, section, rhythm and constant shar
   const signalId = signalIds.find((id) => describeTarget(doc, id).kind === 'setting-signal')!;
   await selectNode(page, { nodeId: signalId });
   await expect(page.locator('#editor')).toContainText('0.1 to 0.35 · signal');
-  await expect(page.locator('input[type="range"]')).toHaveCount(0);
+  await expect(page.locator('#editor input[type="range"]')).toHaveCount(0);
   await page.getByRole('button', { name: 'Done', exact: true }).click();
   const windowBefore = await page.locator('#window').textContent();
   const sectionEdit = page.getByRole('button', { name: 'Edit section drop', exact: true }).first();

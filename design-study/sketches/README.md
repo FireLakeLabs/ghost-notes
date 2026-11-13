@@ -18,3 +18,8 @@ canvas is private to the owner.
 | `Grid.dc.html`     | Beat map health, ½×/1×/2× tempo, where bar 1 starts.                                                                                                                                                                   | G15, G27 |
 | `Simplify.dc.html` | Working simplify for drums under user limits.                                                                                                                                                                          | G16, G30 |
 | `Pitch.dc.html`    | Piano roll, contour, or contour outside the lens and roll inside.                                                                                                                                                      | G32      |
+
+Part 1 implementation proof: [synthetic fit](timeline-part1.png) and [zoom](timeline-part1-zoom.png) screenshots, with
+its [navigation mockup and measured sizes](timeline-part1.html). Recording rows
+only; lens, Notes/Mine and section controls belong to the later parts. No real
+song data or pixels are included.

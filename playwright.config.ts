@@ -1,5 +1,5 @@
 import { defineConfig } from '@playwright/test';
-const optional = /\/(demo|edit-demo|shots|measure|online)\.spec\.ts$/;
+const optional = /\/(demo|edit-demo|shots|measure|online|timeline-measure)\.spec\.ts$/;
 const audio = /\/(engine|silent-swap|assumptions|reference)\.spec\.ts$/;
 export default defineConfig({
   testDir: './tests/browser',

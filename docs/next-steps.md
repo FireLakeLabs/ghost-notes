@@ -287,6 +287,19 @@ unmeasured here (step 9). Decisions G57–G59; API and reproduction: [convert](c
 
 ## 7. Timeline and the lens
 
+**Part 1: done.** The recording timeline has optional audio above MIDI per stem,
+whole-song ruler, pickup/gap/uncovered/inference marks, zoom and overview
+navigation. Proof on six local songs (including diversity-1: 181 detected / 243 derived bars, 3,947
+notes, 627.3 MiB PCM) is recorded in [timeline measurements](timeline-measurements.md).
+The [structure and viewport API](timeline.md) are the handoff to parts 2/3;
+[synthetic screenshots](../design-study/sketches/timeline-part1.png) match Main's
+row sizes. G61–G65 record choices made for the owner. #5 stays open.
+
+Step 6 (#21) and the consistent grid (#20, closing #19) have landed.
+Part 2 can now add the lens, selection and doubtful-tempo integration.
+Part 3: Notes/Mine rows, six difference marks, unarranged bars, match strip,
+and rows-or-layers. Their original requirements follow.
+
 The whole-song view, with the section sheet as a lens inside it (G9). This
 merges the old timeline step and the old "reference marks in the sheet" step.
 
