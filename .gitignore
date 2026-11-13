@@ -18,3 +18,4 @@ reference/
 
 # Test fixtures written for the project (generated, not anyone's music).
 !tests/fixtures/**/*.wav
+!src/reference/
