@@ -48,25 +48,22 @@ A Strudel program does not describe sound flowing through boxes. It describes a
 
 ## How we draw it
 
-Three views of one piece, each with one job.
+One view of one piece: the **score sheet**, for finding and editing. One row
+per instrument, one column per setting in use, a song strip of sections on top.
+ODM's constellation and spiral views were not brought over (G17); in Ghost Notes
+the sheet becomes the inside of the lens (G9).
 
-| View              | Job                                                                                                    |
-| ----------------- | ------------------------------------------------------------------------------------------------------ |
-| **Score sheet**   | Find and edit. One row per instrument, one column per setting in use, a song strip of sections on top. |
-| **Constellation** | Overview. Which instruments are sounding now, and who shares a room. Not an editor.                    |
-| **Spiral**        | Watch. One turn per cycle, with "now" as a bright gate. Not an editor.                                 |
-
-| Thing in Strudel      | What you see                                                            |
-| --------------------- | ----------------------------------------------------------------------- |
-| An instrument         | A row in the sheet; a planet in the constellation; a band in the spiral |
-| A setting over time   | A cell drawn from its real values; a **lane** when opened               |
-| What drives a setting | Nested under it: a moon of the moon                                     |
-| A rewrite             | An ordered chip in the sheet; a **shell** around the planet             |
-| A note                | A mark with its real start and end, never a step in an assumed grid     |
-| A continuous signal   | A curve only, never a note                                              |
-| A section of the song | A block in the song strip; instruments not in it say so                 |
-| An orbit              | **Room**: a region around the instruments that send into it             |
-| Code we do not model  | Still visible, playable, and editable as text                           |
+| Thing in Strudel      | What you see                                                         |
+| --------------------- | -------------------------------------------------------------------- |
+| An instrument         | A row in the sheet                                                   |
+| A setting over time   | A cell drawn from its real values; a **lane** when opened            |
+| What drives a setting | Nested under it                                                      |
+| A rewrite             | An ordered chip in the sheet                                         |
+| A note                | A mark with its real start and end, never a step in an assumed grid  |
+| A continuous signal   | A curve only, never a note                                           |
+| A section of the song | A block in the song strip; instruments not in it say so              |
+| An orbit              | A **room**; drawn only by ODM's constellation, so not drawn here yet |
+| Code we do not model  | Still visible, playable, and editable as text                        |
 
 Selecting anything opens **one editor** for that one thing, named by a
 breadcrumb. Nothing else is editable while it is open.

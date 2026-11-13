@@ -121,6 +121,12 @@
         "prefer-rest-params": "error",
         "prefer-spread": "error"
       }
+    },
+    {
+      "files": ["**/*.js", "**/*.mjs", "**/*.cjs"],
+      "rules": {
+        "no-undef": "error"
+      }
     }
   ]
 }

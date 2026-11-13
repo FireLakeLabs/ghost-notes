@@ -1,55 +1,41 @@
-import { mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { createServer } from 'node:net';
 
 // One browser suite at a time on this machine, across worktrees: parallel suites
-// disturb each other's timing tests. The lock is a directory holding the owner's pid.
-// A fixed /tmp path, not tmpdir(), so sessions with a private TMPDIR still share it.
-export const defaultLockPath = join(
-  process.platform === 'win32' ? tmpdir() : '/tmp',
-  'ghost-notes-browser-suite.lock',
-);
+// disturb each other's timing tests. The lock is a Linux abstract socket: binding
+// it is atomic, and the kernel frees it when its process exits, however it exits,
+// so there is no stale lock to clean up. Other systems run without the lock.
+export const defaultLockName = 'ghost-notes-browser-suite';
 
-function alive(pid) {
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch (error) {
-    return error.code === 'EPERM';
-  }
-}
-
-function tryTake(path) {
-  try {
-    mkdirSync(path);
-  } catch (error) {
-    if (error.code !== 'EEXIST') throw error;
-    let owner = NaN;
-    try {
-      owner = Number(readFileSync(join(path, 'pid'), 'utf8'));
-    } catch {
-      // The owner may be between mkdir and writing its pid. Give it ten seconds.
-      if (Date.now() - statSync(path).mtimeMs < 10_000) return { taken: false, owner: undefined };
-    }
-    if (Number.isInteger(owner) && owner > 0 && alive(owner)) return { taken: false, owner };
-    rmSync(path, { recursive: true, force: true });
-    return tryTake(path);
-  }
-  writeFileSync(join(path, 'pid'), String(process.pid));
-  return { taken: true };
+function listen(name) {
+  return new Promise((resolve, reject) => {
+    const server = createServer();
+    server.once('error', reject);
+    server.listen(`\0${name}`, () => {
+      server.unref();
+      resolve(server);
+    });
+  });
 }
 
 export async function acquireSuiteLock({
-  path = defaultLockPath,
+  name = defaultLockName,
   pollMs = 2000,
   log = console.log,
 } = {}) {
+  if (process.platform !== 'linux') {
+    log('Browser suite lock is Linux-only; running without it.');
+    return () => {};
+  }
   let announced = false;
   for (;;) {
-    const result = tryTake(path);
-    if (result.taken) return () => rmSync(path, { recursive: true, force: true });
+    try {
+      const server = await listen(name);
+      return () => server.close();
+    } catch (error) {
+      if (error.code !== 'EADDRINUSE') throw error;
+    }
     if (!announced) {
-      log(`Waiting for another browser suite to finish (pid ${result.owner ?? 'unknown'})`);
+      log('Waiting for another browser suite on this machine to finish');
       announced = true;
     }
     await new Promise((resolve) => setTimeout(resolve, pollMs));
