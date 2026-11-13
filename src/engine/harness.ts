@@ -7,8 +7,7 @@ const odm = {
   fixture: new URL('../../tests/fixtures/sounds/burst.wav', import.meta.url).href,
   error: '',
   profile: null as
-    | null
-    | ((code: string, scale: number) => Promise<ReturnType<typeof profilePattern>>),
+    null | ((code: string, scale: number) => Promise<ReturnType<typeof profilePattern>>),
 };
 declare global {
   interface Window {

@@ -1,8 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import type { Plugin } from 'vite';
-import type { OutputBundle } from 'rollup';
+import type { Plugin, Rolldown } from 'vite';
 
 const read = (path: string) => readFileSync(path, 'utf8');
 const vendored = (name: string) => read(resolve('scripts/licenses', name));
@@ -80,7 +79,7 @@ export function generateLicenses(moduleIds: Iterable<string>) {
 
 export function licencePlugins() {
   const modules = new Set<string>();
-  const collect = (bundle: OutputBundle) => {
+  const collect = (bundle: Rolldown.OutputBundle) => {
     for (const chunk of Object.values(bundle))
       if (chunk.type === 'chunk')
         for (const [id, info] of Object.entries(chunk.modules))

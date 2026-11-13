@@ -299,13 +299,11 @@ function layerNote(layer: Layer): string {
 }
 
 export function sheetModel(input: SheetInput): SheetModel {
-  if (
-    !(
-      Number.isFinite(input.fromCycle) &&
-      Number.isFinite(input.toCycle) &&
-      input.toCycle > input.fromCycle
-    )
-  )
+  if (!(
+    Number.isFinite(input.fromCycle) &&
+    Number.isFinite(input.toCycle) &&
+    input.toCycle > input.fromCycle
+  ))
     throw Error('Sheet window must be finite and increasing');
   const columns = new Set<string>();
   const songSections = sections(input.doc);

@@ -10,7 +10,7 @@ export function profilePattern(pattern: Pattern, cps: number, scale = 1, cycles 
     firstError: string | undefined,
     anchor = 0,
     ticks = 0;
-  for (let begin = 0; begin < cycles; ) {
+  for (let begin = 0; begin < cycles;) {
     if (!Number.isFinite(cps) || cps <= 0) throw Error('Cannot profile a nonpositive tempo');
     const end = Math.min(cycles, anchor + ++ticks * 0.05 * cps),
       start = performance.now();

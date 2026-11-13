@@ -1,6 +1,6 @@
 import { readdirSync } from 'node:fs';
 import { defineConfig } from 'vite';
-import { deployedCommit, licencePlugins } from './scripts/licenses';
+import { deployedCommit, licencePlugins } from './scripts/licenses.ts';
 const licences = licencePlugins();
 // Every harness/*.html is built as its own page, so a browser test can load one
 // part of the app (harness/engine.html, harness/sheet.html) without the others.
@@ -13,5 +13,5 @@ export default defineConfig({
   worker: { plugins: () => [licences.worker()] },
   server: { port: 0 },
   preview: { port: 0 },
-  build: { rollupOptions: { input: ['index.html', ...harness] } },
+  build: { rolldownOptions: { input: ['index.html', ...harness] } },
 });

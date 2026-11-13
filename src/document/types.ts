@@ -1,20 +1,8 @@
 export type JsonValue =
-  | null
-  | number
-  | string
-  | boolean
-  | JsonValue[]
-  | { [key: string]: JsonValue };
+  null | number | string | boolean | JsonValue[] | { [key: string]: JsonValue };
 export type Tier = 1 | 2 | 3;
 export type Role =
-  | 'instrument'
-  | 'setting'
-  | 'rhythm'
-  | 'rewrite'
-  | 'section'
-  | 'driver'
-  | 'argument'
-  | 'setup';
+  'instrument' | 'setting' | 'rhythm' | 'rewrite' | 'section' | 'driver' | 'argument' | 'setup';
 export interface Meta {
   id: string;
   tier: Tier;

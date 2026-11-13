@@ -9,7 +9,7 @@ test('bundle notices include Strudel and the AGPL, without installed dev depende
     resolve('src/app/main.ts'),
   ]);
   expect(text).toContain('@strudel/core@1.2.6 — AGPL-3.0-or-later');
-  expect(text).toContain('acorn@8.15.0 — MIT');
+  expect(text).toContain('acorn@8.19.0 — MIT');
   expect(text).toContain('AGPL-3.0 full text\n');
   expect(text.match(/GNU AFFERO GENERAL PUBLIC LICENSE/g)).toHaveLength(2);
   expect(text).toContain('17. Interpretation of Sections 15 and 16.');

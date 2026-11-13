@@ -25,7 +25,9 @@ removed (G17) and the app renamed: 489 Node tests and 56 browser tests pass,
 Known flaky: the browser test "Kiln live: split removal, undo, literal marks
 and evenly spread drum hits" (`tests/browser/rhythm.spec.ts`) failed 2 of 5
 runs here, each time seeing 3 of 4 expected bass triggers in the measured
-cycle. It passed in ODM's own checkout on its one run. Not yet investigated.
+cycle. It passed in ODM's own checkout on its one run. Not yet investigated. After the
+toolchain update (G34, Playwright 1.65 with Chromium 158) it passed 3 of 3 runs;
+too few to call it fixed.
 
 What was planned:
 

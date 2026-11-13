@@ -227,7 +227,12 @@ export function signal<T>(read: () => T | Promise<T>, options: { timeout?: numbe
  * A failed case restarts Playwright's worker, so later cases get a fresh setup. */
 export function sharedProgram<T>(setup: (page: Page) => Promise<T>) {
   let page: Page | undefined, value: T;
-  let baseline: { doc: string; events: string; selected: string | null; pasteHidden: boolean };
+  let baseline: {
+    doc: string;
+    events: string;
+    selected: string | null;
+    pasteHidden: boolean | 'until-found';
+  };
   test.use({
     page: async ({ browser }, use) => {
       void browser;
