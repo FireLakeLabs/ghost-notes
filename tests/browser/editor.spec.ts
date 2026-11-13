@@ -190,5 +190,5 @@ test('section-local setting is distinct; signal stays read-only; arrow keys and 
   await page.getByRole('button', { name: 'in build: lpf signal', exact: true }).click();
   await expect(page.locator('#editor-breadcrumb')).toHaveText('chords › in build › lpf');
   await expect(page.locator('#editor')).toContainText('400 to 2000 Hz · signal');
-  await expect(page.locator('input[type="range"]')).toHaveCount(0);
+  await expect(page.locator('#editor input[type="range"]')).toHaveCount(0);
 });

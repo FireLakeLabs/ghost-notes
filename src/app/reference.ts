@@ -92,7 +92,9 @@ export function mountReference(root: HTMLElement) {
       `Stems: ${song.stems.map((s) => `${s.id} ${s.levelDb} dB (${s.transcription === 'skipped_quiet' ? 'skipped quiet; possible bleed' : 'complete'})`).join('; ')}. Audio decoded; waveform peaks ready.`;
   }
   async function load(files: SongFiles) {
+    // Release the old timeline before reading or decoding a replacement.
     current = null;
+    root.dispatchEvent(new Event('referencechange'));
     currentFiles = null;
     tempoChoice.hidden = true;
     status.textContent = 'Reading reference and decoding stem audio…';

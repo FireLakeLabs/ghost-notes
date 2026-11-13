@@ -87,3 +87,11 @@ check:docs`); when a topic file fills, start a new one.
 - G57: adaptive onset snapping within 1 ms and 1/1024 beat, never across a bar line.
 - G58: preserve uncovered edge notes in explicit, unnumbered sections.
 - G59: retain separate notes, seconds durations, velocity and one ODM instrument boundary.
+
+## [Whole-song timeline](decisions/timeline.md)
+
+- G61: draw the chosen grid; uncovered edges remain unnumbered.
+- G62: viewport canvases and a declared 200-event cap per bar cell.
+- G63: prototype row order and sizes, optional audio, quiet-stem warnings.
+- G64: the song strip navigates the visible window before sections exist.
+- G65: affected bars show the chosen grid's inference reasons.

@@ -8,6 +8,7 @@ import { sheetModel, mountSheet, setPlayhead, setCurrentSection } from '../sheet
 import { aboutControls, mountAbout } from './about';
 import './style.css';
 import { mountReference } from './reference';
+import { mountTimeline } from '../timeline/render';
 
 const app = createApp();
 document.body.innerHTML = `
@@ -19,6 +20,7 @@ document.body.innerHTML = `
   ${aboutControls}</div><p id="solo-banner" hidden><span></span> <button id="stop-solo">Stop solo</button></p><p id="message" role="status"></p><div id="sound-notice" hidden><span role="status">Default sounds could not load. Check your connection, then press Play again.</span><button id="dismiss-sound-notice" aria-label="Dismiss sound notice">Dismiss</button></div></header>
   <main>
     <section id="reference-panel" aria-label="Open reference folder"></section>
+    <section id="timeline" aria-label="Whole song timeline" hidden></section>
     <section id="paste-panel" aria-label="Paste Strudel">
       <label for="source">Your Strudel program</label>
       <textarea id="source" spellcheck="false" placeholder='s("bd*2, hh*4, ~ cp")' aria-describedby="load-error"></textarea>
@@ -29,7 +31,10 @@ document.body.innerHTML = `
     <div class="score-toolbar"><h2>The score</h2><button id="follow" aria-pressed="true">Follow</button><output id="window"></output></div>
     <div id="score-workspace"><div id="score"><p class="welcome">Paste a Strudel program or choose an original to see its score. Press Play when you're ready.</p></div><aside id="editor" hidden></aside></div>
   </main><footer>Read the score. Follow the cycles.</footer>`;
-const reference = mountReference(document.getElementById('reference-panel')!);
+const timeline = mountTimeline(document.getElementById('timeline')!);
+const referenceRoot = document.getElementById('reference-panel')!;
+const reference = mountReference(referenceRoot);
+referenceRoot.addEventListener('referencechange', () => timeline.setReference(reference.current));
 const aboutDialog = mountAbout();
 const get = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id)! as T;
 const source = get<HTMLTextAreaElement>('source'),
