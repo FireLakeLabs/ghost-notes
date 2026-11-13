@@ -1,6 +1,9 @@
 import { spawn } from 'node:child_process';
 import { appendFileSync } from 'node:fs';
 import { timingResult, NODE_LIMIT_SECONDS } from './timing.mjs';
+import { acquireSuiteLock } from './suite-lock.mjs';
+const releaseLock = await acquireSuiteLock();
+process.once('exit', releaseLock);
 const start = performance.now();
 const limit = Number(process.env.ODM_NODE_LIMIT_SECONDS ?? NODE_LIMIT_SECONDS);
 if (!Number.isFinite(limit) || limit < 0 || limit > NODE_LIMIT_SECONDS)

@@ -18,7 +18,7 @@ describe.runIf(process.platform === 'linux')('browser suite lock', () => {
     );
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(second).toBe(false);
-    expect(logs).toEqual(['Waiting for another browser suite on this machine to finish']);
+    expect(logs).toEqual(['Waiting for another test suite on this machine to finish']);
     release();
     (await waiting)();
     expect(second).toBe(true);
