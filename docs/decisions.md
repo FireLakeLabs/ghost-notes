@@ -72,3 +72,5 @@ check:docs`); when a topic file fills, start a new one.
 
 - G45: preserve uncertain timing in queryable reference coordinates.
 - G46: notes JSON first, MIDI second through pinned midi-file.
+- G47: one decoded song, sequential stems, retained PCM and min/max peaks.
+- G48: persist only the last folder handle; source folders use a song selector.
