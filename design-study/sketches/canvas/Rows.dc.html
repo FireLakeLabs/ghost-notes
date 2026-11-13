@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Drawing one instrument</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.n{position:absolute;border-radius:1px}
+.lane{position:relative;overflow:hidden;background-image:linear-gradient(to right,#2A2F3A 1px,transparent 1px);background-size:12.5% 100%}
+.rl{width:70px;flex:none;font-size:12px;font-weight:600}
+.cap{font-size:12.5px;color:#C9CDD4;line-height:1.5}
+</style>
+</helmet>
+<div style="width: 1200px; height: 1000px; box-sizing: border-box; padding: 40px; background: #0F1115; color: #ECEAE4; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; gap: 20px">
+  <div>
+    <div style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 28px; font-weight: 600">Drawing one instrument: rows or layers</div>
+    <div style="color: #A4AAB5; font-size: 14px; margin-top: 6px">Question 2. The same 8 bars of invented bass, three ways. The orange is the same in all three: something the conversion changed, or a note of yours that the recording doesn't have.</div>
+  </div>
+  <div style="display: flex; gap: 28px; flex: 1; min-height: 0">
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 18px; min-width: 0">
+
+      <div style="background: #13161B; border: 1px solid #22262E; border-radius: 10px; padding: 16px">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px"><span style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">A · Three rows</span><span style="font-size: 11px; font-weight: 600; color: #14161A; background: #F2C14E; border-radius: 4px; padding: 2px 6px">in the prototype's timeline</span></div>
+        <div style="display: flex; flex-direction: column; gap: 4px">
+          <div style="display: flex; align-items: center"><span class="rl" style="color: #9DBCE3">MIDI</span><div class="lane" style="flex: 1; height: 46px"><sc-for list="{{midiA}}" as="n" hint-placeholder-count="40"><span class="n" style="background: #6F9FD8; {{n.st}}"></span></sc-for></div></div>
+          <div style="display: flex; align-items: center"><span class="rl" style="color: #C3D6EE">Notes</span><div class="lane" style="flex: 1; height: 46px"><sc-for list="{{litA}}" as="n" hint-placeholder-count="40"><span class="n" style="{{n.st}}"></span></sc-for><sc-for list="{{marksA}}" as="m" hint-placeholder-count="4"><span class="n" style="height: 2px; background: #FF8A5B; {{m.st}}"></span></sc-for></div></div>
+          <div style="display: flex; align-items: center"><span class="rl" style="color: #F1E6CC">Mine</span><div class="lane" style="flex: 1; height: 46px"><sc-for list="{{mineA}}" as="n" hint-placeholder-count="40"><span class="n" style="{{n.st}}"></span></sc-for></div></div>
+        </div>
+        <div class="cap" style="margin-top: 10px">Nothing overlaps, so each row reads cleanly, and the eye compares by looking straight down. It costs three rows of height per instrument.</div>
+      </div>
+
+      <div style="background: #13161B; border: 1px solid #22262E; border-radius: 10px; padding: 16px">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px"><span style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">B · One row, three layers</span><span style="font-size: 11px; font-weight: 600; color: #14161A; background: #F2C14E; border-radius: 4px; padding: 2px 6px">in the prototype's section sheet</span></div>
+        <div style="display: flex; align-items: center"><span class="rl" style="color: #ECEAE4">Bass</span>
+          <div class="lane" style="flex: 1; height: 120px">
+            <sc-for list="{{midiB}}" as="n" hint-placeholder-count="40"><span class="n" style="background: #6F9FD8; opacity: .38; {{n.st}}"></span></sc-for>
+            <sc-for list="{{litB}}" as="n" hint-placeholder-count="40"><span class="n" style="background: transparent; {{n.st}}"></span></sc-for>
+            <sc-for list="{{mineB}}" as="n" hint-placeholder-count="40"><span class="n" style="{{n.st}}"></span></sc-for>
+          </div>
+        </div>
+        <div class="cap" style="margin-top: 10px">The recording sits faintly behind yours, so drift shows up as a note with no shadow, or a shadow with no note. Dense at whole-song zoom. Good up close, where you edit.</div>
+      </div>
+
+      <div style="background: #13161B; border: 1px solid #22262E; border-radius: 10px; padding: 16px">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px"><span style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">C · Evidence and mine</span></div>
+        <div style="display: flex; flex-direction: column; gap: 4px">
+          <div style="display: flex; align-items: center"><span class="rl" style="color: #9DBCE3">Evidence</span><div class="lane" style="flex: 1; height: 56px"><sc-for list="{{midiC}}" as="n" hint-placeholder-count="40"><span class="n" style="{{n.st}}"></span></sc-for><sc-for list="{{marksC}}" as="m" hint-placeholder-count="4"><span class="n" style="{{m.st}}"></span></sc-for></div></div>
+          <div style="display: flex; align-items: center"><span class="rl" style="color: #F1E6CC">Mine</span><div class="lane" style="flex: 1; height: 46px"><sc-for list="{{mineA}}" as="n" hint-placeholder-count="40"><span class="n" style="{{n.st}}"></span></sc-for></div></div>
+        </div>
+        <div class="cap" style="margin-top: 10px">MIDI and Notes merge into one row: the MIDI is drawn, and only the notes the conversion changed get an orange tick at their new place. Saves a row; asks more of the reader.</div>
+      </div>
+    </div>
+
+    <div style="width: 290px; flex: none; display: flex; flex-direction: column; gap: 14px">
+      <div style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">How differences are marked</div>
+      <sc-for list="{{legend}}" as="lg" hint-placeholder-count="6">
+        <div style="display: flex; gap: 12px; align-items: flex-start; background: #13161B; border: 1px solid #22262E; border-radius: 8px; padding: 10px 12px">
+          <div style="position: relative; width: 64px; height: 28px; flex: none; background-image: linear-gradient(to right,#2A2F3A 1px,transparent 1px); background-size: 50% 100%">
+            <sc-for list="{{lg.marks}}" as="m" hint-placeholder-count="2"><span class="n" style="{{m.st}}"></span></sc-for>
+          </div>
+          <div><div style="font-size: 13px; font-weight: 600">{{lg.title}}</div><div style="font-size: 12px; color: #A4AAB5; line-height: 1.45; margin-top: 2px">{{lg.body}}</div></div>
+        </div>
+      </sc-for>
+      <div style="font-size: 12px; color: #858C98; line-height: 1.5">Colour is never the only signal: moved notes also get a line back to where they were, and missing notes are hollow.</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":1000}}'>
+function rng(seed) { let s = seed >>> 0; return () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; }; }
+const SPAN = 32, LO = 34, HI = 50;
+function song() {
+  const R = rng(4242), J = a => (R() - 0.5) * 2 * a, out = [];
+  const riff = [[[0, 0.7, 40], [1, 0.4, 40], [1.5, 0.4, 43], [2, 0.7, 45], [3, 0.4, 43], [3.5, 0.4, 40]], [[0, 0.7, 38], [1, 0.4, 38], [1.5, 0.4, 40], [2, 0.9, 43], [3.25, 0.6, 45]]];
+  for (let b = 0; b < 8; b++) {
+    riff[b % 2].forEach((r, k) => {
+      let off = r[0]; if (b % 2 === 1 && k === 4 && R() < 0.5) off = 3.91;
+      out.push({ s: b * 4 + off + J(0.05), d: Math.max(0.15, r[1] + J(0.08)), p: r[2], v: 70 + R() * 40 });
+    });
+    if (R() < 0.35) out.push({ s: b * 4 + Math.floor(R() * 15) / 4 + 0.12, d: 0.14, p: 42 + Math.floor(R() * 6), v: 26 });
+  }
+  return out.sort((a, b) => a.s - b.s);
+}
+function lit(ns) {
+  const o = ns.map(n => { const q = Math.round(n.s * 4) / 4; return { s: q, d: Math.max(0.25, Math.round(n.d * 4) / 4), p: n.p, src: n.s, moved: Math.abs(q - n.s) >= 0.07, crossed: Math.floor(q / 4) !== Math.floor(n.s / 4) }; });
+  for (let i = 0; i < o.length - 1; i++) if (o[i + 1].s < o[i].s + o[i].d) { o[i].d = Math.max(0.25, o[i + 1].s - o[i].s); o[i].short = true; }
+  return o;
+}
+const pc = x => (x / SPAN * 100).toFixed(3);
+function geo(n, H, nh) { const t = 3 + (HI - n.p) / (HI - LO) * (H - 6 - nh); return 'left:' + pc(n.s) + '%;width:max(2px,' + pc(n.d) + '%);top:' + t.toFixed(1) + 'px;height:' + nh + 'px'; }
+class Component extends DCLogic {
+  renderVals() {
+    if (this._v) return this._v;
+    const midi = song(), L = lit(midi);
+    const mine = [];
+    L.filter(n => n.s < 8).forEach(n => { for (let r = 0; r < 4; r++) mine.push({ s: n.s + r * 8, d: n.d, p: n.p }); });
+    const hit = m => midi.some(n => n.p === m.p && Math.abs(n.s - m.s) <= 0.13);
+    const chg = n => n.moved || n.crossed || n.short;
+    const legendMark = (l, w, t, h, bg, extra) => ({ st: 'left:' + l + 'px;width:' + w + 'px;top:' + t + 'px;height:' + h + 'px;background:' + bg + ';' + (extra || '') });
+    this._v = {
+      midiA: midi.map(n => ({ st: geo(n, 46, 3) + ';opacity:' + (0.3 + n.v / 180).toFixed(2) })),
+      litA: L.map(n => ({ st: geo(n, 46, 3) + ';background:' + (chg(n) ? '#FF8A5B' : '#A9C4E6') })),
+      marksA: L.filter(n => n.moved || n.crossed).map(n => ({ st: 'left:' + pc(Math.min(n.s, n.src)) + '%;width:max(3px,' + pc(Math.abs(n.s - n.src)) + '%);top:42px' })),
+      mineA: mine.map(m => ({ st: geo(m, 46, 3) + ';background:' + (hit(m) ? '#F1E6CC' : '#FF8A5B') })),
+      midiB: midi.map(n => ({ st: geo(n, 120, 7) })),
+      litB: L.map(n => ({ st: geo(n, 120, 7) + ';box-shadow:inset 0 0 0 1px ' + (chg(n) ? '#FF8A5B' : '#A9C4E6') })),
+      mineB: mine.map(m => ({ st: geo(m, 120, 3) + ';margin-top:2px;background:' + (hit(m) ? '#F1E6CC' : '#FF8A5B') })),
+      midiC: midi.map(n => ({ st: geo(n, 56, 4) + ';background:#6F9FD8;opacity:' + (0.35 + n.v / 180).toFixed(2) })),
+      marksC: L.filter(chg).map(n => ({ st: 'left:' + pc(n.s) + '%;width:2px;top:0;bottom:0;height:auto;background:#FF8A5B' })),
+      legend: [
+        { title: 'Moved', body: 'Snapped to the grid by 0.07 of a beat or more. A line runs back to where it was played.', marks: [legendMark(18, 8, 8, 6, '#FF8A5B'), legendMark(11, 15, 22, 2, '#FF8A5B')] },
+        { title: 'Moved across a bar line', body: 'Played just before the bar, written on the downbeat. Changes which bar owns it.', marks: [legendMark(32, 8, 8, 6, '#FF8A5B'), legendMark(27, 7, 22, 2, '#FF8A5B'), legendMark(31, 2, 0, 28, '#FF8A5B')] },
+        { title: 'Shortened', body: 'Cut where the next note starts, because the stem plays one note at a time.', marks: [legendMark(6, 20, 10, 6, '#FF8A5B'), legendMark(26, 18, 10, 6, 'transparent', 'box-shadow:inset 0 0 0 1px #FF8A5B')] },
+        { title: 'Merged', body: 'Two notes landed on the same step and became one chord, or one drum hit.', marks: [legendMark(20, 10, 6, 6, '#FF8A5B'), legendMark(20, 10, 15, 6, '#FF8A5B')] },
+        { title: 'Only in yours', body: 'A note in your arrangement with no matching note in the recording nearby.', marks: [legendMark(20, 16, 11, 6, '#FF8A5B')] },
+        { title: 'Only in the recording', body: 'Hollow: the recording has it, yours does not. Shown in the section sheet.', marks: [legendMark(20, 16, 11, 6, 'transparent', 'box-shadow:inset 0 0 0 2px #6F9FD8')] }
+      ]
+    };
+    return this._v;
+  }
+}
+</script>
+</body>
+</html>

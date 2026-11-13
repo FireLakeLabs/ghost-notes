@@ -1,0 +1,1321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ghost Notes workbench</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0F1115}
+a{color:#9DBCE3}a:hover{color:#C8DAF0}
+.gn button,.gn input,.gn select{font-family:inherit}
+.gn-seg{display:inline-flex;background:#0F1115;border:1px solid #2A2F3A;border-radius:9px;padding:2px;gap:2px;flex-wrap:wrap}
+.gn-seg button{border:0;background:transparent;color:#A4AAB5;padding:0 11px;height:30px;border-radius:7px;cursor:pointer;font-size:12.5px;font-weight:500}
+.gn-seg button:hover{color:#ECEAE4}
+.gn-seg button[aria-pressed="true"]{background:#2C323E;color:#ECEAE4}
+.gn-mini{display:inline-flex;background:#0F1115;border:1px solid #2A2F3A;border-radius:7px;padding:1px;gap:1px}
+.gn-mini button{border:0;background:transparent;color:#A4AAB5;padding:0 8px;height:24px;border-radius:5px;cursor:pointer;font-size:11.5px}
+.gn-mini button[aria-pressed="true"]{background:#2C323E;color:#ECEAE4}
+.gn-btn{height:34px;padding:0 14px;border-radius:8px;border:1px solid #343A46;background:#1C2029;color:#ECEAE4;font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.gn-btn:hover{background:#262B36}
+.gn-btn[disabled]{opacity:.45;cursor:default}
+.gn-primary{background:#F2C14E;border-color:#F2C14E;color:#1A1405;font-weight:600}
+.gn-primary:hover{background:#F6CF6E}
+.gn-ghost{background:transparent;border-color:transparent;color:#A4AAB5}
+.gn-ghost:hover{background:#1C2029;color:#ECEAE4}
+.gn-toggle{height:30px;padding:0 10px;border-radius:7px;border:1px solid #343A46;background:transparent;color:#A4AAB5;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.gn-toggle[aria-pressed="true"]{background:#262B36;color:#ECEAE4;border-color:#5A6273}
+.gn-hear{width:26px;height:26px;flex:none;border-radius:6px;border:1px solid transparent;background:transparent;color:#5A6273;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0}
+.gn-hear:hover{background:#1C2029;color:#A4AAB5}
+.gn-hear[aria-pressed="true"]{color:#F2C14E;border-color:#5C4A1E;background:#1B1810}
+.gn-sel{height:26px;border-radius:6px;border:1px solid #343A46;background:#0F1115;color:#D9D6CE;font-size:11.5px;padding:0 6px;max-width:220px}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #F2C14E;outline-offset:2px}
+.gn-n{position:absolute;border-radius:1px;pointer-events:none}
+.n-midi{background:#6F9FD8}
+.n-lit{background:#A9C4E6}
+.n-chg{background:#FF8A5B}
+.n-mine{background:#F1E6CC}
+.n-extra{background:#FF8A5B}
+.n-lay-midi{background:#6F9FD8;opacity:.32}
+.n-lay-lit{box-shadow:inset 0 0 0 1px #A9C4E6}
+.n-lay-chg{box-shadow:inset 0 0 0 1px #FF8A5B}
+.n-mark{position:absolute;height:2px;background:#FF8A5B;pointer-events:none;border-radius:1px}
+.gn-hatch{background-image:repeating-linear-gradient(135deg,rgba(236,234,228,.09) 0 2px,transparent 2px 7px)}
+.gn-cell{position:absolute;border:0;border-radius:2px;background:#1E222B;cursor:pointer;padding:0;z-index:3}
+.gn-cell:hover{box-shadow:inset 0 0 0 1px #8A92A0}
+.gn-cell.c-beat{background:#272C37}
+.gn-cell.c-both{background:#F1E6CC;box-shadow:inset 0 0 0 2px #6F9FD8}
+.gn-cell.c-mine{background:#FF8A5B}
+.gn-cell.c-ref{background:#101317;box-shadow:inset 0 0 0 2px #6F9FD8}
+.gn-blk{position:absolute;top:0;bottom:0;border:1px solid;border-radius:5px;cursor:pointer;padding:0;text-align:left;color:inherit}
+.gn-blk:hover{filter:brightness(1.25)}
+.gn-chip{position:absolute;top:3px;bottom:3px;border:0;border-radius:5px;cursor:pointer;color:#14161A;font-size:11px;font-weight:600;padding:0 6px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-align:left}
+.gn-chip:hover{filter:brightness(1.12)}
+.gn-num{width:56px;height:30px;border-radius:7px;border:1px solid #343A46;background:#0F1115;color:#ECEAE4;padding:0 8px;font-size:13px}
+.gn-name{height:36px;border-radius:8px;border:1px solid #343A46;background:#0F1115;color:#ECEAE4;padding:0 10px;font-size:16px;font-weight:600;font-family:'Space Grotesk',Inter,sans-serif;min-width:0;width:240px}
+.gn-ph{position:absolute;top:0;bottom:0;left:-4px;width:2px;background:#F2C14E;box-shadow:0 0 0 1px #0F1115}
+.gn-lbl{font-size:11px;color:#A4AAB5;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px}
+@keyframes gn-sweep{from{left:0%}to{left:100%}}
+.gn-tl div,.gn-tl span,.gn-tl button{transition:left .45s cubic-bezier(.2,.75,.25,1),width .45s cubic-bezier(.2,.75,.25,1),top .45s cubic-bezier(.2,.75,.25,1),height .45s cubic-bezier(.2,.75,.25,1),opacity .35s ease,visibility .35s}
+.gn-tl path{transition:d .45s cubic-bezier(.2,.75,.25,1)}
+.gn-tl.gn-dragging div,.gn-tl.gn-dragging span,.gn-tl.gn-dragging button,.gn-tl.gn-dragging path{transition-duration:.16s}
+.gn-tl .gn-noanim,.gn-tl .gn-ph{transition:none}
+.gn-tl .gn-cell{animation:gn-fade .35s ease .25s both}
+@keyframes gn-fade{from{opacity:0}to{opacity:1}}
+.gn-cont{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.gn-blur{position:absolute;top:0;bottom:0;pointer-events:none;-webkit-backdrop-filter:blur(1.4px) saturate(.7);backdrop-filter:blur(1.4px) saturate(.7);background:rgba(15,17,21,.24)}
+.gn-grab{cursor:grab;touch-action:none}
+.gn-grab:active{cursor:grabbing}
+@media (prefers-reduced-motion: reduce){.gn-tl div,.gn-tl span,.gn-tl button,.gn-tl path{transition:none}.gn-tl .gn-cell{animation:none}}
+</style>
+</helmet>
+<div class="gn" style="min-height: 100vh; background: #0F1115; color: #ECEAE4; font-family: Inter, system-ui, sans-serif; font-size: 13px; position: relative" onPointerUp="{{up}}" onPointerLeave="{{up}}">
+
+  <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; padding: 14px 20px; border-bottom: 1px solid #22262E; background: #13161B">
+    <div style="display: flex; align-items: baseline; gap: 12px; flex: 1 1 300px; min-width: 0">
+      <span style="font-family: 'Space Grotesk', Inter, sans-serif; font-weight: 700; font-size: 18px; letter-spacing: -0.01em">Ghost Notes</span>
+      <span style="color: #A4AAB5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">song-3 · 3 stems + notes.json + beats.json <span style="color: #858C98">· invented</span></span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px">
+      <span style="color: #858C98; font-size: 12px">Grid</span>
+      <div class="gn-seg" role="group" aria-label="Grid for the Notes row">
+        <sc-for list="{{grids}}" as="g" hint-placeholder-count="3"><button aria-pressed="{{g.pressed}}" onClick="{{g.pick}}">{{g.label}}</button></sc-for>
+      </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px">
+      <span style="color: #858C98; font-size: 12px">Hear</span>
+      <div class="gn-seg" role="group" aria-label="Quick choice of what to hear">
+        <sc-for list="{{presets}}" as="l" hint-placeholder-count="3"><button aria-pressed="{{l.pressed}}" onClick="{{l.pick}}">{{l.label}}</button></sc-for>
+      </div>
+      <button class="gn-btn" onClick="{{togglePlay}}" aria-label="{{playAria}}">
+        <sc-if value="{{playing}}" hint-placeholder-val="{{ false }}"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1" fill="currentColor"></rect></svg></sc-if>
+        <sc-if value="{{notPlaying}}" hint-placeholder-val="{{ true }}"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M4 2.5v9l7.5-4.5z" fill="currentColor"></path></svg></sc-if>
+        {{playLabel}}
+      </button>
+    </div>
+    <button class="gn-btn" onClick="{{openSettings}}">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 4h7M12 4h2M2 12h2M7 12h7M2 8h3M8 8h6"></path><circle cx="10.5" cy="4" r="1.5"></circle><circle cx="5.5" cy="12" r="1.5"></circle><circle cx="6.5" cy="8" r="1.5"></circle></svg>
+      Settings
+    </button>
+    <button class="gn-btn gn-primary" onClick="{{openCopy}}">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="5" y="5" width="9" height="9" rx="2"></rect><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"></path></svg>
+      Copy Strudel
+      <sc-if value="{{dirty}}" hint-placeholder-val="{{ true }}"><span style="width: 7px; height: 7px; border-radius: 50%; background: #1A1405" title="Changed since your last copy"></span></sc-if>
+    </button>
+  </header>
+
+  <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 10px 20px; border-bottom: 1px solid #22262E; font-size: 12.5px; color: #A4AAB5">
+    <span style="display: inline-flex; align-items: center; gap: 7px; color: #FFC8A8; background: #2A1C16; border: 1px solid #5A3424; border-radius: 7px; padding: 5px 9px">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 2 1.5 13.5h13z"></path><path d="M8 6.5v3.2M8 11.6v.1"></path></svg>
+      Beat map stops at bar 44. Bars 45–48 use the median tempo.
+    </span>
+    <span>{{tempoLine}}</span>
+    <span style="color: #4A505C" aria-hidden="true">|</span>
+    <span>Bar 1 at the first detected downbeat; the pickup is bar 0</span>
+    <span style="flex: 1"></span>
+    <span style="color: #858C98">{{settingsSummary}}</span>
+    <label style="display: inline-flex; align-items: center; gap: 6px">Select bars <input class="gn-num" type="number" min="1" max="48" value="{{fromBar}}" onChange="{{setFrom}}" aria-label="First bar"></label>
+    <label style="display: inline-flex; align-items: center; gap: 6px">to <input class="gn-num" type="number" min="1" max="48" value="{{toBar}}" onChange="{{setTo}}" aria-label="Last bar"></label>
+    <button class="gn-btn" style="height: 30px" onClick="{{selectTyped}}">Select</button>
+  </div>
+
+  <div style="overflow-x: auto; padding: 14px 20px 0">
+    <div class="gn-tl {{tlClass}}" style="min-width: 1000px">
+
+      <div style="display: flex; align-items: center; margin-bottom: 8px">
+        <div style="width: 150px; flex: none; font-size: 11px; color: #858C98; letter-spacing: .08em; text-transform: uppercase">Song</div>
+        <div style="flex: 1; position: relative; height: 32px; border-radius: 7px; background: #161920; overflow: hidden">
+          <sc-for list="{{songGaps}}" as="sg" hint-placeholder-count="3"><div class="gn-hatch" style="position: absolute; top: 3px; bottom: 3px; border-radius: 5px; {{sg.st}}"></div></sc-for>
+          <sc-for list="{{songChips}}" as="sc" hint-placeholder-count="2"><button class="gn-chip" style="{{sc.st}}" onClick="{{sc.open}}" aria-label="{{sc.aria}}">{{sc.label}}</button></sc-for>
+          <div class="gn-grab" title="Drag to move the lens" onPointerDown="{{lensDown}}" onPointerMove="{{lensMove}}" onPointerUp="{{lensUp}}" style="position: absolute; top: 0; bottom: 0; border: 2px solid #ECEAE4; border-radius: 6px; box-shadow: 0 0 0 1px #0F1115; {{lensSongSt}}"></div>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; height: 36px; margin-bottom: 4px">
+        <div style="width: 150px; flex: none; font-size: 11px; color: #858C98; letter-spacing: .08em; text-transform: uppercase">Lens</div>
+        <div style="flex: 1; position: relative; height: 36px">
+            <div class="gn-grab" title="Drag to move the lens" onPointerDown="{{lensDown}}" onPointerMove="{{lensMove}}" onPointerUp="{{lensUp}}" style="position: absolute; top: 2px; bottom: 2px; display: flex; align-items: center; gap: 6px; padding: 0 6px; border-radius: 8px; background: #1F242E; border: 1px solid #3A4150; min-width: 0; overflow: hidden; {{lensHeadSt}}">
+              <svg width="10" height="14" viewBox="0 0 10 14" aria-hidden="true" style="flex: none; color: #858C98"><g fill="currentColor"><circle cx="3" cy="3" r="1.2"></circle><circle cx="7" cy="3" r="1.2"></circle><circle cx="3" cy="7" r="1.2"></circle><circle cx="7" cy="7" r="1.2"></circle><circle cx="3" cy="11" r="1.2"></circle><circle cx="7" cy="11" r="1.2"></circle></g></svg>
+              <button class="gn-btn gn-ghost" style="height: 26px; padding: 0 8px" onClick="{{lensPrev}}" disabled="{{lensNoPrev}}" aria-label="Move the lens earlier">‹</button>
+              <span style="flex: 1; text-align: center; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{lensTitle}}</span>
+              <button class="gn-btn gn-ghost" style="height: 26px; padding: 0 8px" onClick="{{lensNext}}" disabled="{{lensNoNext}}" aria-label="Move the lens later">›</button>
+              <button class="gn-btn gn-ghost" style="height: 26px; padding: 0 8px" onClick="{{lensClose}}" aria-label="Close the lens">
+                <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8"></path></svg>
+              </button>
+            </div>
+          <sc-if value="{{lensOff}}" hint-placeholder-val="{{ true }}"><span style="position: absolute; top: 10px; left: 0; color: #858C98; font-size: 12px">Open a section, or select bars and choose Look closer. Those bars grow in place; the rest of the song stays in view, squeezed to the sides.</span></sc-if>
+        </div>
+      </div>
+
+      <div style="position: relative; user-select: none; touch-action: pan-y; cursor: crosshair" onPointerDown="{{down}}" onPointerMove="{{move}}">
+
+        <div style="position: absolute; top: 0; bottom: 0; left: 150px; right: 0; pointer-events: none; z-index: 0; overflow: hidden">
+          <div style="position: absolute; top: 0; bottom: 0; background: #151922; {{lensBgSt}}"></div>
+          <sc-for list="{{beatLines}}" as="bt" hint-placeholder-count="0"><div style="position: absolute; top: 28px; bottom: 0; width: 1px; background: #1E232C; {{bt.st}}"></div></sc-for>
+          <sc-for list="{{barLines}}" as="bl" hint-placeholder-count="48"><div style="position: absolute; top: 0; bottom: 0; width: 1px; {{bl.st}}"></div></sc-for>
+        </div>
+
+        <div style="position: absolute; top: 0; bottom: 0; left: 150px; right: 0; pointer-events: none; z-index: 5; overflow: hidden">
+          <div class="gn-blur" style="{{blurLeftSt}}"></div><div class="gn-blur" style="{{blurRightSt}}"></div>
+          <div style="position: absolute; top: 0; bottom: 0; border-left: 1px solid #6A7383; border-right: 1px solid #6A7383; box-shadow: -10px 0 18px -10px rgba(0,0,0,.7), 10px 0 18px -10px rgba(0,0,0,.7); {{lensBgSt}}"></div>
+          <sc-if value="{{showMapEnd}}" hint-placeholder-val="{{ true }}">
+            <div class="gn-hatch" style="position: absolute; top: 0; bottom: 0; right: 0; background-color: rgba(255,138,91,.05); border-left: 1px dashed #FF8A5B; {{mapEndSt}}">
+              <span style="position: absolute; top: 6px; left: 4px; font-size: 10px; color: #FFC8A8; background: #0F1115; padding: 1px 4px; border-radius: 4px; white-space: nowrap">no beat map</span>
+            </div>
+          </sc-if>
+          <sc-if value="{{playing}}" hint-placeholder-val="{{ false }}">
+            <sc-for list="{{playSegs}}" as="ps" hint-placeholder-count="1"><div style="position: absolute; top: 0; bottom: 0; overflow: hidden; {{ps.box}}"><div class="gn-ph" style="{{ps.anim}}"></div></div></sc-for>
+          </sc-if>
+        </div>
+
+        <div style="display: flex; height: 28px; position: relative; z-index: 1; border-bottom: 1px solid #2A2F3A">
+          <div style="width: 150px; flex: none; display: flex; align-items: center; font-size: 11px; color: #858C98; letter-spacing: .08em; text-transform: uppercase">Bar</div>
+          <div style="flex: 1; position: relative">
+            <span style="position: absolute; top: 7px; font-size: 10px; color: #858C98; text-align: center; overflow: hidden; {{pickupSt}}">0</span>
+            <sc-for list="{{rulerBars}}" as="rb" hint-placeholder-count="48"><span style="position: absolute; top: 7px; text-align: center; font-size: 10.5px; font-variant-numeric: tabular-nums; {{rb.st}}">{{rb.label}}</span></sc-for>
+          </div>
+        </div>
+
+        <sc-for list="{{lanes}}" as="inst" hint-placeholder-count="3">
+          <div style="position: relative; z-index: 1" data-inst="{{inst.id}}">
+            <div style="display: flex; align-items: center; min-height: 38px; margin-top: 8px; gap: 10px; flex-wrap: wrap">
+              <div style="width: 140px; flex: none; display: flex; flex-direction: column; justify-content: center">
+                <span style="font-weight: 600; font-size: 13.5px">{{inst.name}}</span>
+                <span style="font-size: 11px; color: #858C98">{{inst.stem}}</span>
+              </div>
+              <div class="gn-mini" role="group" aria-label="{{inst.viewAria}}">
+                <button aria-pressed="{{inst.isRows}}" onClick="{{inst.toRows}}">Rows</button>
+                <button aria-pressed="{{inst.isLayers}}" onClick="{{inst.toLayers}}">Layers</button>
+              </div>
+              <select class="gn-sel" value="{{inst.sound}}" onChange="{{inst.setSound}}" aria-label="{{inst.soundAria}}">
+                <sc-for list="{{inst.sounds}}" as="o" hint-placeholder-count="4"><option value="{{o.value}}">{{o.label}}</option></sc-for>
+              </select>
+              <span style="font-size: 11.5px; color: #A4AAB5; white-space: nowrap">{{inst.midiCount}}</span>
+              <span style="font-size: 11.5px; color: #FFB596; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1">{{inst.counts}}</span>
+              <sc-if value="{{inst.quiet}}" hint-placeholder-val="{{ false }}"><span style="font-size: 11.5px; white-space: nowrap; color: #D8D2C2; background: #23262E; border-radius: 5px; padding: 2px 7px">Quiet stem: some notes may be bleed</span></sc-if>
+            </div>
+
+            <sc-if value="{{inst.showAudio}}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; border-top: 1px solid #1E222A; {{inst.hAudio}}">
+                <div style="width: 150px; flex: none; display: flex; align-items: center; gap: 6px">
+                  <button class="gn-hear" aria-pressed="{{inst.hear.audio.on}}" onClick="{{inst.hear.audio.toggle}}" aria-label="{{inst.hear.audio.aria}}"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 6h3l4-3v10l-4-3H2z"></path><path d="M11.5 5.5a3.5 3.5 0 0 1 0 5M13.5 3.5a6.5 6.5 0 0 1 0 9"></path></svg></button>
+                  <span style="display: flex; flex-direction: column"><span style="font-size: 12px; font-weight: 600; color: #B8BDC6">Audio</span><span style="font-size: 10.5px; color: #858C98">the stem</span></span>
+                </div>
+                <div style="flex: 1; position: relative; overflow: hidden">
+                  <svg width="100%" height="100%" viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true" style="position: absolute; inset: 0; display: block"><path d="{{inst.wave}}" fill="#5A6273"></path></svg>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{inst.isRows}}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; border-top: 1px solid #1E222A; {{inst.hMidi}}">
+                <div style="width: 150px; flex: none; display: flex; align-items: center; gap: 6px">
+                  <button class="gn-hear" aria-pressed="{{inst.hear.midi.on}}" onClick="{{inst.hear.midi.toggle}}" aria-label="{{inst.hear.midi.aria}}"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 6h3l4-3v10l-4-3H2z"></path><path d="M11.5 5.5a3.5 3.5 0 0 1 0 5M13.5 3.5a6.5 6.5 0 0 1 0 9"></path></svg></button>
+                  <span style="display: flex; flex-direction: column"><span style="font-size: 12px; font-weight: 600; color: #9DBCE3">MIDI</span><span style="font-size: 10.5px; color: #858C98">as heard</span></span>
+                </div>
+                <div style="flex: 1; position: relative; overflow: hidden">
+                  <svg class="gn-cont" viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true"><path d="{{inst.cMidi}}" fill="none" stroke="#6F9FD8" stroke-width="1.6" stroke-opacity="1" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path></svg>
+                  <sc-for list="{{inst.midi}}" as="n" hint-placeholder-count="40"><span class="gn-n n-midi" style="{{n.st}}"></span></sc-for>
+                </div>
+              </div>
+              <div style="display: flex; border-top: 1px solid #1E222A; {{inst.hNotes}}">
+                <div style="width: 150px; flex: none; display: flex; align-items: center; gap: 6px">
+                  <button class="gn-hear" aria-pressed="{{inst.hear.notes.on}}" onClick="{{inst.hear.notes.toggle}}" aria-label="{{inst.hear.notes.aria}}"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 6h3l4-3v10l-4-3H2z"></path><path d="M11.5 5.5a3.5 3.5 0 0 1 0 5M13.5 3.5a6.5 6.5 0 0 1 0 9"></path></svg></button>
+                  <span style="display: flex; flex-direction: column"><span style="font-size: 12px; font-weight: 600; color: #C3D6EE">Notes</span><span style="font-size: 10.5px; color: #858C98">{{inst.gridSub}}</span></span>
+                </div>
+                <div style="flex: 1; position: relative; overflow: hidden">
+                  <svg class="gn-cont" viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true"><path d="{{inst.cLit}}" fill="none" stroke="#A9C4E6" stroke-width="1.6" stroke-opacity="1" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path></svg>
+                  <sc-for list="{{inst.lit}}" as="n" hint-placeholder-count="40"><span class="gn-n {{n.cls}}" style="{{n.st}}"></span></sc-for>
+                  <sc-for list="{{inst.marks}}" as="m" hint-placeholder-count="4"><span class="n-mark" style="{{m.st}}"></span></sc-for>
+                </div>
+              </div>
+              <div style="display: flex; border-top: 1px solid #1E222A; border-bottom: 1px solid #1E222A; {{inst.hMine}}">
+                <div style="width: 150px; flex: none; display: flex; align-items: center; gap: 6px">
+                  <button class="gn-hear" aria-pressed="{{inst.hear.mine.on}}" onClick="{{inst.hear.mine.toggle}}" aria-label="{{inst.hear.mine.aria}}"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 6h3l4-3v10l-4-3H2z"></path><path d="M11.5 5.5a3.5 3.5 0 0 1 0 5M13.5 3.5a6.5 6.5 0 0 1 0 9"></path></svg></button>
+                  <span style="display: flex; flex-direction: column"><span style="font-size: 12px; font-weight: 600; color: #F1E6CC">Mine</span><span style="font-size: 10.5px; color: #858C98">your Strudel</span></span>
+                </div>
+                <div style="flex: 1; position: relative; overflow: hidden">
+                  <sc-for list="{{inst.gaps}}" as="gp" hint-placeholder-count="2">
+                    <div class="gn-hatch" style="position: absolute; top: 4px; bottom: 4px; border-radius: 5px; border: 1px dashed #343A46; display: flex; align-items: center; justify-content: center; {{gp.st}}">
+                      <sc-if value="{{gp.showLabel}}" hint-placeholder-val="{{ true }}"><span style="font-size: 11px; color: #A4AAB5; background: #0F1115; padding: 1px 6px; border-radius: 4px; white-space: nowrap">not arranged</span></sc-if>
+                    </div>
+                  </sc-for>
+                  <sc-for list="{{inst.blocks}}" as="bk" hint-placeholder-count="2">
+                    <button class="gn-blk" style="{{bk.st}}" onClick="{{bk.open}}" aria-label="{{bk.aria}}" aria-pressed="{{bk.isOpen}}">
+                      <span style="position: absolute; left: 4px; top: 3px; display: inline-flex; gap: 5px; align-items: center; font-size: 10.5px; font-weight: 600; color: #14161A; border-radius: 4px; padding: 0 5px; white-space: nowrap; z-index: 2; {{bk.chipSt}}">{{bk.label}} <span style="font-weight: 500">{{bk.pct}}</span></span>
+                    </button>
+                  </sc-for>
+                  <svg class="gn-cont" viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true"><path d="{{inst.cMine}}" fill="none" stroke="#F1E6CC" stroke-width="2" stroke-opacity="1" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path></svg>
+                  <sc-for list="{{inst.mine}}" as="n" hint-placeholder-count="30"><span class="gn-n {{n.cls}}" style="z-index: 1; {{n.st}}"></span></sc-for>
+                  <sc-for list="{{inst.grid}}" as="c" hint-placeholder-count="0"><button class="gn-cell {{c.cls}}" style="{{c.st}}" aria-label="{{c.aria}}" title="{{c.aria}}" onClick="{{c.toggle}}"></button></sc-for>
+                  <sc-for list="{{inst.strip}}" as="sp" hint-placeholder-count="8"><span title="{{sp.title}}" style="position: absolute; bottom: 2px; height: 4px; border-radius: 2px; z-index: 1; {{sp.st}}"></span></sc-for>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{inst.isLayers}}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; border-top: 1px solid #1E222A; border-bottom: 1px solid #1E222A; {{inst.hLayers}}">
+                <div style="width: 150px; flex: none; display: flex; flex-direction: column; justify-content: center; gap: 2px">
+                  <span style="display: flex; align-items: center; gap: 6px"><button class="gn-hear" aria-pressed="{{inst.hear.midi.on}}" onClick="{{inst.hear.midi.toggle}}" aria-label="{{inst.hear.midi.aria}}"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 6h3l4-3v10l-4-3H2z"></path><path d="M11.5 5.5a3.5 3.5 0 0 1 0 5"></path></svg></button><span style="font-size: 11.5px; color: #9DBCE3">MIDI, faint</span></span>
+                  <span style="display: flex; align-items: center; gap: 6px"><button class="gn-hear" aria-pressed="{{inst.hear.notes.on}}" onClick="{{inst.hear.notes.toggle}}" aria-label="{{inst.hear.notes.aria}}"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 6h3l4-3v10l-4-3H2z"></path><path d="M11.5 5.5a3.5 3.5 0 0 1 0 5"></path></svg></button><span style="font-size: 11.5px; color: #C3D6EE">Notes, outline</span></span>
+                  <span style="display: flex; align-items: center; gap: 6px"><button class="gn-hear" aria-pressed="{{inst.hear.mine.on}}" onClick="{{inst.hear.mine.toggle}}" aria-label="{{inst.hear.mine.aria}}"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 6h3l4-3v10l-4-3H2z"></path><path d="M11.5 5.5a3.5 3.5 0 0 1 0 5"></path></svg></button><span style="font-size: 11.5px; color: #F1E6CC">Mine, solid</span></span>
+                </div>
+                <div style="flex: 1; position: relative; overflow: hidden">
+                  <sc-for list="{{inst.gaps}}" as="gp" hint-placeholder-count="2"><div class="gn-hatch" style="position: absolute; top: 4px; bottom: 4px; border-radius: 5px; border: 1px dashed #343A46; {{gp.st}}"></div></sc-for>
+                  <sc-for list="{{inst.blocks}}" as="bk" hint-placeholder-count="2">
+                    <button class="gn-blk" style="{{bk.st}}" onClick="{{bk.open}}" aria-label="{{bk.aria}}" aria-pressed="{{bk.isOpen}}">
+                      <span style="position: absolute; left: 4px; top: 3px; display: inline-flex; gap: 5px; align-items: center; font-size: 10.5px; font-weight: 600; color: #14161A; border-radius: 4px; padding: 0 5px; white-space: nowrap; z-index: 2; {{bk.chipSt}}">{{bk.label}} <span style="font-weight: 500">{{bk.pct}}</span></span>
+                    </button>
+                  </sc-for>
+                  <svg class="gn-cont" viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true"><path d="{{inst.cMidi}}" fill="none" stroke="#6F9FD8" stroke-width="1.6" stroke-opacity=".55" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path></svg><svg class="gn-cont" viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true"><path d="{{inst.cMine}}" fill="none" stroke="#F1E6CC" stroke-width="2" stroke-opacity="1" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path></svg>
+                  <sc-for list="{{inst.layMidi}}" as="n" hint-placeholder-count="40"><span class="gn-n n-lay-midi" style="{{n.st}}"></span></sc-for>
+                  <sc-for list="{{inst.layLit}}" as="n" hint-placeholder-count="40"><span class="gn-n {{n.cls}}" style="z-index: 1; {{n.st}}"></span></sc-for>
+                  <sc-for list="{{inst.layMine}}" as="n" hint-placeholder-count="30"><span class="gn-n {{n.cls}}" style="z-index: 2; {{n.st}}"></span></sc-for>
+                  <sc-for list="{{inst.grid}}" as="c" hint-placeholder-count="0"><button class="gn-cell {{c.cls}}" style="{{c.st}}" aria-label="{{c.aria}}" title="{{c.aria}}" onClick="{{c.toggle}}"></button></sc-for>
+                  <sc-for list="{{inst.strip}}" as="sp" hint-placeholder-count="8"><span title="{{sp.title}}" style="position: absolute; bottom: 2px; height: 4px; border-radius: 2px; z-index: 2; {{sp.st}}"></span></sc-for>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{inst.showSel}}" hint-placeholder-val="{{ false }}">
+              <div style="position: absolute; left: 150px; right: 0; top: 46px; bottom: 0; pointer-events: none; z-index: 6; overflow: hidden">
+                <div class="gn-noanim" style="position: absolute; top: 0; bottom: 0; background: rgba(242,193,78,.10); border-left: 2px solid #F2C14E; border-right: 2px solid #F2C14E; {{inst.selSt}}"></div>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+      <p style="margin: 10px 0 0 150px; font-size: 11.5px; color: #858C98">{{helpLine}}</p>
+    </div>
+  </div>
+
+  <sc-if value="{{hasSel}}" hint-placeholder-val="{{ false }}">
+    <section aria-label="Selected bars" style="margin: 16px 20px 0; padding: 16px 18px; border: 1px solid #5C4A1E; background: #1B1810; border-radius: 12px; display: flex; flex-wrap: wrap; gap: 14px 28px; align-items: flex-start">
+      <div style="min-width: 170px; max-width: 280px">
+        <div style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 20px; font-weight: 600">{{selLabel}}</div>
+        <div style="color: #A4AAB5; margin-top: 2px">{{selInfo}}</div>
+      </div>
+      <div>
+        <div class="gn-lbl">Instruments</div>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap">
+          <sc-for list="{{scopes}}" as="sc" hint-placeholder-count="3"><button class="gn-toggle" aria-pressed="{{sc.pressed}}" onClick="{{sc.toggle}}" disabled="{{sc.locked}}">{{sc.label}}</button></sc-for>
+        </div>
+      </div>
+      <div>
+        <div class="gn-lbl">Starts as</div>
+        <div class="gn-seg" role="group" aria-label="What the new section starts with">
+          <sc-for list="{{starters}}" as="s" hint-placeholder-count="3"><button aria-pressed="{{s.pressed}}" onClick="{{s.pick}}">{{s.label}}</button></sc-for>
+        </div>
+      </div>
+      <div style="flex: 1 1 240px; min-width: 0">
+        <div class="gn-lbl">{{alsoTitle}}</div>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap">
+          <sc-for list="{{also}}" as="al" hint-placeholder-count="2">
+            <button class="gn-toggle" aria-pressed="{{al.pressed}}" onClick="{{al.toggle}}">
+              <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="0.75" y="0.75" width="10.5" height="10.5" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.3"></rect><sc-if value="{{al.pressed}}" hint-placeholder-val="{{ true }}"><path d="M3 6.2 5 8.2 9 3.8" fill="none" stroke="currentColor" stroke-width="1.6"></path></sc-if></svg>
+              {{al.label}} <span style="color: #858C98">{{al.pct}}</span>
+            </button>
+          </sc-for>
+        </div>
+        <sc-if value="{{overlapWarn}}" hint-placeholder-val="{{ false }}"><div style="margin-top: 8px; color: #FFC8A8; font-size: 12px">{{overlapText}}</div></sc-if>
+      </div>
+      <div style="display: flex; gap: 8px; align-items: center; align-self: center; flex-wrap: wrap">
+        <button class="gn-btn gn-ghost" onClick="{{clearSel}}">Cancel</button>
+        <sc-if value="{{canRemovePick}}" hint-placeholder-val="{{ false }}"><button class="gn-btn gn-ghost" onClick="{{removePick}}">Remove pickup section</button></sc-if>
+        <sc-if value="{{canLook}}" hint-placeholder-val="{{ true }}"><button class="gn-btn" onClick="{{lookCloser}}">Look closer</button></sc-if>
+        <button class="gn-btn gn-primary" onClick="{{make}}" disabled="{{cantMake}}">{{makeLabel}}</button>
+      </div>
+    </section>
+  </sc-if>
+
+  <sc-if value="{{hasOpen}}" hint-placeholder-val="{{ true }}">
+    <section aria-label="Open section" style="margin: 16px 20px 24px; border: 1px solid #2A2F3A; background: #14171C; border-radius: 12px; overflow: hidden">
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 14px 18px; border-bottom: 1px solid #22262E">
+        <span style="width: 12px; height: 12px; border-radius: 3px; {{secDot}}"></span>
+        <input class="gn-name" value="{{secName}}" onChange="{{rename}}" aria-label="Section name">
+        <span style="color: #A4AAB5">{{secSrc}}</span>
+        <span style="flex: 1"></span>
+        <sc-if value="{{showOpenLens}}" hint-placeholder-val="{{ false }}"><button class="gn-btn" onClick="{{openLens}}">Open in lens</button></sc-if>
+        <div style="display: flex; align-items: center; gap: 8px">
+          <span style="color: #858C98; font-size: 12px">Replace with</span>
+          <div class="gn-seg" role="group" aria-label="Replace this section's notes">
+            <sc-for list="{{replaces}}" as="rp" hint-placeholder-count="3"><button aria-pressed="{{rp.pressed}}" onClick="{{rp.pick}}">{{rp.label}}</button></sc-for>
+          </div>
+        </div>
+        <button class="gn-btn gn-ghost" onClick="{{deleteSec}}">Delete section</button>
+        <button class="gn-btn gn-ghost" onClick="{{closeSec}}" aria-label="Close section">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8"></path></svg>
+        </button>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 18px; border-bottom: 1px solid #22262E">
+        <span style="color: #858C98; font-size: 12px; margin-right: 4px">Plays at</span>
+        <sc-for list="{{rangeChips}}" as="rc" hint-placeholder-count="2">
+          <span style="display: inline-flex; align-items: center; gap: 2px; border: 1px solid #262B36; border-radius: 9px; padding: 2px">
+            <button class="gn-toggle" style="border: 0" aria-pressed="{{rc.pressed}}" onClick="{{rc.pick}}">{{rc.label}} <span style="color: #858C98">{{rc.pct}}</span></button>
+            <sc-if value="{{rc.canSplit}}" hint-placeholder-val="{{ false }}">
+              <button class="gn-btn gn-ghost" style="height: 28px; padding: 0 8px; font-size: 12px" onClick="{{rc.split}}" aria-label="{{rc.splitAria}}">Own copy</button>
+              <button class="gn-btn gn-ghost" style="height: 28px; padding: 0 8px" onClick="{{rc.unlink}}" aria-label="{{rc.unlinkAria}}">×</button>
+            </sc-if>
+          </span>
+        </sc-for>
+        <span style="color: #858C98; font-size: 12px; margin-left: 6px">The lens and the numbers compare with the place you pick. Own copy splits that place off so you can change it alone.</span>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 12px 18px; border-bottom: 1px solid #22262E">
+        <span style="color: #858C98; font-size: 12px">Tempo in your copy</span>
+        <sc-for list="{{tempoRows}}" as="tr" hint-placeholder-count="2">
+          <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: #C9CDD4">{{tr.label}} <input class="gn-num" style="width: 64px" type="number" min="40" max="300" value="{{tr.value}}" onChange="{{tr.set}}" aria-label="{{tr.aria}}"> BPM <span style="color: #858C98">{{tr.note}}</span></label>
+        </sc-for>
+        <span style="color: #858C98; font-size: 12px">Starts at the band's average for that place. Playback in the app always follows the band.</span>
+      </div>
+      <div style="display: flex; flex-wrap: wrap">
+        <div style="flex: 1 1 420px; min-width: 0; padding: 14px 18px 18px">
+          <div class="gn-lbl">{{statTitle}}</div>
+          <div style="display: grid; grid-template-columns: minmax(0, 1.4fr) repeat(4, minmax(0, 1fr)); gap: 1px; background: #22262E; border-radius: 8px; overflow: hidden; font-variant-numeric: tabular-nums">
+            <span style="background: #181B21; padding: 8px 10px; font-size: 11.5px; color: #A4AAB5"></span>
+            <span style="background: #181B21; padding: 8px 10px; font-size: 11.5px; color: #A4AAB5">match</span>
+            <span style="background: #181B21; padding: 8px 10px; font-size: 11.5px; color: #A4AAB5">in both</span>
+            <span style="background: #181B21; padding: 8px 10px; font-size: 11.5px; color: #9DBCE3">only recording</span>
+            <span style="background: #181B21; padding: 8px 10px; font-size: 11.5px; color: #FFB596">only yours</span>
+            <sc-for list="{{statRows}}" as="sr" hint-placeholder-count="3">
+              <span style="background: #14171C; padding: 9px 10px; font-weight: 600">{{sr.name}}</span>
+              <span style="background: #14171C; padding: 9px 10px; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 16px; font-weight: 600">{{sr.match}}</span>
+              <span style="background: #14171C; padding: 9px 10px">{{sr.both}}</span>
+              <span style="background: #14171C; padding: 9px 10px">{{sr.refOnly}}</span>
+              <span style="background: #14171C; padding: 9px 10px">{{sr.mineOnly}}</span>
+            </sc-for>
+          </div>
+          <div style="font-size: 11.5px; color: #858C98; margin-top: 8px">{{statNote}}</div>
+          <div style="font-size: 12px; color: #A4AAB5; margin-top: 14px; line-height: 1.5">Drums are edited in the lens: click a cell in the Mine lanes. Every place this section plays changes with it. Bass and keys are edited with ODM's rhythm, values and text editors, which this mockup leaves out.</div>
+        </div>
+        <aside style="flex: 1 1 420px; min-width: 0; padding: 14px 18px 18px; border-left: 1px solid #22262E; background: #12151A">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px">
+            <span class="gn-lbl" style="margin: 0">This section as Strudel</span>
+            <span style="font-size: 11.5px; color: #858C98; font-variant-numeric: tabular-nums">{{secChars}}</span>
+          </div>
+          <pre style="margin: 0; max-height: 280px; overflow: auto; background: #0D0F13; border: 1px solid #22262E; border-radius: 8px; padding: 12px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11.5px; line-height: 1.55; color: #D9D6CE; white-space: pre-wrap; overflow-wrap: anywhere">{{secCode}}</pre>
+        </aside>
+      </div>
+    </section>
+  </sc-if>
+
+  <sc-if value="{{noOpenNoSel}}" hint-placeholder-val="{{ false }}">
+    <div style="margin: 16px 20px 24px; padding: 22px; border: 1px dashed #343A46; border-radius: 12px; color: #A4AAB5">Select bars to make a section, or click a section in a Mine row to open it in the lens.</div>
+  </sc-if>
+
+  <sc-if value="{{settingsOpen}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; inset: 0; background: rgba(8,9,12,.62); z-index: 20; display: flex; justify-content: flex-end">
+      <section role="dialog" aria-label="Settings" style="width: min(560px, 100%); min-height: 100%; background: #14171C; border-left: 1px solid #2A2F3A; display: flex; flex-direction: column">
+        <div style="display: flex; align-items: center; gap: 12px; padding: 18px 20px; border-bottom: 1px solid #22262E">
+          <span style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 19px; font-weight: 600">Settings</span>
+          <span style="flex: 1"></span>
+          <button class="gn-btn gn-ghost" onClick="{{closeSettings}}" aria-label="Close settings"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8"></path></svg></button>
+        </div>
+        <div style="padding: 6px 20px 24px; display: flex; flex-direction: column; gap: 6px">
+          <sc-for list="{{settingGroups}}" as="sg" hint-placeholder-count="5">
+            <div style="padding: 14px 0; border-bottom: 1px solid #22262E; display: flex; flex-direction: column; gap: 12px">
+              <div style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 15px; font-weight: 600">{{sg.group}}</div>
+              <sc-for list="{{sg.items}}" as="it" hint-placeholder-count="2">
+                <div style="display: flex; flex-direction: column; gap: 6px">
+                  <span style="font-size: 12.5px; color: #C9CDD4">{{it.label}}</span>
+                  <div class="gn-seg" role="group" aria-label="{{it.label}}"><sc-for list="{{it.opts}}" as="o" hint-placeholder-count="3"><button aria-pressed="{{o.pressed}}" onClick="{{o.pick}}">{{o.label}}</button></sc-for></div>
+                  <sc-if value="{{it.hasHelp}}" hint-placeholder-val="{{ false }}"><span style="font-size: 11.5px; color: #858C98; line-height: 1.45">{{it.help}}</span></sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{copyOpen}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; inset: 0; background: rgba(8,9,12,.62); z-index: 20; display: flex; justify-content: flex-end">
+      <section role="dialog" aria-label="Copy your Strudel" style="width: min(640px, 100%); min-height: 100%; background: #14171C; border-left: 1px solid #2A2F3A; display: flex; flex-direction: column">
+        <div style="display: flex; align-items: center; gap: 12px; padding: 18px 20px; border-bottom: 1px solid #22262E">
+          <span style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 19px; font-weight: 600">Copy your Strudel</span>
+          <span style="flex: 1"></span>
+          <button class="gn-btn gn-ghost" onClick="{{closeCopy}}" aria-label="Close"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8"></path></svg></button>
+        </div>
+        <div style="padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; border-bottom: 1px solid #22262E">
+          <div>
+            <div class="gn-lbl">Sections you haven't edited</div>
+            <div class="gn-seg" role="group" aria-label="How to write sections you haven't edited"><sc-for list="{{copyUneditedOpts}}" as="o" hint-placeholder-count="3"><button aria-pressed="{{o.pressed}}" onClick="{{o.pick}}">{{o.label}}</button></sc-for></div>
+            <div style="font-size: 11.5px; color: #858C98; margin-top: 6px">{{uneditedNote}}</div>
+          </div>
+          <div>
+            <div class="gn-lbl">Bars you haven't arranged</div>
+            <div class="gn-seg" role="group" aria-label="How to write bars you haven't arranged"><sc-for list="{{copyGapOpts}}" as="o" hint-placeholder-count="3"><button aria-pressed="{{o.pressed}}" onClick="{{o.pick}}">{{o.label}}</button></sc-for></div>
+            <sc-if value="{{gapsSilent}}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; gap: 8px; align-items: flex-start; color: #FFC8A8; font-size: 12px; margin-top: 8px">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true" style="flex: none; margin-top: 1px"><path d="M8 2 1.5 13.5h13z"></path><path d="M8 6.5v3.2M8 11.6v.1"></path></svg>
+                <span>{{unarrangedText}}</span>
+              </div>
+            </sc-if>
+          </div>
+          <div style="color: #A4AAB5; font-size: 12.5px; line-height: 1.5">The app saves nothing: this text is your save. Section names and the bars they came from travel inside it as comments, so pasting it back here with the same files restores the links. Closing the page with changes you haven't copied asks first.</div>
+          <div style="display: flex; gap: 10px; align-items: center">
+            <button class="gn-btn gn-primary" onClick="{{doCopy}}">{{copyLabel}}</button>
+            <span style="color: #858C98; font-size: 12px; font-variant-numeric: tabular-nums">{{progChars}}</span>
+          </div>
+        </div>
+        <pre style="flex: 1; margin: 0; overflow: auto; padding: 16px 20px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11.5px; line-height: 1.55; color: #D9D6CE; white-space: pre-wrap; overflow-wrap: anywhere">{{progCode}}</pre>
+      </section>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1700}}'>
+const BPB = 4, BARS = 48, MAP_END = 44, BPM = 168, BPS = BPM / 60, SPAN = 193, LENS_F = 68;
+const INSTS = [
+  { id: 'drums', name: 'Drums', stem: 'drums stem', mode: 'drum', sounds: [['default', 'Samples: default kit'], ['RolandTR808', 'Samples: TR-808'], ['RolandTR909', 'Samples: TR-909']] },
+  { id: 'bass', name: 'Bass', stem: 'bass stem', mode: 'mono', lo: 34, hi: 54, sounds: [['triangle', 'Synth: triangle'], ['sawtooth', 'Synth: sawtooth'], ['gm_electric_bass_finger', 'Sample: electric bass'], ['gm_acoustic_bass', 'Sample: upright bass']] },
+  { id: 'keys', name: 'Keys', stem: 'other stem', mode: 'poly', lo: 46, hi: 66, quiet: true, sounds: [['sine', 'Synth: sine'], ['square', 'Synth: square'], ['gm_epiano1', 'Sample: electric piano'], ['gm_acoustic_grand_piano', 'Sample: grand piano']] }
+];
+const KINDS = ['cr', 'hh', 'sd', 'lt', 'bd'];
+const KIND_LABEL = { cr: 'Crash', hh: 'Hi-hat', sd: 'Snare', lt: 'Tom', bd: 'Kick' };
+const FORM = [{ n: 'Intro', a: 1, b: 4 }, { n: 'Verse', a: 5, b: 12 }, { n: 'Chorus', a: 13, b: 20 }, { n: 'Verse', a: 21, b: 28 }, { n: 'Chorus', a: 29, b: 36 }, { n: 'Bridge', a: 37, b: 40 }, { n: 'Chorus', a: 41, b: 48 }];
+const SEC_COLORS = ['#8CC7B5', '#B9A3E3', '#E3B47A', '#8FB9E6', '#E39A9A', '#C9D17E', '#D9A3C9'];
+const NOTE_NAMES = ['c', 'c#', 'd', 'eb', 'e', 'f', 'f#', 'g', 'ab', 'a', 'bb', 'b'];
+const GRIDS = [{ div: 4, label: '1/16' }, { div: 2, label: '1/8' }, { div: 3, label: '1/8 triplet' }];
+const STARTERS = [{ id: 'literal', label: 'Literal copy' }, { id: 'simplified', label: 'Simplified' }, { id: 'empty', label: 'Empty' }];
+const ROWS = ['audio', 'midi', 'notes', 'mine'];
+const ROW_NAME = { audio: 'audio', midi: 'MIDI', notes: 'Notes', mine: 'Mine' };
+const SETTINGS = [
+  { group: 'Selecting', items: [
+    { key: 'scope', label: 'Select across', opts: [['band', 'Whole band'], ['inst', 'One instrument']], help: 'With one instrument, the selection stays in the instrument where you start dragging.' },
+    { key: 'snap', label: 'Snap to', opts: [['bar', 'Bars'], ['beat', 'Beats']], help: 'Sections are always whole bars, because one bar is one Strudel cycle. With beats, only the notes inside the beats you select come into the section.' }] },
+  { group: 'New sections', items: [
+    { key: 'starter', label: 'Start as', opts: [['literal', 'Literal copy'], ['simplified', 'Simplified'], ['empty', 'Empty']], help: 'What you edit from. How sections you never edit are written is chosen when you copy.' }] },
+  { group: 'What counts as a match', items: [
+    { key: 'tol', label: 'Starts within', opts: [[0.0625, '1/16 beat'], [0.13, '1/8 beat'], [0.25, '1/4 beat']] },
+    { key: 'quiet', label: 'Quiet notes in the recording', opts: [['count', 'Count them'], ['ignore', 'Ignore them']], help: 'Quiet means velocity under 40: ghost notes, bleed and stray notes.' },
+    { key: 'pitch', label: 'Pitch', opts: [['exact', 'Exact'], ['class', 'Any octave']], help: 'Any octave forgives the transcriber\'s octave mistakes.' }] },
+  { group: 'Simplify', items: [
+    { key: 'move', label: 'Move a note at most', opts: [[0.125, 'a 32nd'], [0.25, 'a 16th'], [0.5, 'an 8th']] },
+    { key: 'drop', label: 'Drop at most', opts: [[0, 'none'], [0.05, '5%'], [0.1, '10%'], [0.2, '20%']], help: 'of the recording\'s notes, quietest first.' },
+    { key: 'fills', label: 'Fills', opts: [['keep', 'Keep as played'], ['pattern', 'Replace with pattern']] }] },
+  { group: 'View', items: [
+    { key: 'audio', label: 'Audio rows', opts: [[true, 'Show'], [false, 'Hide']], help: 'The stem audio, opened from your disk alongside the notes. Never uploaded or stored.' },
+    { key: 'defView', label: 'Every instrument shows', opts: [['rows', 'Rows'], ['layers', 'Layers']], help: 'Each instrument can still be switched on its own.' },
+    { key: 'lensBars', label: 'The lens shows', opts: [[2, '2 bars'], [4, '4 bars'], [8, '8 bars']] }] }
+];
+const TEMPO = { Intro: 160, Verse: 166, Chorus: 176, Bridge: 150 };
+const WOBBLE = { 15: -9, 16: 11, 17: -7, 18: 8 };
+function barBpm(b) { if (b < 1) return 158; if (b > MAP_END) return 168; const f = FORM.find(x => b >= x.a && b <= x.b); return TEMPO[f.n] + (WOBBLE[b] || 0); }
+function avgBpm(a, b) { let secs = 0; for (let x = a; x <= b; x++) secs += 240 / barBpm(x); return (b - a + 1) * 4 / secs * 60; }
+function secsBetween(x0, x1) { let t = 0, x = x0; while (x < x1 - 1e-9) { const b = x < 0 ? 0 : Math.floor(x / 4 + 1e-9) + 1, end = Math.min(x1, b === 0 ? 0 : b * 4); t += (end - x) * 60 / barBpm(b); x = end; } return t; }
+const SONG_BPM = avgBpm(1, 48);
+const nn = p => NOTE_NAMES[p % 12] + (Math.floor(p / 12) - 1);
+const bs = b => (b - 1) * BPB;
+const barOf = x => Math.floor(x / BPB + 1e-9) + 1;
+const f2 = x => Math.round(x * 1000) / 1000;
+function rng(seed) { let s = seed >>> 0; return () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; }; }
+function hexA(h, a) { const n = parseInt(h.slice(1), 16); return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')'; }
+function jac(A, B) { if (!A.size && !B.size) return 1; let m = 0; A.forEach(x => { if (B.has(x)) m++; }); return m / (A.size + B.size - m); }
+function rawKey(n) { return n.k != null ? n.k : n.p; }
+
+function makeSong() {
+  const R = rng(31337), J = a => (R() - 0.5) * 2 * a;
+  const bass = [], drums = [], keys = [];
+  const RIFF = {
+    Intro: [[], [[0, 3.6, 40]]],
+    Verse: [[[0, 0.7, 40], [1, 0.4, 40], [1.5, 0.4, 43], [2, 0.7, 45], [3, 0.4, 43], [3.5, 0.4, 40]], [[0, 0.7, 38], [1, 0.4, 38], [1.5, 0.4, 40], [2, 0.9, 43], [3.25, 0.6, 45]]],
+    Chorus: [[[0, 0.42, 45], [0.5, 0.42, 45], [1, 0.42, 45], [1.5, 0.42, 52], [2, 0.42, 41], [2.5, 0.42, 41], [3, 0.42, 41], [3.5, 0.42, 48]], [[0, 0.42, 36], [0.5, 0.42, 36], [1, 0.42, 36], [1.5, 0.42, 43], [2, 0.42, 43], [2.5, 0.42, 43], [3, 0.9, 47]]],
+    Bridge: [[[0, 1.8, 38], [2, 1.8, 41]], [[0, 1.8, 43], [2, 1.4, 45], [3.6, 0.35, 47]]]
+  };
+  const CH = { Intro: [[52, 55, 59], [52, 55, 59], [48, 52, 55], [50, 54, 57]], Verse: [[52, 55, 59], [48, 52, 55], [47, 50, 55], [50, 54, 57]], Chorus: [[57, 60, 64], [53, 57, 60], [52, 55, 60], [50, 55, 59]], Bridge: [[50, 53, 57], [53, 57, 60]] };
+  bass.push({ s: -0.5 + J(0.03), d: 0.42, p: 47, v: 84 });
+  drums.push({ s: -0.5 + J(0.02), d: 0.1, k: 'sd', v: 80 }, { s: -0.25 + J(0.02), d: 0.1, k: 'sd', v: 86 });
+  for (let b = 1; b <= BARS; b++) {
+    const f = FORM.find(x => b >= x.a && b <= x.b), i = b - f.a, last = b === f.b, s0 = bs(b);
+    const riff = f.n === 'Intro' ? (i < 2 ? [] : RIFF.Intro[1]) : RIFF[f.n][i % 2];
+    riff.forEach((r, k) => {
+      if (R() < 0.035) return;
+      let off = r[0], d = r[1];
+      if (f.n === 'Chorus' && i % 2 === 0 && k === riff.length - 1 && R() < 0.45) { off = 3.9; d = 0.3; }
+      const s = s0 + off + J(0.05); d = Math.max(0.15, d + J(0.08)); const v = Math.round(68 + R() * 42);
+      if (d > 0.65 && R() < 0.22) { bass.push({ s, d: d * 0.45, p: r[2], v }); bass.push({ s: s + d * 0.52, d: d * 0.44, p: r[2], v: v - 28 }); }
+      else bass.push({ s, d, p: r[2], v });
+    });
+    if (f.n !== 'Intro' && R() < 0.14) bass.push({ s: s0 + Math.floor(R() * 15) / 4 + 0.12, d: 0.14, p: 38 + Math.floor(R() * 12), v: 20 + Math.floor(R() * 14) });
+    const add = (k, off, v) => drums.push({ s: s0 + off + J(0.025), d: 0.1, k, v: Math.max(20, Math.min(127, Math.round(v + J(8)))) });
+    const fill = last && f.n !== 'Intro';
+    const hs = f.n === 'Bridge' ? 1 : 0.5;
+    for (let t = 0; t < 4; t += hs) { if (fill && t >= 3) continue; add('hh', t, t % 1 === 0 ? 80 : 56); }
+    if (f.n === 'Intro') { if (i >= 2) add('bd', 0, 96); if (i === 3) add('bd', 2.5, 90); }
+    else if (f.n === 'Verse') { add('bd', 0, 100); add('bd', 2.5, 90); add('sd', 1, 100); if (!fill) add('sd', 3, 100); if (i === 0) add('cr', 0, 104); }
+    else if (f.n === 'Chorus') { add('bd', 0, 106); add('bd', 1.5, 92); add('bd', 2, 100); add('sd', 1, 106); if (!fill) add('sd', 3, 106); if (i === 0) add('cr', 0, 112); }
+    else { add('bd', 0, 96); add('lt', 2, 82); if (!fill) add('sd', 3, 94); if (i === 0) add('cr', 0, 100); }
+    if (fill) [3, 3.25, 3.5, 3.75].forEach((t, j) => add(j < 2 ? 'sd' : 'lt', t, 86 + j * 5));
+    if (f.n !== 'Intro' && R() < 0.5) add('sd', [0.75, 1.75, 2.25, 3.25][Math.floor(R() * 4)], 34);
+    if (R() < 0.12) add('hh', 0.54, 42);
+    const chs = CH[f.n], ch = chs[i % chs.length];
+    const hits = f.n === 'Bridge' ? [[0, 3.6]] : (f.n === 'Intro' ? [[0, 3.7]] : [[0, 1.7], [2, 1.7]]);
+    hits.forEach(h => ch.forEach(p => keys.push({ s: s0 + h[0] + J(0.06), d: h[1] + J(0.1), p, v: Math.round(30 + R() * 24) })));
+    if (R() < 0.15) keys.push({ s: s0 + Math.floor(R() * 8) / 2 + 0.1, d: 0.2, p: 52 + Math.floor(R() * 12), v: 18 });
+  }
+  [bass, drums, keys].forEach(a => a.sort((x, y) => x.s - y.s));
+  return { bass, drums, keys };
+}
+function makeWave(notes, mode, seed, gain) {
+  const R = rng(seed), step = 0.125, N = Math.round(SPAN / step) + 1, amp = new Array(N).fill(0);
+  notes.forEach(n => {
+    const len = mode === 'drum' ? 0.6 : n.d + 0.25;
+    const i0 = Math.max(0, Math.floor((n.s + 1) / step)), i1 = Math.min(N - 1, Math.ceil((n.s + len + 1) / step));
+    for (let i = i0; i <= i1; i++) {
+      const t = i * step - 1 - n.s; if (t < 0) continue;
+      const a = n.v / 127 * (mode === 'drum' ? Math.exp(-t * 7) : (t < n.d ? 0.85 * Math.exp(-t * 0.5) : 0.3 * Math.exp(-(t - n.d) * 6)));
+      if (a > amp[i]) amp[i] = a;
+    }
+  });
+  for (let i = 0; i < N; i++) amp[i] = Math.min(1, (amp[i] * 0.85 + 0.03 + R() * (amp[i] > 0.05 ? 0.12 : 0.04)) * gain);
+  return amp;
+}
+function literal(notes, div, mode) {
+  const g = 1 / div;
+  let out = notes.map(n => {
+    const q = Math.round(n.s * div) / div;
+    const dq = mode === 'drum' ? g : Math.max(g, Math.round(n.d * div) / div);
+    return Object.assign({}, n, { s: q, d: dq, src: n.s, moved: Math.abs(q - n.s) >= 0.07, crossed: barOf(q) !== barOf(n.s) });
+  });
+  out.sort((a, b) => a.s - b.s || (String(rawKey(a)) < String(rawKey(b)) ? -1 : 1));
+  if (mode === 'drum') {
+    const seen = {}, res = [];
+    out.forEach(n => { const k = n.k + '@' + n.s; if (seen[k]) { seen[k].merged = true; return; } seen[k] = n; res.push(n); });
+    out = res;
+  }
+  if (mode === 'mono') {
+    for (let i = 0; i < out.length - 1; i++) {
+      const a = out[i], b = out[i + 1];
+      if (b.s === a.s) { a.merged = true; b.merged = true; }
+      else if (b.s < a.s + a.d - 1e-9) { a.d = b.s - a.s; a.shortened = true; }
+    }
+  }
+  const counts = { moved: 0, crossed: 0, shortened: 0, merged: 0 };
+  out.forEach(n => { if (n.crossed) counts.crossed++; else if (n.moved) counts.moved++; if (n.shortened) counts.shortened++; if (n.merged) counts.merged++; });
+  return { notes: out, counts };
+}
+function byBar(notes, quant) {
+  const m = {};
+  notes.forEach(n => { const b = barOf(quant ? Math.round(n.s * 4) / 4 : n.s); (m[b] = m[b] || []).push(n); });
+  return m;
+}
+function matchSets(refs, mines, o) {
+  const key = n => (n.k != null ? n.k : (o.pitch === 'class' ? n.p % 12 : n.p));
+  const R = o.quiet === 'ignore' ? refs.filter(r => r.v >= 40) : refs;
+  const used = new Array(mines.length).fill(false); let m = 0;
+  R.forEach(r => {
+    let best = -1, bd = o.tol + 1e-9;
+    mines.forEach((x, j) => { if (used[j] || key(x) !== key(r)) return; const d = Math.abs(x.s - r.s); if (d <= bd) { bd = d; best = j; } });
+    if (best >= 0) { used[best] = true; m++; }
+  });
+  const u = R.length + mines.length - m;
+  return { m, refs: R.length, mines: mines.length, used, j: u ? m / u : 1 };
+}
+function simplifyRel(inst, L, a, len, set) {
+  const bars = [];
+  for (let i = 0; i < len; i++) {
+    let ns = (L[a + i] || []).map(n => ({ s: n.s - bs(a + i), d: n.d, p: n.p, k: n.k, v: n.v }));
+    const dropN = Math.floor(ns.length * set.drop);
+    ns.slice().sort((x, y) => x.v - y.v).slice(0, dropN).forEach(x => { if (x.v < 60) ns = ns.filter(y => y !== x); });
+    bars.push(ns);
+  }
+  const sets = bars.map(b => new Set(b.map(n => rawKey(n) + '@' + Math.round(n.s * 12))));
+  const per = inst.mode === 'drum' ? 1 : (len % 2 === 0 && len >= 2 ? 2 : 1);
+  const rep = [];
+  for (let r = 0; r < per; r++) {
+    let idx = []; for (let i = r; i < len; i += per) if (i < len - 1 || len <= per) idx.push(i);
+    if (!idx.length) idx = [r];
+    let best = idx[0], bv = -1;
+    idx.forEach(i => { let t = 0; idx.forEach(j => { t += jac(sets[i], sets[j]); }); if (t > bv) { bv = t; best = i; } });
+    rep.push(best);
+  }
+  const out = [];
+  for (let i = 0; i < len; i++) {
+    let src = rep[i % per];
+    if (set.fills === 'keep' && i === len - 1 && len > per && jac(sets[i], sets[src]) < 0.55) src = i;
+    bars[src].forEach(n => out.push(Object.assign({}, n, { s: n.s + i * BPB })));
+  }
+  return out;
+}
+function barCode(notes, mode, div) {
+  const steps = 4 * div, at = {};
+  notes.forEach(n => { const st = Math.round(n.s * div); if (st < 0 || st >= steps) return; (at[st] = at[st] || []).push(n); });
+  const toks = []; let i = 0;
+  while (i < steps) {
+    const a = at[i];
+    if (!a) { let r = 0; while (i < steps && !at[i]) { r++; i++; } toks.push(r > 1 ? '~@' + r : '~'); continue; }
+    if (mode === 'drum') { const ks = Array.from(new Set(a.map(n => n.k))).sort(); toks.push(ks.length > 1 ? '[' + ks.join(',') + ']' : ks[0]); i++; continue; }
+    let next = i + 1; while (next < steps && !at[next]) next++;
+    const len = Math.max(1, Math.min(next - i, Math.round(Math.max.apply(null, a.map(n => n.d)) * div)));
+    const ps = Array.from(new Set(a.map(n => n.p))).sort((x, y) => x - y).map(nn);
+    let t = ps.length > 1 ? '[' + ps.join(',') + ']' : ps[0];
+    if (len > 1) t += '@' + len;
+    toks.push(t); i += len;
+  }
+  if (toks.every(t => t[0] === '~')) return '~';
+  return '[' + toks.join(' ') + ']';
+}
+function seqCode(bars) {
+  const L = bars.length, wrap = a => (a.length === 1 ? a[0] : '<' + a.join(' ') + '>');
+  for (let p = 1; p < L; p++) {
+    if (L % p) continue;
+    let ok = true; for (let i = p; i < L; i++) if (bars[i] !== bars[i % p]) { ok = false; break; }
+    if (ok) return wrap(bars.slice(0, p));
+  }
+  const out = []; let i = 0;
+  while (i < L) { let j = i; while (j < L && bars[j] === bars[i]) j++; out.push(j - i > 1 ? bars[i] + '!' + (j - i) : bars[i]); i = j; }
+  return wrap(out);
+}
+function instCode(inst, notes, len, div, sound) {
+  const bars = []; for (let i = 0; i < len; i++) bars.push([]);
+  (notes || []).forEach(n => { const q = Math.round(n.s * div) / div; const bi = Math.floor(q / BPB + 1e-9); if (bi >= 0 && bi < len) bars[bi].push(Object.assign({}, n, { s: q - bi * BPB })); });
+  if (inst.mode === 'drum') {
+    const lines = KINDS.filter(k => bars.some(b => b.some(n => n.k === k))).map(k => 's("' + seqCode(bars.map(b => barCode(b.filter(n => n.k === k), 'drum', div))) + '")' + (sound !== 'default' ? '.bank("' + sound + '")' : '') + ', // ' + KIND_LABEL[k].toLowerCase());
+    return lines.length ? 'stack(\n    ' + lines.join('\n    ') + '\n  )' : 'silence';
+  }
+  return 'note("' + seqCode(bars.map(b => barCode(b, inst.mode, div))) + '").s("' + sound + '")' + (inst.id === 'keys' ? '.gain(.4)' : '');
+}
+function slug(name) {
+  const v = String(name).toLowerCase().replace(/[^a-z0-9]+(.)?/g, (m, c) => (c ? c.toUpperCase() : '')).replace(/^[^a-z]+/, '');
+  return v || 'section';
+}
+function makeMap(lens) {
+  if (!lens) return { X: b => (b + 1) / SPAN * 100, inv: x => x / 100 * SPAN - 1 };
+  const la = lens.a, lb = lens.b, cl = la + 1, cr = 192 - lb, rest = 100 - LENS_F;
+  const lw = cl + cr ? rest * cl / (cl + cr) : 0, rw = rest - lw;
+  return {
+    X: b => (b <= la ? (cl ? (b + 1) / cl * lw : 0) : (b <= lb ? lw + (b - la) / (lb - la) * LENS_F : lw + LENS_F + (cr ? (b - lb) / cr * rw : 0))),
+    inv: x => (x <= lw ? (lw ? x / lw * cl - 1 : la) : (x <= lw + LENS_F ? la + (x - lw) / LENS_F * (lb - la) : lb + (rw ? (x - lw - LENS_F) / rw * cr : 0)))
+  };
+}
+
+class Component extends DCLogic {
+  state = {
+    div: 4, selA: null, selB: null, selInst: null, drag: false, anchor: null,
+    scope: { drums: true, bass: true, keys: true }, starterPick: null, alsoOff: {},
+    secVer: 0, open: '1', cmp: 0, lensOff: 0, lensDrag: false,
+    lensOn: true, lensMode: 'sec', lensA: 1, lensB: 4,
+    viewMode: { drums: 'rows', bass: 'rows', keys: 'rows' },
+    hear: { drums: { audio: true, midi: false, notes: false, mine: true }, bass: { audio: true, midi: false, notes: false, mine: true }, keys: { audio: true, midi: false, notes: false, mine: true } },
+    sounds: { drums: 'default', bass: 'triangle', keys: 'sine' },
+    set: { scope: 'band', snap: 'bar', starter: 'literal', tol: 0.13, quiet: 'count', pitch: 'exact', move: 0.25, drop: 0.1, fills: 'keep', audio: true, defView: 'rows', lensBars: 4 },
+    playing: false, playFrom: 0, playTo: 0,
+    settingsOpen: false, copyOpen: false, copied: false, copyErr: false, dirty: true,
+    copyUnedited: 'asmade', copyGaps: 'silence', fromBar: '', toBar: ''
+  };
+
+  data() {
+    if (this._d) return this._d;
+    const song = makeSong(), d = { song, lit: {}, midiQ: {}, feat: null, wave: {} };
+    INSTS.forEach((i, k) => { d.midiQ[i.id] = byBar(song[i.id], true); d.wave[i.id] = makeWave(song[i.id], i.mode, 500 + k, i.quiet ? 0.55 : 1); });
+    this._d = d; return d;
+  }
+  lit(div) {
+    const d = this.data();
+    if (!d.lit[div]) {
+      const o = {};
+      INSTS.forEach(i => { const r = literal(d.song[i.id], div, i.mode); o[i.id] = { notes: r.notes, counts: r.counts, byBar: byBar(r.notes) }; });
+      d.lit[div] = o;
+    }
+    return d.lit[div];
+  }
+  secs() {
+    if (!this._s) {
+      this._s = []; this._nid = 1;
+      this.addSection(5, 12, [[5, 12], [21, 28]], ['drums', 'bass', 'keys'], 'literal', 'Verse', 4, null);
+    }
+    return this._s;
+  }
+  sectionNotes(inst, a, len, starter, div, win) {
+    if (starter === 'empty') return [];
+    const L = this.lit(div)[inst.id].byBar;
+    if (starter === 'simplified') return simplifyRel(inst, L, a, len, this.state.set);
+    const out = [];
+    for (let i = 0; i < len; i++) (L[a + i] || []).forEach(n => { const s = n.s - bs(a); if (win && (s < win[0] - 1e-9 || s >= win[1] - 1e-9)) return; out.push({ s, d: n.d, p: n.p, k: n.k, v: n.v }); });
+    return out;
+  }
+  nextColor() { const used = this._s.map(s => s.color); return SEC_COLORS.find(c => used.indexOf(c) < 0) || SEC_COLORS[this._nid % SEC_COLORS.length]; }
+  addSection(a, b, ranges, insts, starter, name, div, win) {
+    const len = b - a + 1;
+    this._s.forEach(s => { s.ranges = s.ranges.filter(r => !ranges.some(q => !(q[1] < r[0] || q[0] > r[1]))); });
+    this._s = this._s.filter(s => s.ranges.length);
+    const id = String(this._nid++), notes = {};
+    INSTS.forEach(i => { if (insts.indexOf(i.id) >= 0) notes[i.id] = this.sectionNotes(i, a, len, starter, div, win); });
+    const sec = { id, name, a, len, ranges: ranges.slice().sort((x, y) => x[0] - y[0]), insts, starter, div, notes, color: this.nextColor(), edited: false, bpmText: {} };
+    this._s.push(sec);
+    return sec;
+  }
+  similarFor(a, b) {
+    const key = a + '-' + b;
+    if (this._simKey === key) return this._sim;
+    const d = this.data();
+    if (!d.feat) {
+      const L = this.lit(4); d.feat = {};
+      for (let bar = 1; bar <= BARS; bar++) {
+        const s = new Set();
+        INSTS.forEach(i => (L[i.id].byBar[bar] || []).forEach(n => { if (n.v >= 40) s.add(i.id + ':' + rawKey(n) + '@' + Math.round((n.s - bs(bar)) * 4)); }));
+        d.feat[bar] = s;
+      }
+    }
+    const F = d.feat, len = b - a + 1, cands = [];
+    for (let s = 1; s + len - 1 <= BARS; s++) {
+      if (s + len - 1 >= a && s <= b) continue;
+      let t = 0; for (let i = 0; i < len; i++) t += jac(F[a + i], F[s + i]);
+      cands.push({ s, e: s + len - 1, score: t / len });
+    }
+    cands.sort((x, y) => y.score - x.score);
+    const picked = [];
+    for (const c of cands) {
+      if (c.score < 0.5) break;
+      if (picked.some(p => !(c.e < p.s || c.s > p.e))) continue;
+      picked.push(c); if (picked.length >= 3) break;
+    }
+    picked.sort((x, y) => x.s - y.s);
+    this._simKey = key; this._sim = picked;
+    return picked;
+  }
+  computeMatch(secs, o) {
+    const d = this.data(), res = { inst: {}, rangeJ: {} };
+    INSTS.forEach(inst => {
+      const mineByBar = {}, all = [], covered = {};
+      secs.forEach(s => {
+        if (!s.notes[inst.id]) return;
+        s.ranges.forEach((r, ri) => {
+          for (let b = r[0]; b <= r[1]; b++) covered[b] = { s, ri };
+          const off = bs(r[0]);
+          s.notes[inst.id].forEach(n => {
+            const m = { s: n.s + off, d: n.d, p: n.p, k: n.k, v: n.v, extra: false };
+            const b = barOf(Math.round(m.s * 4) / 4);
+            if (b < r[0] || b > r[1]) return;
+            (mineByBar[b] = mineByBar[b] || []).push(m); all.push(m);
+          });
+        });
+      });
+      const barJ = {}, acc = {};
+      Object.keys(covered).forEach(k => {
+        const b = +k, refs = d.midiQ[inst.id][b] || [], mines = mineByBar[b] || [];
+        const r = matchSets(refs, mines, o);
+        mines.forEach((m, j) => { if (!r.used[j]) m.extra = true; });
+        barJ[b] = r.j;
+        const ck = covered[b].s.id + ':' + covered[b].ri;
+        const a = acc[ck] || (acc[ck] = { m: 0, u: 0 });
+        a.m += r.m; a.u += r.refs + r.mines - r.m;
+      });
+      const rj = {};
+      Object.keys(acc).forEach(k => { rj[k] = acc[k].u ? acc[k].m / acc[k].u : 1; });
+      res.inst[inst.id] = { all, barJ, covered };
+      res.rangeJ[inst.id] = rj;
+    });
+    return res;
+  }
+  lensInfo(sec) {
+    const st = this.state;
+    if (!st.lensOn) return null;
+    if (st.lensMode === 'sec') {
+      if (!sec) return null;
+      const cmp = Math.min(st.cmp, sec.ranges.length - 1), r = sec.ranges[cmp];
+      const n = Math.min(st.set.lensBars, sec.len), maxOff = sec.len - n, off = Math.max(0, Math.min(maxOff, st.lensOff));
+      const a = r[0] + off, b = a + n - 1;
+      return { a: bs(a), b: bs(b + 1), barA: a, barB: b, off, maxOff, n, rel0: off, sec, r };
+    }
+    return { a: bs(st.lensA), b: bs(st.lensB + 1), barA: st.lensA, barB: st.lensB, free: true };
+  }
+  buildLanes(map, lens, div, secs, M, open) {
+    const st = this.state, d = this.data(), LIT = this.lit(div), X = map.X, lensOn = !!lens;
+    const H = lensOn ? { audio: 44, midi: 58, notes: 50, mine: 100, layers: 150 } : { audio: 32, midi: 44, notes: 44, mine: 58, layers: 100 };
+    const vis = () => true;
+    const geo = (n, inst, h, top, minW) => {
+      const l = X(n.s);
+      if (inst.mode === 'drum') {
+        const lh = (h - 6) / 5, t = (top || 0) + 3 + KINDS.indexOf(n.k) * lh;
+        return 'left:' + f2(l) + '%;width:max(' + (minW || 2) + 'px,' + f2(X(n.s + 0.09) - l) + '%);top:' + f2(t) + 'px;height:' + f2(Math.max(2, lh - 1.5)) + 'px';
+      }
+      const rg = inst.hi - inst.lo, nh = Math.max(2, Math.min(lensOn ? 6 : 4, (h - 6) / rg)), t = (top || 0) + 3 + (inst.hi - n.p) / rg * (h - 6 - nh);
+      return 'left:' + f2(l) + '%;width:max(' + (minW || 2) + 'px,' + f2(X(n.s + n.d) - l) + '%);top:' + f2(t) + 'px;height:' + f2(nh) + 'px';
+    };
+    return INSTS.map(inst => {
+      const midi = d.song[inst.id], lit = LIT[inst.id], c = lit.counts, MI = M.inst[inst.id];
+      const isLayers = st.viewMode[inst.id] === 'layers';
+      const mineH = isLayers ? H.layers : H.mine;
+      const gridOn = lens && lens.sec && inst.mode === 'drum' && lens.sec.notes.drums;
+      const inLens = n => lens && n.s >= lens.a - 1e-9 && n.s < lens.b - 1e-9;
+      const midiArr = [], litArr = [], marks = [], layMidi = [], layLit = [];
+      const far = n => (inst.mode !== 'drum' && !inLens(n) ? ';opacity:0' : '');
+      const contour = (notes, pick) => {
+        if (inst.mode === 'drum') return '';
+        const rg = inst.hi - inst.lo, yOf = p => f2(6 + (inst.hi - p) / rg * 88), gs = [];
+        notes.forEach(n => {
+          if (inLens(n)) { gs.push(null); return; }
+          const k = Math.round(n.s * 8), g = gs[gs.length - 1];
+          if (g && g.k === k) { g.p = pick === 'max' ? Math.max(g.p, n.p) : Math.min(g.p, n.p); g.e = Math.max(g.e, n.s + n.d); }
+          else gs.push({ k, s: n.s, e: n.s + n.d, p: n.p });
+        });
+        let d = '', pe = null;
+        gs.forEach(g => {
+          if (!g) { pe = null; return; }
+          const x = f2(X(g.s) * 10);
+          d += (pe == null || g.s - pe > 1.5 ? 'M' + x + ' ' : 'H' + x + 'V') + yOf(g.p) + 'H' + f2(X(g.e) * 10);
+          pe = g.e;
+        });
+        return d;
+      };
+      const pick = inst.mode === 'mono' ? 'min' : 'max';
+      midi.forEach(n => {
+        if (!isLayers) midiArr.push({ st: geo(n, inst, H.midi) + ';opacity:' + f2(0.3 + n.v / 127 * 0.7) + far(n) });
+        else layMidi.push({ st: geo(n, inst, mineH - 10, 0, 3) + (gridOn && inLens(n) ? ';opacity:0' : '') + far(n) });
+      });
+      lit.notes.forEach(n => {
+        const chg = n.moved || n.crossed || n.shortened || n.merged;
+        if (!isLayers) {
+          litArr.push({ st: geo(n, inst, H.notes) + far(n), cls: chg ? 'n-chg' : 'n-lit' });
+          if (n.moved || n.crossed) { const a = Math.min(n.s, n.src); marks.push({ st: 'left:' + f2(X(a)) + '%;width:max(3px,' + f2(X(a + Math.abs(n.s - n.src)) - X(a)) + '%);top:' + (H.notes - 4) + 'px' }); }
+        } else layLit.push({ st: geo(n, inst, mineH - 10, 0, 3) + (gridOn && inLens(n) ? ';opacity:0' : '') + far(n), cls: chg ? 'n-lay-chg' : 'n-lay-lit' });
+      });
+      const PK = this._pick && this._pick.notes[inst.id] ? this._pick.notes[inst.id].map(n => Object.assign({}, n, { s: n.s - 1, extra: false })) : [];
+      const mineAll = MI.all.concat(PK);
+      const mineArr = [];
+      mineAll.forEach(n => { mineArr.push({ st: geo(n, inst, mineH - 12, 4) + (isLayers ? ';height:3px;margin-top:2px' : '') + (gridOn && inLens(n) ? ';opacity:0' : '') + far(n), cls: n.extra ? 'n-extra' : 'n-mine' }); });
+      const blocks = [];
+      secs.forEach(s => {
+        if (!s.notes[inst.id]) return;
+        s.ranges.forEach((r, ri) => {
+          const a = bs(r[0]), e = bs(r[1] + 1), j = M.rangeJ[inst.id][s.id + ':' + ri], isOpen = s.id === open;
+          blocks.push({
+            st: 'left:' + f2(X(a)) + '%;width:' + f2(X(e) - X(a)) + '%;border-color:' + (isOpen ? s.color : hexA(s.color, 0.6)) + ';background:' + hexA(s.color, isOpen ? 0.12 : 0.05) + (isOpen ? ';box-shadow:inset 0 0 0 1px ' + s.color : ''),
+            chipSt: 'background:' + s.color, label: s.name, pct: j == null ? '' : Math.round(j * 100) + '%',
+            aria: 'Open section ' + s.name + ', bars ' + r[0] + ' to ' + r[1], isOpen,
+            open: () => this.openSection(s, ri)
+          });
+        });
+      });
+      if (this._pick && this._pick.notes[inst.id]) blocks.push({
+        st: 'left:' + f2(X(-1)) + '%;width:' + f2(X(0) - X(-1)) + '%;border-color:#C9CDD4;background:rgba(201,205,212,.08)',
+        chipSt: 'background:#C9CDD4', label: 'P', pct: '', isOpen: false, aria: 'Pickup section, 1 beat before bar 1',
+        open: () => this.setState({ selA: -1, selB: 0, selInst: null, starterPick: null })
+      });
+      const gaps = []; let g0 = null;
+      if (!(this._pick && this._pick.notes[inst.id])) gaps.push({ st: 'left:calc(' + f2(X(-1)) + '% + 1px);width:calc(' + f2(X(0) - X(-1)) + '% - 2px)', showLabel: false });
+      for (let b = 1; b <= BARS + 1; b++) {
+        if (b <= BARS && !MI.covered[b]) { if (g0 == null) g0 = b; continue; }
+        if (g0 != null) { const w = X(bs(b)) - X(bs(g0)); gaps.push({ st: 'left:calc(' + f2(X(bs(g0))) + '% + 2px);width:calc(' + f2(w) + '% - 4px)', showLabel: w > 6 }); g0 = null; }
+      }
+      const strip = [];
+      Object.keys(MI.barJ).forEach(k => {
+        const b = +k, j = MI.barJ[b], col = j >= 0.9 ? 'rgba(241,230,204,.55)' : (j >= 0.7 ? '#E8B04B' : '#FF8A5B');
+        strip.push({ st: 'left:calc(' + f2(X(bs(b))) + '% + 1px);width:calc(' + f2(X(bs(b + 1)) - X(bs(b))) + '% - 2px);background:' + col, title: 'Bar ' + b + ': ' + Math.round(j * 100) + '% match' });
+      });
+      let grid = [];
+      if (gridOn) {
+        const sec = lens.sec, sdiv = sec.div, SL = this.lit(sdiv), steps = 4 * sdiv, nb = lens.barB - lens.barA + 1;
+        const refSet = {}, mineSet = {};
+        for (let bi = 0; bi < nb; bi++) {
+          const abs = lens.barA + bi;
+          (SL.drums.byBar[abs] || []).forEach(n => { const stp = Math.round((n.s - bs(abs)) * sdiv); if (stp >= 0 && stp < steps) refSet[n.k + ':' + (bi * steps + stp)] = true; });
+        }
+        sec.notes.drums.forEach(n => { const q = n.s * sdiv, stp = Math.round(q), rb = Math.floor(stp / steps) - lens.rel0; if (rb >= 0 && rb < nb && Math.abs(q - stp) < 0.2) mineSet[n.k + ':' + (rb * steps + (stp % steps))] = true; });
+        const top0 = isLayers ? 8 : 6, lh = (mineH - top0 - 10) / 5;
+        KINDS.forEach((k, ki) => {
+          for (let i = 0; i < nb * steps; i++) {
+            const beat = lens.a + i / sdiv, l = X(beat), w = X(beat + 1 / sdiv) - l;
+            const key = k + ':' + i, a = !!refSet[key], b = !!mineSet[key];
+            const relBar = lens.rel0 + Math.floor(i / steps), stp = i % steps;
+            grid.push({
+              st: 'left:calc(' + f2(l) + '% + 1px);width:calc(' + f2(w) + '% - 2px);top:' + f2(top0 + ki * lh) + 'px;height:' + f2(lh - 2) + 'px',
+              cls: (stp % sdiv === 0 ? 'c-beat ' : '') + (a && b ? 'c-both' : (b ? 'c-mine' : (a ? 'c-ref' : ''))),
+              aria: KIND_LABEL[k] + ', bar ' + (lens.barA + Math.floor(i / steps)) + ', step ' + (stp + 1) + ': ' + (a && b ? 'in both' : (b ? 'only in yours' : (a ? 'only in the recording' : 'empty'))),
+              toggle: () => {
+                const s = relBar * BPB + stp / sdiv, arr = sec.notes.drums, hit = arr.filter(n => n.k === k && Math.abs(n.s - s) < 0.5 / sdiv);
+                sec.notes.drums = hit.length ? arr.filter(n => hit.indexOf(n) < 0) : arr.concat([{ s, d: 1 / sdiv, k, v: 90 }]);
+                sec.edited = true; this.bump();
+              }
+            });
+          }
+        });
+      }
+      const amp = d.wave[inst.id], step = 0.125, top = [], bot = [];
+      let lastX = -1, peak = 0;
+      for (let i = 0; i < amp.length; i++) {
+        const x = X(-1 + i * step) * 10; peak = Math.max(peak, amp[i]);
+        if (x - lastX < 0.8 && i < amp.length - 1) continue;
+        top.push(f2(x) + ' ' + f2(50 - peak * 46)); bot.push(f2(x) + ' ' + f2(50 + peak * 46)); lastX = x; peak = 0;
+      }
+      const wave = 'M' + top.join(' L') + ' L' + bot.reverse().join(' L') + ' Z';
+      const parts = [];
+      if (c.moved) parts.push(c.moved + ' moved');
+      if (c.crossed) parts.push(c.crossed + ' across a bar line');
+      if (c.shortened) parts.push(c.shortened + ' shortened');
+      if (c.merged) parts.push(c.merged + ' merged');
+      const hear = {};
+      ROWS.forEach(r => {
+        const on = !!st.hear[inst.id][r];
+        hear[r] = { on, aria: (on ? 'Stop hearing ' : 'Hear ') + inst.name + ' ' + ROW_NAME[r], toggle: () => { const h = JSON.parse(JSON.stringify(this.state.hear)); h[inst.id][r] = !h[inst.id][r]; this.setState({ hear: h }); } };
+      });
+      return {
+        id: inst.id, name: inst.name, stem: inst.stem, quiet: !!inst.quiet,
+        midiCount: midi.length + ' notes',
+        counts: parts.length ? 'Conversion changed: ' + parts.join(' · ') : 'Conversion changed nothing',
+        isRows: !isLayers, isLayers, viewAria: inst.name + ': rows or layers',
+        toRows: () => this.setState({ viewMode: Object.assign({}, this.state.viewMode, { [inst.id]: 'rows' }) }),
+        toLayers: () => this.setState({ viewMode: Object.assign({}, this.state.viewMode, { [inst.id]: 'layers' }) }),
+        sound: st.sounds[inst.id], soundAria: inst.name + ' sound',
+        sounds: inst.sounds.map(o => ({ value: o[0], label: o[1] })),
+        setSound: e => { this.setState({ sounds: Object.assign({}, this.state.sounds, { [inst.id]: e.target.value }), dirty: true, copied: false }); },
+        showAudio: !!st.set.audio, wave, hear,
+        hAudio: 'height:' + H.audio + 'px', hMidi: 'height:' + H.midi + 'px', hNotes: 'height:' + H.notes + 'px', hMine: 'height:' + H.mine + 'px', hLayers: 'height:' + H.layers + 'px',
+        cMidi: contour(midi, pick), cLit: contour(lit.notes, pick), cMine: contour(mineAll.slice().sort((a, b) => a.s - b.s), pick),
+        midi: midiArr, lit: litArr, marks, mine: isLayers ? [] : mineArr, layMine: isLayers ? mineArr : [], layMidi, layLit,
+        blocks, gaps, strip, grid,
+        showSel: false
+      };
+    });
+  }
+  shiftLens(L, dBars) {
+    if (!L) return;
+    if (L.sec) this.setState({ lensOff: Math.max(0, Math.min(L.maxOff, L.off + dBars)) });
+    else { const n = L.barB - L.barA + 1, a = Math.max(1, Math.min(BARS - n + 1, L.barA + dBars)); this.setState({ lensA: a, lensB: a + n - 1 }); }
+  }
+  openSection(s, ri) { this.setState({ open: s.id, cmp: ri || 0, lensOff: 0, lensOn: true, lensMode: 'sec' }); }
+  beatFromEvent(e) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - rect.left - 150) / (rect.width - 150) * 100;
+    return Math.max(-1, Math.min(191.999, this._map.inv(Math.max(0, Math.min(100, x)))));
+  }
+  bump(extra) { this.setState(Object.assign({ secVer: this.state.secVer + 1, dirty: true, copied: false }, extra || {})); }
+  stopPlay() { if (this._pt) clearTimeout(this._pt); this._pt = null; }
+  componentWillUnmount() { this.stopPlay(); }
+
+  renderVals() {
+    const st = this.state, set = st.set, d = this.data(), secs = this.secs(), div = st.div;
+    const sec = secs.find(s => s.id === st.open) || null;
+    const lens = this.lensInfo(sec);
+    if (lens) this._lastLens = lens;
+    const LL = lens || this._lastLens;
+    const map = makeMap(lens); this._map = map;
+    const X = map.X;
+    const mo = { tol: set.tol, quiet: set.quiet, pitch: set.pitch };
+    const mk = [st.secVer, secs.length, set.tol, set.quiet, set.pitch].join('|');
+    if (this._mk !== mk) { this._mk = mk; this._match = this.computeMatch(secs, mo); }
+    const M = this._match;
+    const lk = [div, st.secVer, st.open, secs.length, lens ? lens.a + ':' + lens.b + ':' + (lens.sec ? lens.sec.id : '') : '', JSON.stringify(st.viewMode), JSON.stringify(st.hear), JSON.stringify(st.sounds), mk, set.audio].join('|');
+    if (this._lk !== lk) { this._lk = lk; this._lanes = this.buildLanes(map, lens, div, secs, M, st.open); }
+    const gridLabel = GRIDS.find(g => g.div === div).label;
+
+    const barLines = [], rulerBars = [], beatLines = [];
+    const secStarts = {}; secs.forEach(s => s.ranges.forEach(r => { secStarts[r[0]] = true; }));
+    for (let b = 1; b <= BARS + 1; b++) {
+      const x = X(bs(b));
+      barLines.push({ st: 'left:' + f2(x) + '%;background:' + (b % 4 === 1 ? '#2E3440' : '#22262E') });
+      if (b <= BARS) {
+        const w = X(bs(b + 1)) - x;
+        const show = w >= 1.7 || (w >= 0.9 && b % 2 === 1) || b % 4 === 1 || secStarts[b];
+        rulerBars.push({ st: 'left:' + f2(x) + '%;width:' + f2(Math.max(w, 1.6)) + '%;color:' + (secStarts[b] ? '#ECEAE4' : (b > MAP_END ? '#FFB596' : '#858C98')) + ';font-weight:' + (secStarts[b] || (lens && b >= lens.barA && b <= lens.barB) ? 600 : 400), label: show ? String(b) : '' });
+      }
+    }
+    if (lens) for (let x = lens.a; x <= lens.b; x++) if (x % BPB !== 0) beatLines.push({ st: 'left:' + f2(X(x)) + '%' });
+
+    const songP = x => (x + 1) / SPAN * 100;
+    const songChips = [], songGaps = [];
+    secs.forEach(s => s.ranges.forEach((r, ri) => songChips.push({
+      st: 'left:calc(' + f2(songP(bs(r[0]))) + '% + 1px);width:calc(' + f2((r[1] - r[0] + 1) * 4 / SPAN * 100) + '% - 2px);background:' + s.color + (s.id === st.open ? ';box-shadow:inset 0 0 0 2px #0F1115' : ''),
+      label: s.name, aria: 'Open ' + s.name + ' at bars ' + r[0] + ' to ' + r[1], open: () => this.openSection(s, ri)
+    })));
+    const anyCov = {}; secs.forEach(s => s.ranges.forEach(r => { for (let b = r[0]; b <= r[1]; b++) anyCov[b] = true; }));
+    let gs = null, unarranged = 0;
+    for (let b = 1; b <= BARS + 1; b++) {
+      if (b <= BARS && !anyCov[b]) { unarranged++; if (gs == null) gs = b; continue; }
+      if (gs != null) { songGaps.push({ st: 'left:calc(' + f2(songP(bs(gs))) + '% + 1px);width:calc(' + f2((b - gs) * 4 / SPAN * 100) + '% - 2px)' }); gs = null; }
+    }
+
+    const hasSel = st.selA != null;
+    const selBarA = hasSel ? barOf(st.selA) : 0, selBarB = hasSel ? barOf(st.selB - 0.001) : 0;
+    const nBars = hasSel ? selBarB - selBarA + 1 : 0;
+    const isPick = hasSel && st.selA === -1;
+    const wholeBars = hasSel && !isPick && st.selA === bs(selBarA) && st.selB === bs(selBarB + 1);
+    const cands = hasSel && !isPick && !st.drag ? this.similarFor(selBarA, selBarB) : [];
+    const targets = hasSel ? [[selBarA, selBarB]].concat(wholeBars ? cands.filter(c => !st.alsoOff[c.s]).map(c => [c.s, c.e]) : []) : [];
+    const overl = hasSel ? secs.filter(s => s.ranges.some(r => targets.some(q => !(q[1] < r[0] || q[0] > r[1])))).map(s => s.name) : [];
+    const scopeOn = st.selInst ? [st.selInst] : INSTS.filter(i => st.scope[i.id]).map(i => i.id);
+    const starter = st.starterPick || set.starter;
+    const beatName = x => { const b = barOf(x); return 'bar ' + b + ', beat ' + (Math.round((x - bs(b)) * 100) / 100 + 1); };
+    const selStr = hasSel ? 'left:' + f2(X(st.selA)) + '%;width:' + f2(X(st.selB) - X(st.selA)) + '%' : '', gridSubStr = 'literal · ' + gridLabel;
+    const lanes = this._lanes.map(l => (hasSel && (!st.selInst || st.selInst === l.id)) ? Object.assign({}, l, { showSel: true, selSt: selStr, gridSub: gridSubStr }) : Object.assign({}, l, { gridSub: gridSubStr }));
+
+    let insp = {};
+    if (sec) {
+      const cmp = Math.min(st.cmp, sec.ranges.length - 1), r = sec.ranges[cmp], off = bs(r[0]);
+      const statRows = sec.insts.map(id => {
+        const inst = INSTS.find(i => i.id === id);
+        const refRel = d.song[id].filter(n => { const q = Math.round(n.s * 4) / 4; return q >= off && q < off + sec.len * 4; }).map(n => Object.assign({}, n, { s: n.s - off }));
+        const ms = matchSets(refRel, sec.notes[id] || [], mo);
+        return { name: inst.name, match: Math.round(ms.j * 100) + '%', both: ms.m, refOnly: ms.refs - ms.m, mineOnly: ms.mines - ms.m };
+      });
+      const code = this.sectionCode(sec, slug(sec.name), sec.notes);
+      insp = {
+        secName: sec.name, secDot: 'background:' + sec.color,
+        secSrc: 'From bars ' + sec.a + '–' + (sec.a + sec.len - 1) + ', ' + STARTERS.find(x => x.id === sec.starter).label.toLowerCase() + (sec.edited ? ', edited' : ''),
+        showOpenLens: !(lens && lens.sec === sec),
+        openLens: () => this.setState({ lensOn: true, lensMode: 'sec' }),
+        rename: e => { sec.name = e.target.value; this.bump(); },
+        replaces: STARTERS.map(x => ({ label: x.label, pressed: sec.starter === x.id && !sec.edited, pick: () => { sec.starter = x.id; sec.div = this.state.div; sec.edited = false; INSTS.forEach(i => { if (sec.insts.indexOf(i.id) >= 0) sec.notes[i.id] = this.sectionNotes(i, sec.a, sec.len, x.id, sec.div); }); this.bump(); } })),
+        deleteSec: () => { this._s = this._s.filter(s => s !== sec); this.bump({ open: null, lensOn: this.state.lensMode === 'sec' ? false : this.state.lensOn }); },
+        closeSec: () => this.setState({ open: null, lensOn: this.state.lensMode === 'sec' ? false : this.state.lensOn }),
+        rangeChips: sec.ranges.map((q, qi) => {
+          let m = 0, u = 0;
+          sec.insts.forEach(id => { const j = M.rangeJ[id][sec.id + ':' + qi]; if (j != null) { m += j; u++; } });
+          return {
+            label: 'Bars ' + q[0] + '–' + q[1] + (q[0] === sec.a ? ' · source' : ''), pct: u ? Math.round(m / u * 100) + '%' : '',
+            pressed: qi === cmp, pick: () => this.setState({ cmp: qi, lensOff: 0, lensOn: true, lensMode: 'sec' }),
+            canSplit: sec.ranges.length > 1,
+            splitAria: 'Make bars ' + q[0] + ' to ' + q[1] + ' their own section', unlinkAria: 'Stop using this section at bars ' + q[0] + ' to ' + q[1],
+            split: () => {
+              sec.ranges = sec.ranges.filter((_, k) => k !== qi);
+              const ns = { id: String(this._nid++), name: sec.name + ' at ' + q[0], a: q[0], len: sec.len, ranges: [q], insts: sec.insts.slice(), starter: sec.starter, div: sec.div, notes: JSON.parse(JSON.stringify(sec.notes)), color: this.nextColor(), edited: sec.edited, bpmText: {} };
+              this._s.push(ns); this.bump({ open: ns.id, cmp: 0, lensOff: 0, lensOn: true, lensMode: 'sec' });
+            },
+            unlink: () => { sec.ranges = sec.ranges.filter((_, k) => k !== qi); this.bump({ cmp: 0, lensOff: 0 }); }
+          };
+        }),
+        statTitle: 'Compared with bars ' + r[0] + '–' + r[1],
+        statRows,
+        tempoRows: sec.ranges.map(q => {
+          const band = Math.round(avgBpm(q[0], q[1])), txt = sec.bpmText[q[0]];
+          return {
+            label: 'Bars ' + q[0] + '–' + q[1], value: txt != null ? txt : String(band), aria: 'Tempo for bars ' + q[0] + ' to ' + q[1] + ', in beats per minute',
+            note: txt != null && parseFloat(txt) !== band ? '(band: ' + band + ')' : '(band\'s average)',
+            set: e => { sec.bpmText[q[0]] = e.target.value; this.bump(); }
+          };
+        }),
+        statNote: 'In both: same ' + (set.pitch === 'class' ? 'note name, any octave,' : 'pitch') + ' or drum, starting within ' + set.tol + ' beats.' + (set.quiet === 'ignore' ? ' Quiet notes in the recording are left out.' : '') + ' Change this in Settings.',
+        secCode: code, secChars: code.length.toLocaleString() + ' characters'
+      };
+    }
+
+    const prog = this.programCode(secs);
+    let bmin = 999, bmax = 0; for (let b = 0; b <= BARS; b++) { bmin = Math.min(bmin, barBpm(b)); bmax = Math.max(bmax, barBpm(b)); }
+    const playSegs = [];
+    if (st.playing) {
+      for (let b = 0; b <= BARS; b++) {
+        const s0 = b === 0 ? -1 : bs(b), s1 = b === 0 ? 0 : bs(b + 1);
+        if (s1 <= st.playFrom || s0 >= st.playTo) continue;
+        const segDur = secsBetween(s0, s1), delay = s0 >= st.playFrom ? secsBetween(st.playFrom, s0) : -secsBetween(s0, st.playFrom);
+        playSegs.push({ box: 'left:' + f2(X(s0)) + '%;width:' + f2(X(s1) - X(s0)) + '%', anim: 'animation:gn-sweep ' + f2(segDur) + 's linear ' + f2(delay) + 's' });
+      }
+    }
+    const hearCount = INSTS.reduce((t, i) => t + ROWS.filter(r => st.hear[i.id][r] && (r !== 'audio' || set.audio)).length, 0);
+    const presetIs = p => INSTS.every(i => ROWS.every(r => !!st.hear[i.id][r] === !!p[r]));
+    const PRESETS = [['Recording', { audio: true }], ['Mine', { mine: true }], ['Both', { audio: true, mine: true }]];
+    const sv = (k, v) => () => {
+      const ns = Object.assign({}, this.state.set, { [k]: v }), extra = { set: ns };
+      if (k === 'defView') extra.viewMode = { drums: v, bass: v, keys: v };
+      if (k === 'scope' || k === 'snap') Object.assign(extra, { selA: null, selB: null, selInst: null });
+      this.setState(extra);
+    };
+    const sumParts = [set.scope === 'band' ? 'Select: whole band' : 'Select: one instrument', 'snap to ' + (set.snap === 'bar' ? 'bars' : 'beats'), 'match within ' + set.tol + ' beat'];
+
+    return Object.assign({
+      grids: GRIDS.map(g => ({ label: g.label, pressed: g.div === div, pick: () => this.setState({ div: g.div }) })),
+      gridSub: 'literal · ' + gridLabel,
+      presets: PRESETS.map(p => ({ label: p[0], pressed: presetIs(p[1]), pick: () => { const h = {}; INSTS.forEach(i => { h[i.id] = { audio: !!p[1].audio, midi: !!p[1].midi, notes: !!p[1].notes, mine: !!p[1].mine }; }); this.setState({ hear: h }); } })),
+      playing: st.playing, notPlaying: !st.playing,
+      playLabel: st.playing ? 'Stop' : ('Play ' + (hasSel ? 'bars ' + selBarA + '–' + selBarB : (lens ? 'the lens' : 'all')) + ' · ' + hearCount + (hearCount === 1 ? ' row' : ' rows')),
+      playAria: st.playing ? 'Stop playback' : 'Play the rows with a lit speaker',
+      togglePlay: () => {
+        if (this.state.playing) { this.stopPlay(); return this.setState({ playing: false }); }
+        const L = this.lensInfo((this._s || []).find(s => s.id === this.state.open));
+        const from = this.state.selA != null ? this.state.selA : (L ? L.a : 0);
+        const to = this.state.selA != null ? this.state.selB : (L ? L.b : 192);
+        this.stopPlay();
+        this._pt = setTimeout(() => this.setState({ playing: false }), Math.max(200, secsBetween(from, to) * 1000));
+        this.setState({ playing: true, playFrom: from, playTo: to });
+      },
+      playSegs,
+      tempoLine: 'Playback follows the band: ' + bmin + '–' + bmax + ' BPM, song average ' + Math.round(SONG_BPM),
+      dirty: st.dirty,
+      settingsSummary: sumParts.join(' · '),
+      openSettings: () => this.setState({ settingsOpen: true }),
+      closeSettings: () => this.setState({ settingsOpen: false }),
+      settingsOpen: st.settingsOpen,
+      settingGroups: SETTINGS.map(g => ({ group: g.group, items: g.items.map(it => ({ label: it.label, help: it.help || '', hasHelp: !!it.help, opts: it.opts.map(o => ({ label: o[1], pressed: set[it.key] === o[0], pick: sv(it.key, o[0]) })) })) })),
+
+      openCopy: () => this.setState({ copyOpen: true, copied: false, copyErr: false }),
+      closeCopy: () => this.setState({ copyOpen: false }),
+      copyOpen: st.copyOpen,
+      copyUneditedOpts: [['asmade', 'As made'], ['literal', 'Literal'], ['simplified', 'Simplified']].map(o => ({ label: o[1], pressed: st.copyUnedited === o[0], pick: () => this.setState({ copyUnedited: o[0], copied: false }) })),
+      uneditedNote: secs.filter(s => !s.edited).length + ' of ' + secs.length + ' sections are unedited. Sections you have edited are always written as they are.',
+      copyGapOpts: [['silence', 'Silence'], ['literal', 'Literal'], ['simplified', 'Simplified']].map(o => ({ label: o[1], pressed: st.copyGaps === o[0], pick: () => this.setState({ copyGaps: o[0], copied: false }) })),
+      gapsSilent: unarranged > 0 && st.copyGaps === 'silence',
+      unarrangedText: unarranged + ' of ' + BARS + ' bars will be silent, written as [n, silence] so the song keeps its length.',
+      copyLabel: st.copied ? 'Copied' : (st.copyErr ? 'Copy blocked here: select the text below' : 'Copy to clipboard'),
+      doCopy: () => {
+        const ok = () => this.setState({ copied: true, dirty: false, copyErr: false });
+        try { navigator.clipboard.writeText(prog).then(ok, () => this.setState({ copyErr: true })); } catch (e) { this.setState({ copyErr: true }); }
+      },
+      progCode: prog, progChars: prog.length.toLocaleString() + ' characters',
+
+      fromBar: st.fromBar, toBar: st.toBar,
+      setFrom: e => this.setState({ fromBar: e.target.value }),
+      setTo: e => this.setState({ toBar: e.target.value }),
+      selectTyped: () => {
+        let a = parseInt(this.state.fromBar, 10), b = parseInt(this.state.toBar || this.state.fromBar, 10);
+        if (!(a >= 1 && a <= BARS)) return; if (!(b >= 1 && b <= BARS)) b = a;
+        this.setState({ selA: bs(Math.min(a, b)), selB: bs(Math.max(a, b) + 1), selInst: null, alsoOff: {}, starterPick: null });
+      },
+
+      lensOn: !!lens, lensOff: !lens, tlClass: st.lensDrag ? 'gn-dragging' : '',
+      lensSongSt: (LL ? 'left:' + f2(songP(LL.a)) + '%;width:' + f2((LL.b - LL.a) / SPAN * 100) + '%' : 'left:0;width:0') + (lens ? ';opacity:1;visibility:visible' : ';opacity:0;visibility:hidden'),
+      lensHeadSt: (LL ? 'left:' + f2(X(LL.a)) + '%;width:' + f2(X(LL.b) - X(LL.a)) + '%' : 'left:0;width:100%') + (lens ? ';opacity:1;visibility:visible' : ';opacity:0;visibility:hidden'),
+      lensBgSt: lens ? 'left:' + f2(X(lens.a)) + '%;width:' + f2(X(lens.b) - X(lens.a)) + '%;opacity:1' : 'left:0;width:100%;opacity:0',
+      blurLeftSt: lens ? 'left:0;width:' + f2(X(lens.a)) + '%;opacity:1' : 'left:0;width:0;opacity:0',
+      blurRightSt: lens ? 'left:' + f2(X(lens.b)) + '%;width:' + f2(100 - X(lens.b)) + '%;opacity:1' : 'left:100%;width:0;opacity:0',
+      lensTitle: LL ? (LL.sec ? LL.sec.name + ' · bars ' + LL.barA + '–' + LL.barB + (LL.maxOff > 0 ? ' of ' + LL.r[0] + '–' + LL.r[1] : '') : 'Bars ' + LL.barA + '–' + LL.barB) : '',
+      lensNoPrev: !lens || (lens.sec ? lens.off <= 0 : lens.barA <= 1),
+      lensNoNext: !lens || (lens.sec ? lens.off >= lens.maxOff : lens.barB >= BARS),
+      lensPrev: () => this.shiftLens(lens, -(lens ? (lens.sec ? lens.n : lens.barB - lens.barA + 1) : 0)),
+      lensNext: () => this.shiftLens(lens, lens ? (lens.sec ? lens.n : lens.barB - lens.barA + 1) : 0),
+      lensDown: e => {
+        if (!lens || e.button !== 0 || (e.target.closest && e.target.closest('button'))) return;
+        const inSong = e.currentTarget.parentElement.offsetHeight < 34;
+        const w = e.currentTarget.parentElement.getBoundingClientRect().width;
+        const bpp = inSong ? SPAN / 100 : ((lens.a + 1) + (192 - lens.b)) / (100 - LENS_F);
+        try { e.currentTarget.setPointerCapture(e.pointerId); } catch (x) {}
+        this._ld = { x0: e.clientX, w, bpp, lens, moved: 0 };
+        this.setState({ lensDrag: true });
+        e.preventDefault();
+      },
+      lensMove: e => {
+        const g = this._ld; if (!g) return;
+        const dBars = Math.round((e.clientX - g.x0) / g.w * 100 * g.bpp / BPB);
+        if (dBars !== g.moved) { g.moved = dBars; this.shiftLens(g.lens, dBars); }
+      },
+      lensUp: () => { if (this._ld) { this._ld = null; this.setState({ lensDrag: false }); } },
+      lensClose: () => { this.stopPlay(); this.setState({ lensOn: false, playing: false }); },
+
+      songChips, songGaps, barLines, rulerBars, beatLines,
+      pickupSt: 'left:0;width:' + f2(X(0)) + '%',
+      showMapEnd: true, mapEndSt: 'left:' + f2(X(bs(MAP_END + 1))) + '%',
+      hasSel, selSt: hasSel ? 'left:' + f2(X(st.selA)) + '%;width:' + f2(X(st.selB) - X(st.selA)) + '%' : '',
+      lanes,
+      helpLine: 'The thin column before bar 1 is the pickup: drag in it to arrange it as its own section. ' + (set.scope === 'band' ? 'Drag across any row to select bars for the whole band.' : 'Drag inside one instrument to select bars for that instrument only.') + ' Click a section in a Mine row to open it in the lens. The speaker beside each row decides what Play plays.',
+
+      down: e => {
+        if (e.button !== 0) return;
+        if (e.target.closest && e.target.closest('button,input,a,select')) return;
+        const instEl = e.target.closest ? e.target.closest('[data-inst]') : null;
+        const instId = instEl ? instEl.getAttribute('data-inst') : null;
+        if (this.state.set.scope === 'inst' && !instId) return;
+        const beat = this.beatFromEvent(e);
+        try { e.currentTarget.setPointerCapture(e.pointerId); } catch (x) {}
+        if (beat < 0) { this.setState({ drag: true, anchor: -1, selA: -1, selB: 0, selInst: null, alsoOff: {}, starterPick: null }); e.preventDefault(); return; }
+        const snapBar = this.state.set.snap === 'bar';
+        const a = snapBar ? bs(barOf(beat)) : Math.floor(beat), b = snapBar ? a + BPB : a + 1;
+        this.setState({ drag: true, anchor: beat, selA: a, selB: b, selInst: this.state.set.scope === 'inst' ? instId : null, alsoOff: {}, starterPick: null });
+        e.preventDefault();
+      },
+      move: e => {
+        if (!this.state.drag) return;
+        if (this.state.anchor < 0) return;
+        const beat = Math.max(0, this.beatFromEvent(e)), an = this.state.anchor, lo = Math.min(an, beat), hi = Math.max(an, beat);
+        const snapBar = this.state.set.snap === 'bar';
+        const a = snapBar ? bs(barOf(lo)) : Math.floor(lo), b = snapBar ? bs(barOf(hi) + 1) : Math.floor(hi) + 1;
+        if (a !== this.state.selA || b !== this.state.selB) this.setState({ selA: a, selB: b });
+      },
+      up: () => { if (this.state.drag) this.setState({ drag: false, fromBar: String(barOf(this.state.selA)), toBar: String(barOf(this.state.selB - 0.001)) }); },
+
+      selLabel: !hasSel ? '' : isPick ? 'Pickup' : (wholeBars ? (nBars > 1 ? 'Bars ' + selBarA + '–' + selBarB : 'Bar ' + selBarA) : beatName(st.selA) + ' to ' + beatName(st.selB - 1)),
+      selInfo: !hasSel ? '' : isPick ? 'Bar 0, one beat before bar 1. It becomes its own short section, played first, so the section at bar 1 keeps a clean length.' : (wholeBars ? nBars + (nBars === 1 ? ' bar' : ' bars') : 'Makes a ' + nBars + '-bar section (bars ' + selBarA + '–' + selBarB + ') holding only the notes inside these beats.') + (st.selInst ? ' · ' + INSTS.find(i => i.id === st.selInst).name + ' only' : ''),
+      scopes: INSTS.map(i => ({ label: i.name, pressed: st.selInst ? st.selInst === i.id : !!st.scope[i.id], locked: !!st.selInst, toggle: () => this.setState({ scope: Object.assign({}, this.state.scope, { [i.id]: !this.state.scope[i.id] }) }) })),
+      starters: STARTERS.map(x => ({ label: x.label, pressed: starter === x.id, pick: () => this.setState({ starterPick: x.id }) })),
+      alsoTitle: isPick ? 'A pickup plays once, so no other places are offered' : st.drag ? 'Looking for the same music…' : (!wholeBars ? 'Matching places are offered for whole-bar selections' : (cands.length ? 'The same music also plays at' : 'No other bars look like these')),
+      also: wholeBars ? cands.map(c => ({ label: 'Bars ' + c.s + '–' + c.e, pct: Math.round(c.score * 100) + '% alike', pressed: !st.alsoOff[c.s], toggle: () => this.setState({ alsoOff: Object.assign({}, this.state.alsoOff, { [c.s]: !this.state.alsoOff[c.s] }) }) })) : [],
+      overlapWarn: overl.length > 0 && !isPick,
+      makeLabel: isPick ? (this._pick ? 'Replace pickup section' : 'Make pickup section') : 'Make section',
+      canRemovePick: isPick && !!this._pick, canLook: !isPick,
+      removePick: () => { this._pick = null; this.bump({ selA: null, selB: null }); },
+      overlapText: overl.length ? 'Some of these bars already belong to ' + overl.join(', ') + '. Making this section takes those places over.' : '',
+      cantMake: !scopeOn.length,
+      clearSel: () => this.setState({ selA: null, selB: null, selInst: null }),
+      lookCloser: () => { this.stopPlay(); this.setState({ lensOn: true, lensMode: 'free', lensA: selBarA, lensB: Math.min(BARS, Math.max(selBarB, selBarA)), playing: false }); },
+      make: () => {
+        if (!scopeOn.length) return;
+        if (isPick) {
+          const notes = {};
+          INSTS.forEach(i => { if (scopeOn.indexOf(i.id) >= 0) notes[i.id] = starter === 'empty' ? [] : this.pickupNotes(i, this.state.div); });
+          this._pick = { notes, starter };
+          return this.bump({ selA: null, selB: null, selInst: null });
+        }
+        const nameFromForm = (FORM.find(f => f.a === selBarA && f.b === selBarB) || {}).n;
+        const win = wholeBars ? null : [st.selA - bs(selBarA), st.selB - bs(selBarA)];
+        const s2 = this.addSection(selBarA, selBarB, targets, scopeOn, starter, nameFromForm ? nameFromForm + ' (guess)' : 'Bars ' + selBarA + '–' + selBarB, div, win);
+        this.bump({ selA: null, selB: null, selInst: null, open: s2.id, cmp: 0, lensOff: 0, lensOn: true, lensMode: 'sec' });
+      },
+
+      hasOpen: !!sec, noOpenNoSel: !sec && !hasSel,
+      tempoRows: [], secName: '', secDot: '', secSrc: '', replaces: [], rangeChips: [], statRows: [], statTitle: '', statNote: '', showOpenLens: false,
+      secCode: '', secChars: ''
+    }, insp);
+  }
+
+  pickupNotes(inst, div) {
+    return this.lit(div)[inst.id].notes.filter(n => n.s >= -1 - 1e-9 && n.s < -1e-9).map(n => ({ s: n.s + 1, d: n.d, p: n.p, k: n.k, v: n.v }));
+  }
+  placeBpm(sec, q) { const t = sec && sec.bpmText ? parseFloat(sec.bpmText[q[0]]) : NaN; return t >= 40 && t <= 300 ? t : avgBpm(q[0], q[1]); }
+  formNotes(sec, form) {
+    if (form === 'asmade' || sec.edited) return sec.notes;
+    const o = {};
+    INSTS.forEach(i => { if (sec.insts.indexOf(i.id) >= 0) o[i.id] = this.sectionNotes(i, sec.a, sec.len, form, sec.div); });
+    return o;
+  }
+  sectionCode(sec, v, notes) {
+    const meta = { name: sec.name, source: 'song-3/notes.json', from: [sec.a, sec.a + sec.len - 1], bars: sec.ranges };
+    const body = sec.insts.map(id => {
+      const inst = INSTS.find(i => i.id === id);
+      return '  /*@odm-pattern {"stem":"' + inst.id + '"}*/\n  ' + instCode(inst, notes[id], sec.len, sec.div, this.state.sounds[id]);
+    });
+    return '/*@odm-part ' + JSON.stringify(meta) + '*/\nconst ' + v + ' = ' + (body.length ? 'stack(\n' + body.join(',\n') + '\n)' : 'silence') + '\n';
+  }
+  programCode(secs) {
+    const st = this.state, used = {}, names = {}, BASE = Math.round(SONG_BPM);
+    secs.forEach(s => { const v = slug(s.name); let k = v, n = 2; while (used[k]) k = v + (n++); used[k] = 1; names[s.id] = k; });
+    const entry = (bars, v, bpm, note) => {
+      const f = BASE / bpm, slow = Math.abs(f - 1) > 0.0005;
+      return '  [' + f2(bars * f) + ', ' + v + (slow && v !== 'silence' ? '.slow(' + (Math.round(f * 10000) / 10000) + ')' : '') + '], // ' + note + ' · ' + Math.round(bpm) + ' BPM';
+    };
+    let out = '// Ghost Notes · song 3 (invented notes for this mockup)\n// One bar is one cycle. setcpm is the song average; each place below\n// plays at its own tempo by stretching its cycles (to check in Strudel 1.2.6).\nsetcpm(' + BASE + '/4)\n\n';
+    const segs = [];
+    let pk = this._pick ? this._pick.notes : null;
+    if (!pk && st.copyGaps !== 'silence') { pk = {}; INSTS.forEach(i => { pk[i.id] = this.pickupNotes(i, st.div); }); }
+    if (pk) {
+      const fake = { name: 'Pickup', a: 0, len: 1, ranges: [[0, 0]], insts: INSTS.map(i => i.id).filter(id => pk[id]), div: st.div };
+      out += '// The pickup is one beat: the first quarter of this cycle.\n' + this.sectionCode(fake, 'pickup', pk) + '\n';
+      segs.push(entry(0.25, 'pickup', barBpm(0), 'pickup, 1 beat'));
+    } else segs.push(entry(0.25, 'silence', barBpm(0), 'pickup, 1 beat: not arranged'));
+    secs.forEach(s => { out += this.sectionCode(s, names[s.id], this.formNotes(s, st.copyUnedited)) + '\n'; });
+    const starts = {}; secs.forEach(s => s.ranges.forEach(r => { starts[r[0]] = { s, r }; }));
+    let b = 1;
+    while (b <= BARS) {
+      const f = starts[b];
+      if (f) { segs.push(entry(f.s.len, names[f.s.id], this.placeBpm(f.s, f.r), 'bars ' + f.r[0] + '–' + f.r[1])); b = f.r[1] + 1; continue; }
+      let e = b; while (e + 1 <= BARS && !starts[e + 1]) e++;
+      const n = e - b + 1;
+      if (st.copyGaps === 'silence') segs.push(entry(n, 'silence', avgBpm(b, e), 'bars ' + b + '–' + e + ': not arranged'));
+      else {
+        const v = 'bars' + b + 'to' + e, fake = { name: 'Bars ' + b + '–' + e + ' (unarranged, ' + st.copyGaps + ')', a: b, len: n, ranges: [[b, e]], insts: INSTS.map(i => i.id), div: st.div };
+        const notes = {}; INSTS.forEach(i => { notes[i.id] = this.sectionNotes(i, b, n, st.copyGaps, st.div); });
+        out += this.sectionCode(fake, v, notes) + '\n';
+        segs.push(entry(n, v, avgBpm(b, e), 'bars ' + b + '–' + e + ': not arranged, written ' + st.copyGaps));
+      }
+      b = e + 1;
+    }
+    return out + 'arrange(\n' + segs.join('\n') + '\n)\n';
+  }
+}
+</script>
+</body>
+</html>

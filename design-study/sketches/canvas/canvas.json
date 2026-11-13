@@ -1,0 +1,116 @@
+{
+  "v": 3,
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-11-13T12:00:00Z"
+  },
+  "title": "Ghost Notes design",
+  "launch": {
+    "view": "canvas"
+  },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 1700,
+      "title": "Workbench prototype: the core loop, with the lens",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Layout.dc.html": {
+      "x": 0,
+      "y": 2110,
+      "w": 1200,
+      "h": 780,
+      "title": "Q1 · Timeline and section sheet (decided: C, lens)"
+    },
+    "Rows.dc.html": {
+      "x": 1280,
+      "y": 2110,
+      "w": 1200,
+      "h": 1000,
+      "title": "Q2 · Drawing one instrument (decided: A and B, toggle)"
+    },
+    "Drums.dc.html": {
+      "x": 2560,
+      "y": 2110,
+      "w": 1200,
+      "h": 840,
+      "title": "Q2/Q6 · Drums (decided: one lane per drum)"
+    },
+    "Grid.dc.html": {
+      "x": 3840,
+      "y": 2110,
+      "w": 1200,
+      "h": 900,
+      "title": "Q7 · Bar lines and tempo (decided: bar 1 at first downbeat)"
+    },
+    "Simplify.dc.html": {
+      "x": 5120,
+      "y": 2110,
+      "w": 1440,
+      "h": 980,
+      "title": "Q8 · Simplify (limits become settings)",
+      "is_interactive": true
+    },
+    "Pitch.dc.html": {
+      "x": 6640,
+      "y": 2110,
+      "w": 1200,
+      "h": 760,
+      "title": "Q2b · Drawing pitch (decided: C)"
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Layout.dc.html",
+    "Rows.dc.html",
+    "Drums.dc.html",
+    "Grid.dc.html",
+    "Simplify.dc.html",
+    "Pitch.dc.html"
+  ],
+  "notes": {
+    "loopTitle": {
+      "x": 0,
+      "y": -300,
+      "text": "Does the premise work? Try the core loop",
+      "kind": "title1",
+      "maxW": 1440
+    },
+    "tryThis": {
+      "x": 1520,
+      "y": 0,
+      "w": 440,
+      "size": "m",
+      "fill": "teal",
+      "text": "Usability test: five tasks, in this order\n\n1. Without reading bar numbers, point to where the second verse starts. (Pass: by shape alone, in under 10 s.)\n\n2. Make one Chorus section that covers all three choruses. (Pass: drag once, accept the suggested matches, no hunting.)\n\n3. In the Verse lens, find a bar where yours differs from the recording and say why: stray note, ghost note or fill. (Pass: you point at orange without being told what it means.)\n\n4. Fix one drum hit in the lens, then check that the second verse changed too. (Pass: you expect it before you look.)\n\n5. Set Play to hear the drum audio and your drums together, then open Copy Strudel and say which bars will be silent. (Pass: you use the speakers without help, and answer from the warning.)\n\nWatch for: mixing up MIDI and Notes, reading unarranged bars as silence, losing your place when the lens squeezes the song, and dragging on Mine when you meant to open a section."
+    },
+    "decided": {
+      "x": 1520,
+      "y": 1040,
+      "w": 440,
+      "size": "s",
+      "fill": "green",
+      "text": "Decided with the owner, 2026-11-13\n\n1 Lens: the open section grows in place; the rest of the song squeezes to the sides.\n2 Rows and layers both, switched per instrument, with a setting for all.\n2/6 One lane per drum.\n3 Select whole band or one instrument, snap to bars or beats: user settings.\n4 New sections start literal by default (setting). How unedited sections and unarranged bars are written is chosen at copy.\n5 Offer matching places; split a place off as its own copy; a new section takes over overlapped bars, with a warning.\n7 Bar 1 at the first detected downbeat; the pickup is bar 0.\n8 Simplify limits are user settings.\n9 No constellation or spiral: Ghost Notes stands alone.\n10 Copy panel with a changed-since-copy dot, and a warning on leaving with uncopied work.\n11 Synths and samples.\n12 Optional audio row per instrument from the stem; speakers per row choose what Play plays.\n13 What counts as a match is a setting.\n14 Dark scheme.\n\nThen, one at a time:\n6b One instrument per stem; split and merge later.\n6a Drum kit is one instrument, one line per drum.\n7a Doubtful tempo: ask once, ½× 1× 2× side by side.\n7b Playback follows the band; the copy has a tempo per section.\n7c The pickup is its own short section.\n8 Drums first; all instruments are committed scope.\n2c Difference marks as drawn.\n2b Contour outside the lens, piano roll inside.\nStay web. Settings last for the session."
+    },
+    "dataNote": {
+      "x": 1520,
+      "y": 1620,
+      "w": 440,
+      "size": "s",
+      "fill": "gray",
+      "text": "All notes, audio shapes and the band's tempo are invented, with transcriber faults added on purpose. The band plays the verses at 166 BPM, rushes the choruses to 176, drags the bridge to 150 and wobbles in bars 15–18. The beat map stops at bar 44 on purpose.\n\nNumbers on screen are computed from the invented notes; they are not measurements of the real session. Play draws a playhead that moves at the band's speed; there is no sound."
+    },
+    "questionsTitle": {
+      "x": 0,
+      "y": 1820,
+      "text": "Open questions, drawn as options",
+      "kind": "title1",
+      "maxW": 7840
+    }
+  },
+  "designSystems": []
+}
