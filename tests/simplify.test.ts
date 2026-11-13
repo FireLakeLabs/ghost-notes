@@ -17,7 +17,7 @@ test('drum templates query all runs, duplicate hits and tails; ODM retains one i
       [i * 2 + 1, i * 2 + 2.2, 38, 90],
     ]).flat(),
   );
-  const conversion = convertInstrument({ song, stemId: 'drums' });
+  const conversion = convertInstrument({ song, stemId: 'drums', grid: 'exact' });
   const s = simplifyDrums({ song, conversion });
   expect(s.report.keptShare).toBe(1);
   expect(s.report.matchShare).toBe(1);

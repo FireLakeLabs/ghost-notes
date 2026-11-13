@@ -5,7 +5,9 @@ part 2, after step 7 part 3. Suggestions are proposals, never applied edits.
 
 `simplifyDrums({song, conversion, settings?, match?})` consumes the public
 `ConvertedInstrument` from `src/convert/`. Pass the conversion of the chosen
-grid and range; simplify does not choose or modify that grid. It preserves
+grid and range; simplify does not choose or modify that grid. The converter
+default is 4 steps per beat. It emits only `mergedInto === null` records, reads
+the written `velocity`, and retains every merge contributor in change records. It preserves
 pickups, partial bars, gaps and uncovered edges as individual spans. Reset
 before replaying fractional arrangements (G37).
 
@@ -24,7 +26,7 @@ expands is reported honestly; callers should only offer it as a shorter rewrite
 when `shorter` is true. No generated private code is saved by the measurements.
 
 `report.keptShare` is matched / counted original notes; `matchShare` is matched /
-suggested notes. Matches use maximum-cardinality, one-to-one onset comparison
+counted suggested notes (the full output remains in `notes`). Matches use maximum-cardinality, one-to-one onset comparison
 in recorded seconds and exact MIDI pitch or pitch class (any octave). Velocity
 and duration are not match criteria. Quiet filtering excludes original quiet notes and proposals whose sources are
 all quiet. Added notes still count against match share. An empty

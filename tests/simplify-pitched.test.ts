@@ -125,3 +125,42 @@ test('a rotated Euclidean rhythm retains every onset and tail', async () => {
   expect(s.source).toContain('euclidRot(3,8,1)');
   await assertQueried(s, 8);
 });
+
+test('default-grid merges emit once, retain max velocity and all original IDs, and cannot overspend source drop budgets', async () => {
+  const song = await simplifyFixture('keys', [
+    [0.01, 0.06, 60, 10],
+    [0.02, 0.08, 60, 20],
+    ...Array.from({ length: 8 }, (_, i) => [1 + i, 1.125 + i, 64, 100]),
+  ]);
+  const conversion = convertInstrument({ song, stemId: 'keys' });
+  expect(conversion.quantization).toBe(4);
+  for (const s of simplifyPitched({ song, conversion })) {
+    expect(s.notes).toHaveLength(9);
+    expect(s.notes[0]).toMatchObject({ noteIndices: [0, 1], velocity: 20, pitch: 60 });
+    const merged = s.changes.find((c) => c.kind === 'merged');
+    expect(merged?.noteIndices).toEqual([0, 1]);
+    expect(merged?.original).toHaveLength(2);
+    expect(merged?.written).toHaveLength(1);
+    expect(s.changes.filter((c) => c.kind === 'dropped')).toEqual([]);
+    expect(s.report).toMatchObject({
+      originalNotes: 10,
+      suggestedNotes: 9,
+      matchedNotes: 9,
+      keptShare: 0.9,
+      matchShare: 1,
+    });
+    await assertQueried(s, 8);
+  }
+  const allowed = cleanStrays({ song, conversion, settings: { maxDropShare: 0.2 } });
+  expect(allowed.changes.filter((c) => c.kind === 'dropped').flatMap((c) => c.noteIndices)).toEqual(
+    [0, 1],
+  );
+  const quiet = intervalRiffs({ song, conversion, match: { countQuietNotes: false } });
+  expect(quiet.report).toMatchObject({
+    originalNotes: 8,
+    suggestedNotes: 8,
+    matchedNotes: 8,
+    keptShare: 1,
+    matchShare: 1,
+  });
+});

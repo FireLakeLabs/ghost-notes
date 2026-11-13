@@ -82,12 +82,12 @@ test.skipIf(!root || !existsSync(root))(
               trial.dropped += cleanStrays(input).changes.filter(
                 (c) => c.kind === 'dropped',
               ).length;
-              trial.merged += joinSplitNotes(input).changes.filter(
-                (c) => c.kind === 'merged',
-              ).length;
+              trial.merged +=
+                conversion.notes.filter((n) => n.mergedInto === null).length -
+                joinSplitNotes(input).notes.length;
               trial.pitchChanged += correctOctaves(input).changes.filter(
                 (c) =>
-                  c.originalPitches.some((p, i) => p !== c.writtenPitches[i]) && c.kind === 'moved',
+                  c.originalPitches.some((p) => p !== c.writtenPitches[0]) && c.kind === 'moved',
               ).length;
             }
           const suggestions =
@@ -104,10 +104,14 @@ test.skipIf(!root || !existsSync(root))(
                   technique: suggestion.technique,
                   ...suggestion.report,
                   changes: Object.fromEntries(
-                    ['moved', 'shortened', 'merged', 'dropped', 'added'].map((k) => [
-                      k,
-                      suggestion.changes.filter((c) => c.kind === k).length,
-                    ]),
+                    [
+                      'moved',
+                      'moved-across-bar-line',
+                      'shortened',
+                      'merged',
+                      'dropped',
+                      'added',
+                    ].map((k) => [k, suggestion.changes.filter((c) => c.kind === k).length]),
                   ),
                 }),
               );

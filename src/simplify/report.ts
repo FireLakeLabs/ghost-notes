@@ -45,13 +45,13 @@ export function settingsFor(input: SimplifyInput): SimplifySettings {
 }
 export function literalNotes({ song, conversion }: SimplifyInput): SimplifyNote[] {
   return conversion.notes
-    .filter((n) => !('mergedInto' in n) || n.mergedInto === null)
+    .filter((n) => n.mergedInto === null)
     .map((n) => ({
       noteIndices: conversion.changes.find(
         (c) => c.kind === 'merged' && c.noteIndices.includes(n.sourceIndex),
       )?.noteIndices ?? [n.sourceIndex],
       pitch: n.source.pitch,
-      velocity: 'velocity' in n && typeof n.velocity === 'number' ? n.velocity : n.source.velocity,
+      velocity: n.velocity,
       spanIndex: n.spanIndex,
       startCycle: n.startCycle,
       endCycle: n.endCycle,
