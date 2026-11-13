@@ -1,6 +1,7 @@
 import { scoreReady, play, openProgram } from './helpers';
 import { expect, test } from '@playwright/test';
 import type {} from '../../src/app/main';
+import type {} from '../../src/strudel/assumptions-harness';
 
 test.use({ launchOptions: { args: ['--autoplay-policy=no-user-gesture-required'] } });
 for (const drum of ['bd', 'hh', 'cp'])
@@ -48,4 +49,45 @@ for (const drum of ['bd', 'hh', 'cp'])
       expect(result.rms).toBeGreaterThan(0.001);
       expect(result.rms).toBeGreaterThan(result.background * 10);
     }
+  });
+
+// Step 3: each bank is registered alone; overlapping bd names cannot hide a failure.
+for (const [bank, name] of [
+  ['tidal-drum-machines', 'AJKPercusyn_bd'],
+  ['piano', 'piano'],
+  ['Dirt-Samples', 'casio'],
+  ['EmuSP12', 'bd'],
+  ['vcsl', 'ballwhistle'],
+  ['mridangam', 'gumki'],
+  ['full-Dirt', 'arpy'],
+])
+  test(`online bank ${bank}: decode a representative sample and schedule it`, async ({ page }) => {
+    test.skip(
+      process.env.ODM_BROWSER_MODE !== 'online' || !!process.env.CI,
+      'Online only; never CI',
+    );
+    await page.goto('/harness/assumptions.html');
+    await page.waitForFunction(() => !!window.strudelProof);
+    const url =
+      bank === 'full-Dirt'
+        ? 'https://raw.githubusercontent.com/tidalcycles/dirt-samples/main/strudel.json'
+        : `https://raw.githubusercontent.com/felixroos/dough-samples/main/${bank}.json`;
+    const decoded = await page.evaluate(({ url, name }) => window.strudelProof.bank(url, name), {
+      url,
+      name,
+    });
+    expect(decoded.frames).toBeGreaterThan(0);
+    await page.evaluate(
+      (name) => window.strudelProof.play(`setcpm(120); note("c3").s("${name}")`),
+      name,
+    );
+    await page.waitForFunction(() => window.strudelProof.triggers.length >= 2);
+    const events = await page.evaluate(() => {
+      window.strudelProof.stop();
+      return window.strudelProof.triggers.slice(0, 2);
+    });
+    expect(events.map((e) => e.cycle)).toEqual([0, 1]);
+    expect(events[1].time - events[0].time).toBeCloseTo(0.5, 8);
+    expect(events[0].value).toMatchObject({ s: name });
+    console.log('ONLINE BANK MEASURED', JSON.stringify({ bank, name, ...decoded }));
   });

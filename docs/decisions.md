@@ -56,6 +56,11 @@ check:docs`); when a topic file fills, start a new one.
 - G34: TypeScript 7 and Oxlint.
 - G35: decisions are an index plus topic files, each under a word budget.
 
+## [Strudel proof](decisions/strudel-proof.md)
+
+- G36: bar-by-bar `.cps()` splits simultaneous notes; use G28's editable average fallback.
+- G37: a fractional pickup is a once-only prefix; restart before replay.
+
 ## [Transcription](decisions/transcription.md)
 
 - G40: version 1 song folders with explicit relative paths and every stem.
