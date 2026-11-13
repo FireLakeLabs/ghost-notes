@@ -22,3 +22,17 @@ map, positions are `uncovered` with null beat coordinates. No downbeats means
 no numbered bars. Callers must handle these variants before quantizing or
 scheduling. Each bar's tempo is observed beat intervals / elapsed seconds;
 playback should query the map to preserve within-bar timing (step 9).
+
+The picker and drop/input adapters in `folders.ts` share `SongFiles`. Source
+manifests scope paths to selected song folders. Handle storage is optional;
+permission denial is recoverable through opening again. The drop adapter uses
+legacy directory entries where available, without reading unlisted file bytes.
+
+`mountReference` returns a current `{song, audio}` port; its `audio` map is
+keyed by stem id. Each entry contains an AudioBuffer, waveform min/max pairs
+(one bin per 1024 frames across all channels), decode time and byte counts.
+Buffers survive closure of the decoding context and can be scheduled in the
+step 9 playback context. Opening another song releases the prior reference
+before decoding; failed imports leave no current reference. Dropping while
+busy is ignored. The opt-in `?inspect` diagnostic exposes this port as
+`window.ghostReference`, alongside the existing app diagnostic.

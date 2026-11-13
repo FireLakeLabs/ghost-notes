@@ -165,7 +165,23 @@ The drum model's weights are non-commercial share-alike (see the tool's
 README). Personal use is fine; anything shipped needs permission or another
 model.
 
-## 5. Reference import (TypeScript)
+## 5. Reference import (TypeScript): done
+
+Done 2026-11-13. Version 1 song/source folders open through a picker, retained
+handle or dropped folder. JSON notes, secondary MIDI, exact timing queries,
+coverage/tempo warnings, stem levels, retained PCM and waveform peaks are in
+`src/reference/`; the open control is in the app. Types and uncertainty are
+described in [reference](reference.md).
+
+Measured: all six local songs, 36 decoded stems, zero import failures; per-song
+bars, tempo ranges, gaps, decode/peak times and memory are in the
+[measurement report](reference-measurements.md). `npm run check`: 516 Node tests
+passed, one skipped. `npm run test:browser`: 67 passed, one skipped, 107.108 s /
+180 s, including picker, persisted handles, permission grant/denial, native drop,
+fallback folder input and generated audio. The real-input checks skip when
+absent. Actual system permission UI and Firefox/Safari remain unverified.
+
+What was planned:
 
 - **Opening files (G24):** in Chromium browsers, ask once for a song folder
   and reopen it later; elsewhere, accept a dropped folder each session. All of

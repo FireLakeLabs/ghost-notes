@@ -16,3 +16,17 @@ Decided for the owner during step 5, 2026-11-13.
   midi-file 47,239 bytes, @tonejs/midi 287,668 bytes. Both have older releases
   (2023 and 2022); Tone itself uses midi-file. We need the parser, not Tone's
   higher-level editing model. Synthetic tempo-change tests cover our adapter.
+- **G47: keep one decoded song, process stems sequentially.** Decode at 44.1
+  kHz through a temporary Web Audio context, closing it afterward. Keep each
+  AudioBuffer and min/max waveform bins across all channels for step 9.
+  Release the previous reference before decoding another song; failure leaves
+  no current reference. This avoids a hidden multi-song PCM cache. Report
+  encoded bytes, retained float32 PCM and peaks separately; no arbitrary
+  per-file limit based on just one song.
+- **G48: retain only the last browser folder handle.** The picker adapter
+  keeps its picked or dropped handle and attempts IndexedDB storage for reopening after
+  reload. It asks for read permission when needed; storage failure still
+  permits session access. No note, audio or provenance bytes are persisted.
+  The drop/input adapter requires a folder each session. A source manifest
+  uses a native song selector with ordinal labels; importing shows a plain
+  summary in the existing shell, as recorded in the step 5 sketch.

@@ -93,9 +93,11 @@ export function referenceFixture(): Map<string, Uint8Array> {
     ['stems/bass.wav', generatedWav()],
   ]);
 }
-/** 0.1 s, stereo, 8 kHz PCM16; a constant opposite-polarity signal tests both channels. */
+/** 0.1 s, stereo, 44.1 kHz PCM16, matching the transcription tool's audio rate. */
 export function generatedWav(): Uint8Array {
-  const bytes = new Uint8Array(44 + 800 * 4),
+  const frames = 4410,
+    rate = 44100;
+  const bytes = new Uint8Array(44 + frames * 4),
     view = new DataView(bytes.buffer);
   const text = (offset: number, s: string) =>
     [...s].forEach((c, i) => (bytes[offset + i] = c.charCodeAt(0)));
@@ -106,12 +108,12 @@ export function generatedWav(): Uint8Array {
   view.setUint32(16, 16, true);
   view.setUint16(20, 1, true);
   view.setUint16(22, 2, true);
-  view.setUint32(24, 8000, true);
-  view.setUint32(28, 32000, true);
+  view.setUint32(24, rate, true);
+  view.setUint32(28, rate * 4, true);
   view.setUint16(32, 4, true);
   view.setUint16(34, 16, true);
   text(36, 'data');
-  view.setUint32(40, 3200, true);
+  view.setUint32(40, frames * 4, true);
   for (let i = 44; i < bytes.length; i += 4) {
     view.setInt16(i, 8192, true);
     view.setInt16(i + 2, -16384, true);
