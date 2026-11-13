@@ -95,3 +95,7 @@ check:docs`); when a topic file fills, start a new one.
 - G63: prototype row order and sizes, optional audio, quiet-stem warnings.
 - G64: the song strip navigates the visible window before sections exist.
 - G65: affected bars show the chosen grid's inference reasons.
+
+## [Playback](decisions/playback.md)
+
+- G72: fixed-clock onset and sustain warping through the chosen grid; 1 ms additional scheduling tolerance.
