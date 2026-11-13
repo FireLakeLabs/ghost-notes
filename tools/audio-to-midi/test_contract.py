@@ -3,7 +3,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from contract import beat_document, cache_key, detected_pickup, export_song
+from contract import classify_intervals, beat_document, cache_key, detected_pickup, export_song
 
 
 class ContractTests(unittest.TestCase):
@@ -54,6 +54,20 @@ class ContractTests(unittest.TestCase):
             self.assertEqual(doc['beats'], beats)
         self.assertFalse(beat_document([0, .5, 1], [0], 1, 4)['tempo_review']['flagged'])
         self.assertTrue(beat_document([], [], 1, 4)['tempo_review']['flagged'])
+
+    def test_persistent_metrical_levels_are_not_gaps(self):
+        beats = [0, .25, .5, .75, 1, 1.5, 2, 2.5, 3, 3.25, 3.5, 3.75, 4]
+        doc = beat_document(beats, [0, 1, 3, 4], 4, 4)
+        self.assertEqual(doc['coverage']['gaps'], [])
+        self.assertTrue(doc['coverage']['level_switches'])
+        self.assertEqual(doc['beats'], beats)
+
+    def test_shared_interval_fixtures(self):
+        fixtures = Path(__file__).resolve().parents[2] / 'tests/fixtures/intervals.json'
+        for fixture in json.loads(fixtures.read_text()):
+            with self.subTest(case=fixture['case']):
+                self.assertEqual(classify_intervals(fixture['beats']), {
+                    'gaps': fixture['gaps'], 'level_switches': fixture['level_switches']})
 
     def test_cache_changes_with_content_settings_models_and_bounds(self):
         key = cache_key('audio-a', {'model': 'six', 'threshold': -30}, [0, 10])

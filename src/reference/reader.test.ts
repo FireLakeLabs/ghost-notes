@@ -104,3 +104,47 @@ test('missing detected beats and downbeats stay unmapped', async () => {
   expect(song.bars).toEqual([]);
   expect(song.stems[0].notes[0].start.kind).toBe('uncovered');
 });
+
+test('grid choice remaps notes, retains detected bars, and reads additive v1 switches', async () => {
+  const files = referenceFixture(),
+    doc = JSON.parse(new TextDecoder().decode(files.get('beats.json')));
+  doc.coverage.level_switches = [[2.5, 4.5]];
+  files.set('beats.json', new TextEncoder().encode(JSON.stringify(doc)));
+  const normal = await readReference(memory(files)),
+    double = await readReference(memory(files), 2);
+  expect(double.grid.multiplier).toBe(2);
+  expect(double.bars.length).toBeGreaterThan(normal.bars.length);
+  expect(double.detectedBars).toEqual(normal.detectedBars);
+  expect(double.detectedBeatMap.beats).toEqual(doc.beats);
+  expect(double.stems[0].notes[0].endSeconds).toBe(normal.stems[0].notes[0].endSeconds);
+  expect(double.stems[0].notes[0].end.beat).not.toBe(normal.stems[0].notes[0].end.beat);
+  doc.coverage.level_switches = [[2.5, 4.25]];
+  files.set('beats.json', new TextEncoder().encode(JSON.stringify(doc)));
+  await expect(readReference(memory(files))).rejects.toThrow('switch endpoints');
+});
+
+test('legacy level runs refine coverage without altering original gap evidence', async () => {
+  const files = referenceFixture(),
+    doc = JSON.parse(new TextDecoder().decode(files.get('beats.json')));
+  doc.beats = [0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 6.5, 7, 7.5, 8];
+  doc.downbeats = [0, 2, 6, 8];
+  Object.assign(doc.coverage, {
+    first_beat_seconds: 0,
+    last_beat_seconds: 8,
+    trailing_seconds: 0,
+    gaps: [
+      [2, 3],
+      [3, 4],
+      [4, 5],
+      [5, 6],
+    ],
+  });
+  files.set('beats.json', new TextEncoder().encode(JSON.stringify(doc)));
+  const manifest = JSON.parse(new TextDecoder().decode(files.get('song.json')));
+  manifest.pickup_beats = 0;
+  files.set('song.json', new TextEncoder().encode(JSON.stringify(manifest)));
+  const song = await readReference(memory(files));
+  expect(song.beatMap.coverage.status).toBe('complete');
+  expect(song.beatMap.coverage.gaps).toEqual([]);
+  expect(song.detectedBeatMap.coverage.gaps).toHaveLength(4);
+});

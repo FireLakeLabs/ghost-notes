@@ -206,6 +206,15 @@ What was planned:
 map imports with exact beat positions and the right bar tempos, and a fixture
 folder opens through both the folder picker path and the drop path.
 
+### Consistent bar grid (#19)
+
+Steps 6–11 consume the derived 1× grid by default (G53–G56), with detected
+bars retained. Tempo choices derive alternative grids through the same pure
+function. Every added/removed bar line or beat records its reason and source
+interval. True gaps stay uncertain; the map never extends past detection.
+The step 5 summary reports grid changes. [Measurements](grid-measurements.md)
+cover all six local songs, including unresolved bars and limits.
+
 ## 6. Literal converter (TypeScript)
 
 Our own converter, informed by

@@ -9,7 +9,7 @@ import {
   type SongChoice,
 } from '../reference/folders';
 import { readReference } from '../reference/reader';
-import type { ReferenceSong, SongFiles } from '../reference/types';
+import type { GridMultiplier, ReferenceSong, SongFiles } from '../reference/types';
 export type OpenReference = {
   song: ReferenceSong;
   audio: ReadonlyMap<string, StemAudio<AudioBuffer>>;
@@ -19,7 +19,8 @@ export function mountReference(root: HTMLElement) {
     <input type="file" webkitdirectory multiple hidden aria-label="Choose song folder">
     <p>Drop a song folder or source folder here. Files stay on this device.</p>
     <div data-choose hidden><label>Song <select aria-label="Song"></select></label> <button type="button" data-selected>Open selected song</button></div>
-    <p role="status" data-summary>No reference opened.</p>`;
+    <p role="status" data-summary>No reference opened.</p>
+    <p data-tempo hidden>Choose a tempo grid: <button data-factor="0.5">½×</button> <button data-factor="1">1×</button> <button data-factor="2">2×</button></p>`;
   const open = root.querySelector<HTMLButtonElement>('[data-open]')!,
     reopen = root.querySelector<HTMLButtonElement>('[data-reopen]')!;
   const input = root.querySelector<HTMLInputElement>('input')!,
@@ -67,13 +68,9 @@ export function mountReference(root: HTMLElement) {
       root.removeAttribute('aria-busy');
     }
   }
-  async function load(files: SongFiles) {
-    // Release the previous song before decoding another; no hidden multi-song PCM cache.
-    current = null;
-    status.textContent = 'Reading reference and decoding stem audio…';
-    const song = await readReference(files),
-      audio = await browserAudio(song, files);
-    current = { song, audio };
+  let currentFiles: SongFiles | null = null;
+  const tempoChoice = root.querySelector<HTMLElement>('[data-tempo]')!;
+  function summarize(song: ReferenceSong) {
     const tempos = song.bars.flatMap((b) => (b.bpm === null ? [] : [b.bpm]));
     const c = song.beatMap.coverage,
       review = song.beatMap.tempoReview;
@@ -90,8 +87,37 @@ export function mountReference(root: HTMLElement) {
               .join(', ') + (c.gaps.length > 3 ? `; ${c.gaps.length - 3} more gaps` : '')
           : 'none'
       }. ` +
-      `Tempo doubt: ${review.flagged ? review.reasons.join(', ').replaceAll('_', ' ') : 'no range flag (ambiguity still possible)'}. Detected map kept at 1×. ` +
+      `Grid: ${song.grid.multiplier}×; ${song.grid.inferences.filter((i) => i.kind === 'split-long-bar').length} bar lines inferred, ${song.grid.inferences.filter((i) => i.kind === 'merge-short-bars').length} removed by merging. Detected bars retained. ` +
+      `Tempo doubt: ${review.flagged ? review.reasons.join(', ').replaceAll('_', ' ') : 'no range flag (ambiguity still possible)'}. ` +
       `Stems: ${song.stems.map((s) => `${s.id} ${s.levelDb} dB (${s.transcription === 'skipped_quiet' ? 'skipped quiet; possible bleed' : 'complete'})`).join('; ')}. Audio decoded; waveform peaks ready.`;
+  }
+  async function load(files: SongFiles) {
+    current = null;
+    currentFiles = null;
+    tempoChoice.hidden = true;
+    status.textContent = 'Reading reference and decoding stem audio…';
+    const song = await readReference(files),
+      audio = await browserAudio(song, files);
+    current = { song, audio };
+    currentFiles = files;
+    summarize(song);
+    tempoChoice.hidden = !song.beatMap.tempoReview.flagged;
+    root.dispatchEvent(new Event('referencechange'));
+  }
+  for (const button of root.querySelectorAll<HTMLButtonElement>('[data-factor]')) {
+    button.onclick = () => {
+      const factor = Number(button.dataset.factor);
+      if (factor !== 0.5 && factor !== 1 && factor !== 2) return;
+      const multiplier: GridMultiplier = factor;
+      void run(async () => {
+        if (!current || !currentFiles) return;
+        const song = await readReference(currentFiles, multiplier);
+        current = { song, audio: current.audio };
+        summarize(song);
+        tempoChoice.hidden = true; // G27: one choice per opened song.
+        root.dispatchEvent(new Event('referencechange'));
+      });
+    };
   }
   async function offer(files: SongFiles) {
     choices = await songChoices(files);

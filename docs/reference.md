@@ -5,23 +5,38 @@
 Provenance is not retained. JSON is validated before MIDI is read. Missing
 notes JSON falls back to stem MIDI; malformed or unsupported JSON fails.
 
-`ReferenceSong` holds named stems, RMS levels, transcription status, original
-note seconds and velocity, secondary MIDI notes, detected timing and tool
-warnings. `BeatMap` retains coverage and tempo-review fields without replacing
-the tool's heuristic. `ReferenceBar` has exact start/end seconds and observed
-beat coordinates, an average BPM, a partial flag and intersecting tool gaps.
-The final bar ends at the final detected beat; untracked audio stays untracked.
-If that beat is a downbeat, its partial bar has zero length and null BPM.
+`ReferenceSong` holds stems, RMS levels, transcription status, original note
+seconds/velocity and secondary MIDI notes. `detectedBeatMap` and `detectedBars`
+preserve the imported evidence. `beatMap`, `bars` and note positions describe
+the chosen derived grid (1× by default, G53–G56). `readReference(files, factor)`
+accepts 0.5, 1 or 2; `gridCandidates(map)` derives all three through `deriveGrid`.
+The app's tempo choice re-reads coordinates without decoding audio again.
+`grid.multiplier` is authoritative for the chosen grid. `medianBpm` and
+`tempoReview` (including `selected_multiplier: 1`) describe detection on both
+maps; use grid bars/queries for derived tempo and coordinates.
 
-`secondsToPosition`, `beatToPosition` and `barBeatToPosition` support later
-conversion, drawing and playback. Beat zero is the first detected downbeat;
-negative coordinates belong to pickup bar 0. Bar-local beats start at zero.
-Interpolation between observed beats is linear, including tool-marked gaps,
-which return `kind: 'gap'`. It does not infer a missing-beat count. Outside the
-map, positions are `uncovered` with null beat coordinates. No downbeats means
-no numbered bars. Callers must handle these variants before quantizing or
-scheduling. Each bar's tempo is observed beat intervals / elapsed seconds;
-playback should query the map to preserve within-bar timing (step 9).
+`ReferenceBar` retains its original fields: number, exact start/end seconds,
+beat coordinates, BPM, partial flag and intersecting gaps. Optional `inferences`
+record `kind`, `seconds` and `[start, end]` source evidence for added/removed
+bar lines and beats. `song.grid.inferences` is the complete ledger. The
+[grid decisions](decisions/grid.md) define estimation, inference and ambiguity.
+Short terminal segments stay partial; the last detected beat is the map's end.
+A final downbeat can still be a zero-length partial marker with null BPM.
+
+`secondsToPosition`, `beatToPosition` and `barBeatToPosition` work with either
+map. Beat zero and bar 1 remain at the first detected downbeat; negative
+coordinates belong to pickup bar 0. Bar-local beats start at zero. Interpolation
+is linear between the chosen map's beats; `kind: 'detected'` means covered by
+that map, not necessarily an original observation. Consult the inference ledger
+for provenance. True gaps return `kind: 'gap'`, with no inferred missing-beat
+count. Outside coverage, coordinates are null and `kind` is `uncovered`. No
+downbeats means no numbered bars. Playback must query the map to preserve
+within-bar timing (step 9).
+
+Version 1's additive `coverage.level_switches` separates sustained interval
+runs from isolated gaps. Legacy folders without it get derived coverage from
+the same rule; `detectedBeatMap.coverage` remains unchanged. See the
+[tool contract](../tools/audio-to-midi/README.md).
 
 The picker and drop/input adapters in `folders.ts` share `SongFiles`. Source
 manifests scope paths to selected song folders. Handle storage is optional;
