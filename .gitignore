@@ -15,3 +15,6 @@ reference/
 *.webm
 *.mp3
 *.flac
+
+# Test fixtures written for the project (generated, not anyone's music).
+!tests/fixtures/**/*.wav

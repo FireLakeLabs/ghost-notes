@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Bar lines and tempo</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.n{position:absolute;border-radius:1px}
+.cap{font-size:12.5px;color:#C9CDD4;line-height:1.5}
+.h{font-family:'Space Grotesk',Inter,sans-serif;font-size:17px;font-weight:600}
+</style>
+</helmet>
+<div style="width: 1200px; height: 900px; box-sizing: border-box; padding: 40px; background: #0F1115; color: #ECEAE4; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; gap: 22px">
+  <div>
+    <div style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 28px; font-weight: 600">Bar lines and tempo: show the doubt</div>
+    <div style="color: #A4AAB5; font-size: 14px; margin-top: 6px">Question 7. Everything else hangs on the bar lines, so the app says plainly where they are weak. Invented data.</div>
+  </div>
+
+  <div style="background: #13161B; border: 1px solid #22262E; border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: baseline; gap: 12px"><span class="h">Beat map health</span><span style="font-size: 12px; color: #A4AAB5">gap between detected beats, across the song</span></div>
+    <div style="position: relative; height: 120px; background: #101317; border-radius: 6px; overflow: hidden">
+      <div style="position: absolute; left: 0; right: 0; top: 60px; height: 1px; background: #5A6273"></div>
+      <span style="position: absolute; left: 8px; top: 44px; font-size: 10.5px; color: #A4AAB5">median 0.357 s</span>
+      <div style="position: absolute; top: 0; bottom: 0; left: 31%; width: 9%; background: rgba(232,176,75,.08); border-left: 1px dashed #E8B04B; border-right: 1px dashed #E8B04B"><span style="position: absolute; top: 6px; left: 6px; font-size: 10.5px; color: #F2D29A; white-space: nowrap">uneven: bars 15–18</span></div>
+      <div style="position: absolute; top: 0; bottom: 0; left: 91.6%; right: 0; background: rgba(255,138,91,.08); border-left: 1px dashed #FF8A5B"><span style="position: absolute; top: 6px; left: 6px; font-size: 10.5px; color: #FFC8A8; white-space: nowrap">no beats</span></div>
+      <sc-for list="{{gaps}}" as="g" hint-placeholder-count="170"><span class="n" style="width: 3px; height: 3px; border-radius: 50%; {{g.st}}"></span></sc-for>
+    </div>
+    <div class="cap">Uneven stretches and the end of the map are drawn on every row of the timeline too (the prototype shows the end). Hovering a stretch says how uneven: "beats vary 0.31–0.44 s here".</div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px">
+    <sc-for list="{{tempos}}" as="t" hint-placeholder-count="3">
+      <div style="background: #13161B; border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 8px; {{t.border}}">
+        <div style="display: flex; align-items: baseline; gap: 8px"><span class="h">{{t.title}}</span><span style="font-size: 12px; color: #A4AAB5">{{t.bpm}}</span></div>
+        <div style="display: flex; flex-direction: column; gap: 2px">
+          <sc-for list="{{t.lanes}}" as="ln" hint-placeholder-count="3">
+            <div style="display: flex; align-items: center; gap: 6px"><span style="width: 40px; font-size: 11px; color: #A4AAB5">{{ln.label}}</span>
+              <div style="flex: 1; position: relative; height: 14px; background: #101317; overflow: hidden">
+                <sc-for list="{{t.lines}}" as="bl" hint-placeholder-count="4"><span class="n" style="top: 0; bottom: 0; width: 1px; {{bl.st}}"></span></sc-for>
+                <sc-for list="{{ln.hits}}" as="h" hint-placeholder-count="16"><span class="n" style="top: 2px; height: 10px; width: 3px; {{h.st}}"></span></sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="font-size: 12.5px; color: #ECEAE4">{{t.verdict}}</div>
+      </div>
+    </sc-for>
+  </div>
+  <div class="cap" style="margin-top: -10px">The tracker can settle on half or double the real tempo. When it might have, the first screen shows the three readings side by side and asks once. Later changes re-draw the bar lines and say which sections they move.</div>
+
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+    <sc-for list="{{pickups}}" as="p" hint-placeholder-count="2">
+      <div style="background: #13161B; border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 8px; {{p.border}}">
+        <div style="display: flex; align-items: center; gap: 8px"><span class="h">{{p.title}}</span><sc-if value="{{p.rec}}" hint-placeholder-val="{{ false }}"><span style="font-size: 11px; font-weight: 600; color: #14161A; background: #F2C14E; border-radius: 4px; padding: 2px 6px">recommended</span></sc-if></div>
+        <div style="position: relative; height: 46px; background: #101317; border-radius: 4px; overflow: hidden">
+          <sc-for list="{{p.lines}}" as="bl" hint-placeholder-count="5"><span class="n" style="top: 0; bottom: 0; width: 1px; background: #5A6273; {{bl.st}}"><span style="position: absolute; top: 2px; left: 4px; font-size: 10px; color: #A4AAB5; white-space: nowrap">{{bl.label}}</span></span></sc-for>
+          <sc-for list="{{p.notes}}" as="h" hint-placeholder-count="12"><span class="n" style="top: 22px; height: 12px; width: 4px; {{h.st}}"></span></sc-for>
+        </div>
+        <div class="cap">{{p.cap}}</div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":900}}'>
+function rng(seed) { let s = seed >>> 0; return () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; }; }
+class Component extends DCLogic {
+  renderVals() {
+    if (this._v) return this._v;
+    const R = rng(77), gaps = [], N = 176;
+    for (let i = 0; i < N; i++) {
+      const x = i / 192 * 100;
+      const uneven = x > 31 && x < 40;
+      const g = 0.357 + (R() - 0.5) * (uneven ? 0.14 : 0.03);
+      gaps.push({ st: 'left:' + x.toFixed(2) + '%;top:' + (60 - (g - 0.357) * 600).toFixed(1) + 'px;background:' + (uneven ? '#E8B04B' : '#6F9FD8') });
+    }
+    const groove = [];
+    for (let b = 0; b < 2; b++) {
+      for (let t = 0; t < 4; t += 0.5) groove.push({ s: b * 4 + t, k: 'hh' });
+      groove.push({ s: b * 4, k: 'bd' }, { s: b * 4 + 2.5, k: 'bd' }, { s: b * 4 + 1, k: 'sd' }, { s: b * 4 + 3, k: 'sd' });
+    }
+    const lanes = ['bd', 'sd', 'hh'], LBL = { bd: 'Kick', sd: 'Snare', hh: 'Hi-hat' };
+    const tempo = (title, bpm, barLen, verdict, rec) => {
+      const lines = []; for (let x = 0; x <= 8; x += barLen) lines.push({ st: 'left:' + (x / 8 * 100).toFixed(2) + '%;background:' + '#8A92A0' });
+      const beatLen = barLen / 4; for (let x = 0; x < 8; x += beatLen) if (Math.abs(x / barLen - Math.round(x / barLen)) > 1e-6) lines.push({ st: 'left:' + (x / 8 * 100).toFixed(2) + '%;background:#262B36' });
+      return {
+        title, bpm, verdict,
+        border: rec ? 'border: 1px solid #F2C14E' : 'border: 1px solid #22262E',
+        lines,
+        lanes: lanes.map(k => ({ label: LBL[k], hits: groove.filter(h => h.k === k).map(h => ({ st: 'left:calc(' + (h.s / 8 * 100).toFixed(2) + '% - 1px);background:' + (k === 'sd' ? '#ECEAE4' : '#6F9FD8') })) }))
+      };
+    };
+    const pick = (title, rec, off, cap) => {
+      const lines = []; let n = 0;
+      for (let x = off; x <= 9; x += 4) { lines.push({ st: 'left:' + (x / 9 * 100).toFixed(2) + '%', label: 'bar ' + (n === 0 && off > 0 ? 1 : n + (off > 0 ? 1 : 1)) }); n++; }
+      if (off > 0) lines.unshift({ st: 'left:0%', label: 'pickup' });
+      const notes = [{ s: 0.5 }, { s: 1 }, { s: 2, d: true }, { s: 3.5 }, { s: 4, d: true }, { s: 5 }, { s: 6, d: true }, { s: 7.5 }, { s: 8, d: true }].map(h => ({ st: 'left:' + (h.s / 9 * 100).toFixed(2) + '%;background:' + (h.d ? '#ECEAE4' : '#6F9FD8') }));
+      lines.forEach((l, i) => { if (!(off > 0 && i === 0)) l.label = 'bar ' + (off > 0 ? i : i + 1); });
+      return { title, rec, cap, notes, lines, border: rec ? 'border: 1px solid #F2C14E' : 'border: 1px solid #22262E' };
+    };
+    this._v = {
+      gaps,
+      tempos: [
+        tempo('½×', '84 BPM', 8, 'Snare lands between beats. Each bar holds two grooves.', false),
+        tempo('1×', '168 BPM', 4, 'Snare on beats 2 and 4, every bar. The likely reading.', true),
+        tempo('2×', '336 BPM', 2, 'Each bar holds half a groove. Sections need twice as many bars.', false)
+      ],
+      pickups: [
+        pick('Bar 1 at the first downbeat', true, 1, 'The beat before bar 1 is a short bar 0. It is drawn, never hidden, and joins the first section you make that starts at bar 1. Bar numbers match what a player would count.'),
+        pick('4/4 from the first note', false, 0, 'What the literal converter does now. Every bar line lands one beat early, so the snare (white) falls on beats 1 and 3 and every section is cut in the wrong place.')
+      ]
+    };
+    return this._v;
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Simplify a drum section</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.n{position:absolute;border-radius:1px;pointer-events:none}
+.seg{display:inline-flex;background:#0F1115;border:1px solid #2A2F3A;border-radius:9px;padding:2px;gap:2px;flex-wrap:wrap}
+.seg button{border:0;background:transparent;color:#A4AAB5;padding:0 11px;height:32px;border-radius:7px;cursor:pointer;font-size:12.5px;font-weight:500;font-family:inherit}
+.seg button:hover{color:#ECEAE4}
+.seg button[aria-pressed="true"]{background:#2C323E;color:#ECEAE4}
+button:focus-visible{outline:2px solid #F2C14E;outline-offset:2px}
+.lbl{font-size:11px;color:#A4AAB5;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}
+.code{margin:0;background:#0D0F13;border:1px solid #22262E;border-radius:8px;padding:12px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px;line-height:1.55;color:#D9D6CE;white-space:pre-wrap;overflow-wrap:anywhere;overflow:auto}
+.tile{background:#181B21;border-radius:8px;padding:12px}
+.big{font-family:'Space Grotesk',Inter,sans-serif;font-size:26px;font-weight:600;font-variant-numeric:tabular-nums}
+</style>
+</helmet>
+<div style="width: 1440px; height: 980px; box-sizing: border-box; padding: 40px; background: #0F1115; color: #ECEAE4; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; gap: 22px">
+  <div>
+    <div style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 28px; font-weight: 600">Simplify: limits you set, changes you can see</div>
+    <div style="color: #A4AAB5; font-size: 14px; margin-top: 6px">Question 8. Eight invented bars of drums with ghost notes, a laid-back hi-hat in two bars, an early kick and a fill. Change a limit: the suggestion, the marks and the numbers are worked out again.</div>
+  </div>
+  <div style="display: flex; gap: 28px; flex: 1; min-height: 0">
+    <div style="width: 300px; flex: none; display: flex; flex-direction: column; gap: 22px">
+      <div>
+        <div class="lbl">Move a note at most</div>
+        <div class="seg" role="group" aria-label="How far a note may move"><sc-for list="{{moves}}" as="o" hint-placeholder-count="3"><button aria-pressed="{{o.pressed}}" onClick="{{o.pick}}">{{o.label}}</button></sc-for></div>
+        <div style="font-size: 12px; color: #858C98; margin-top: 6px">Further than this, a note is not counted as kept.</div>
+      </div>
+      <div>
+        <div class="lbl">Drop at most</div>
+        <div class="seg" role="group" aria-label="Share of notes that may be dropped"><sc-for list="{{drops}}" as="o" hint-placeholder-count="4"><button aria-pressed="{{o.pressed}}" onClick="{{o.pick}}">{{o.label}}</button></sc-for></div>
+        <div style="font-size: 12px; color: #858C98; margin-top: 6px">of the recording's notes, quietest first. Past the limit, the loudest dropped notes come back as exceptions.</div>
+      </div>
+      <div>
+        <div class="lbl">Fills</div>
+        <div class="seg" role="group" aria-label="What happens to fills"><sc-for list="{{fills}}" as="o" hint-placeholder-count="2"><button aria-pressed="{{o.pressed}}" onClick="{{o.pick}}">{{o.label}}</button></sc-for></div>
+      </div>
+      <div>
+        <div class="lbl">Pitches</div>
+        <div style="font-size: 12.5px; color: #A4AAB5; line-height: 1.5">Drums have none. For bass and keys: keep exact, allow octave, or allow scale degrees.</div>
+      </div>
+      <div style="margin-top: auto; display: flex; gap: 8px">
+        <button style="height: 36px; padding: 0 14px; border-radius: 8px; border: 1px solid #F2C14E; background: #F2C14E; color: #1A1405; font-weight: 600; font-family: inherit; cursor: pointer">Use suggestion</button>
+        <button style="height: 36px; padding: 0 14px; border-radius: 8px; border: 1px solid #343A46; background: #1C2029; color: #ECEAE4; font-family: inherit; cursor: pointer">Keep literal</button>
+      </div>
+    </div>
+
+    <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px">
+        <div class="tile"><div class="big">{{m.keeps}}</div><div style="font-size: 12px; color: #A4AAB5">of the recording's notes kept</div></div>
+        <div class="tile"><div class="big">{{m.trueShare}}</div><div style="font-size: 12px; color: #A4AAB5">of its notes are in the recording</div></div>
+        <div class="tile"><div class="big">{{m.moved}}</div><div style="font-size: 12px; color: #A4AAB5">{{m.movedSub}}</div></div>
+        <div class="tile"><div class="big">{{m.chars}}</div><div style="font-size: 12px; color: #A4AAB5">{{m.charsSub}}</div></div>
+      </div>
+      <div style="background: #13161B; border: 1px solid #22262E; border-radius: 10px; padding: 14px">
+        <div style="display: flex; gap: 6px; margin-left: 56px; margin-bottom: 4px">
+          <sc-for list="{{barHeads}}" as="bh" hint-placeholder-count="8"><span style="flex: 1; font-size: 11px; {{bh.st}}">{{bh.label}}</span></sc-for>
+        </div>
+        <sc-for list="{{lanes}}" as="ln" hint-placeholder-count="5">
+          <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 3px">
+            <span style="width: 50px; font-size: 11.5px; color: #A4AAB5">{{ln.label}}</span>
+            <div style="flex: 1; position: relative; height: 26px; background-color: #101317; background-image: linear-gradient(to right,#343A46 1px,transparent 1px); background-size: 12.5% 100%; overflow: hidden">
+              <sc-for list="{{ln.marks}}" as="mk" hint-placeholder-count="20"><span class="n" style="{{mk.st}}"></span></sc-for>
+            </div>
+          </div>
+        </sc-for>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 10px 0 0 56px; font-size: 11.5px; color: #A4AAB5">
+          <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 4px; height: 14px; background: #F1E6CC; border-radius: 1px"></span>kept</span>
+          <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 14px; height: 2px; background: #F1E6CC"></span><span style="width: 4px; height: 14px; background: #F1E6CC; border-radius: 1px; margin-left: -4px"></span>kept, moved (line runs back to where it was played)</span>
+          <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 8px; height: 14px; border-radius: 2px; box-shadow: inset 0 0 0 2px #6F9FD8"></span>dropped</span>
+          <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 4px; height: 14px; background: #FF8A5B; border-radius: 1px"></span>added</span>
+          <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 14px; height: 8px; background: rgba(242,193,78,.22); border-radius: 2px"></span>bar differs from the pattern</span>
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; flex: 1; min-height: 0">
+        <div style="display: flex; flex-direction: column; min-height: 0">
+          <div class="lbl">Literal · {{litChars}}</div>
+          <pre class="code" style="flex: 1">{{litCode}}</pre>
+        </div>
+        <div style="display: flex; flex-direction: column; min-height: 0">
+          <div class="lbl">Suggestion · {{sugChars}}</div>
+          <pre class="code" style="flex: 1">{{sugCode}}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":980}}'>
+function rng(seed) { let s = seed >>> 0; return () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; }; }
+const KINDS = ['cr', 'hh', 'sd', 'lt', 'bd'], LABEL = { cr: 'Crash', hh: 'Hi-hat', sd: 'Snare', lt: 'Tom', bd: 'Kick' };
+const NB = 8;
+function jac(A, B) { if (!A.size && !B.size) return 1; let m = 0; A.forEach(x => { if (B.has(x)) m++; }); return m / (A.size + B.size - m); }
+function makeHits() {
+  const R = rng(9001), J = a => (R() - 0.5) * 2 * a, h = [];
+  const add = (b, k, t, v) => h.push({ b, k, s: t + J(0.025), v });
+  for (let b = 0; b < NB; b++) {
+    const fill = b === NB - 1, lazy = b === 2 || b === 5;
+    for (let t = 0; t < 4; t += 0.5) { if (fill && t >= 3) continue; add(b, 'hh', t + (lazy && t % 1 ? 0.16 : 0), t % 1 ? 56 : 80); }
+    add(b, 'bd', 0, 100); add(b, 'bd', b === 4 ? 2.3 : 2.5, 90); add(b, 'sd', 1, 100); if (!fill) add(b, 'sd', 3, 100);
+    if (b === 0) add(b, 'cr', 0, 110);
+    if (R() < 0.55) add(b, 'sd', [0.75, 1.75, 2.25][Math.floor(R() * 3)], 30 + Math.floor(R() * 10));
+    if (b === 3) add(b, 'hh', 0.54, 42);
+    if (fill) [3, 3.25, 3.5, 3.75].forEach((t, j) => add(b, j < 2 ? 'sd' : 'lt', t, 90));
+  }
+  return h;
+}
+function stepsOf(hits) { return new Set(hits.map(x => x.k + '@' + Math.min(15, Math.max(0, Math.round(x.s * 4))))); }
+function kindBar(steps, k) {
+  const toks = []; for (let i = 0; i < 16; i++) toks.push(steps.has(k + '@' + i) ? k : '~');
+  if (toks.every(t => t === '~')) return '~';
+  for (const p of [1, 2, 4, 8]) {
+    let ok = true; for (let i = p; i < 16; i++) if (toks[i] !== toks[i % p]) { ok = false; break; }
+    if (ok) { const u = toks.slice(0, p); if (u[0] === k && u.slice(1).every(t => t === '~')) return k + '*' + (16 / p); return '[' + merge(u).join(' ') + ']*' + (16 / p); }
+  }
+  return '[' + merge(toks).join(' ') + ']';
+}
+function merge(toks) { const o = []; let i = 0; while (i < toks.length) { if (toks[i] !== '~') { o.push(toks[i]); i++; continue; } let r = 0; while (i < toks.length && toks[i] === '~') { r++; i++; } o.push(r > 1 ? '~@' + r : '~'); } return o; }
+function seq(bars) {
+  const L = bars.length, wrap = a => (a.length === 1 ? a[0] : '<' + a.join(' ') + '>');
+  for (let p = 1; p < L; p++) { if (L % p) continue; let ok = true; for (let i = p; i < L; i++) if (bars[i] !== bars[i % p]) { ok = false; break; } if (ok) return wrap(bars.slice(0, p)); }
+  const o = []; let i = 0; while (i < L) { let j = i; while (j < L && bars[j] === bars[i]) j++; o.push(j - i > 1 ? bars[i] + '!' + (j - i) : bars[i]); i = j; }
+  return wrap(o);
+}
+function litBar(steps) {
+  const toks = [];
+  for (let i = 0; i < 16; i++) { const ks = KINDS.filter(k => steps.has(k + '@' + i)).sort(); toks.push(!ks.length ? '~' : (ks.length > 1 ? '[' + ks.join(',') + ']' : ks[0])); }
+  return '[' + merge(toks).join(' ') + ']';
+}
+class Component extends DCLogic {
+  state = { move: 0.25, drop: 0.1, fill: 'keep' };
+  renderVals() {
+    const st = this.state;
+    if (!this._h) this._h = makeHits();
+    const H = this._h, total = H.length;
+    const byBar = Array.from({ length: NB }, (_, b) => H.filter(x => x.b === b));
+    const loud = byBar.map(a => a.filter(x => x.v >= 45));
+    const sets = loud.map(stepsOf);
+    let tpl = 0, bv = -1;
+    for (let i = 0; i < NB - 1; i++) { let t = 0; for (let j = 0; j < NB - 1; j++) t += jac(sets[i], sets[j]); if (t > bv) { bv = t; tpl = i; } }
+    const sug = [];
+    for (let b = 0; b < NB; b++) sug.push(new Set(b === NB - 1 && st.fill === 'keep' && jac(sets[b], sets[tpl]) < 0.55 ? stepsOf(byBar[b]) : sets[tpl]));
+    const L = st.move;
+    const match = () => {
+      const res = [];
+      for (let b = 0; b < NB; b++) {
+        const pts = Array.from(sug[b]).map(x => { const p = x.split('@'); return { k: p[0], s: +p[1] / 4, used: false }; });
+        const rec = byBar[b].map(x => ({ h: x, m: null }));
+        rec.slice().sort((a, c) => c.h.v - a.h.v).forEach(r => {
+          let best = null, bd = L + 1e-9;
+          pts.forEach(p => { if (p.used || p.k !== r.h.k) return; const d = Math.abs(p.s - r.h.s); if (d <= bd) { bd = d; best = p; } });
+          if (best) { best.used = true; r.m = best; }
+        });
+        res.push({ pts, rec });
+      }
+      return res;
+    };
+    let M = match();
+    const exc = {};
+    const dropped = () => { const o = []; M.forEach((bm, b) => bm.rec.forEach(r => { if (!r.m) o.push({ b, h: r.h }); })); return o; };
+    let dr = dropped(), guard = 0;
+    while (dr.length / total > st.drop + 1e-9 && guard++ < 80) {
+      dr.sort((a, c) => c.h.v - a.h.v);
+      const x = dr[0]; sug[x.b].add(x.h.k + '@' + Math.min(15, Math.round(x.h.s * 4))); exc[x.b] = true;
+      M = match(); dr = dropped();
+    }
+    let kept = 0, sugN = 0, sugHit = 0, moved = 0, maxMove = 0;
+    const tplKey = Array.from(sets[tpl]).sort().join('|');
+    const lanes = KINDS.map(k => ({ label: LABEL[k], marks: [] }));
+    const lane = k => lanes[KINDS.indexOf(k)].marks;
+    const pc = x => (x / (NB * 4) * 100).toFixed(3);
+    M.forEach((bm, b) => {
+      const off = b * 4;
+      bm.rec.forEach(r => {
+        if (r.m) {
+          kept++; const d = Math.abs(r.m.s - r.h.s); if (d > 0.07) { moved++; maxMove = Math.max(maxMove, d); lane(r.h.k).push({ st: 'left:' + pc(off + Math.min(r.m.s, r.h.s)) + '%;width:' + pc(d) + '%;top:12px;height:2px;background:#F1E6CC;opacity:.7' }); }
+        } else lane(r.h.k).push({ st: 'left:calc(' + pc(off + r.h.s) + '% - 3px);width:8px;top:5px;height:16px;border-radius:2px;box-shadow:inset 0 0 0 2px #6F9FD8;opacity:' + (r.h.v < 45 ? 0.6 : 1) });
+      });
+      bm.pts.forEach(p => {
+        sugN++; if (p.used) sugHit++;
+        lane(p.k).push({ st: 'left:calc(' + pc(off + p.s) + '% - 1px);width:4px;top:4px;height:18px;background:' + (p.used ? '#F1E6CC' : '#FF8A5B') });
+      });
+    });
+    const sugKeys = sug.map(s => Array.from(s).sort().join('|'));
+    const diff = sugKeys.map((k, b) => k !== tplKey);
+    const litCode = 's("' + seq(byBar.map(a => litBar(stepsOf(a)))) + '")';
+    const used = KINDS.filter(k => sug.some(s => Array.from(s).some(x => x.startsWith(k + '@'))));
+    const sugCode = 'stack(\n' + used.map(k => '  s("' + seq(sug.map(s => kindBar(s, k))) + '"),' + ' '.repeat(Math.max(1, 4)) + '// ' + LABEL[k].toLowerCase()).join('\n') + '\n)';
+    const pct = x => Math.round(x * 100) + '%';
+    const nf = n => n.toLocaleString();
+    const mk = (opts, key) => opts.map(o => ({ label: o[1], pressed: st[key] === o[0], pick: () => this.setState({ [key]: o[0] }) }));
+    return {
+      moves: mk([[0.125, 'a 32nd'], [0.25, 'a 16th'], [0.5, 'an 8th']], 'move'),
+      drops: mk([[0, 'none'], [0.05, '5%'], [0.1, '10%'], [0.2, '20%']], 'drop'),
+      fills: mk([['keep', 'Keep as played'], ['pattern', 'Replace with pattern']], 'fill'),
+      m: {
+        keeps: pct(kept / total), trueShare: pct(sugN ? sugHit / sugN : 1),
+        moved: String(moved), movedSub: moved ? 'notes moved, the furthest ' + maxMove.toFixed(2) + ' beat' : 'notes moved',
+        chars: Math.round((1 - sugCode.length / litCode.length) * 100) + '%',
+        charsSub: 'shorter than literal (' + nf(sugCode.length) + ' vs ' + nf(litCode.length) + ' characters)'
+      },
+      barHeads: diff.map((d, b) => ({ label: 'Bar ' + (b + 1) + (b === tpl ? ' · pattern' : (d ? ' · differs' : '')), st: d ? 'color:#F2D29A;background:rgba(242,193,78,.14);border-radius:4px;padding:2px 4px' : 'color:#858C98;padding:2px 4px' })),
+      lanes,
+      litCode, sugCode,
+      litChars: nf(litCode.length) + ' characters', sugChars: nf(sugCode.length) + ' characters'
+    };
+  }
+}
+</script>
+</body>
+</html>

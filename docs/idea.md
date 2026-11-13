@@ -25,10 +25,11 @@ recording ──► stems ──► MIDI + beat map ──► literal Strudel �
    here) splits a recording into stems, finds beats and downbeats, and
    transcribes each stem. It writes MIDI, `notes.json` (every note as start,
    end, pitch, velocity, in seconds) and `beats.json`.
-2. **Open.** The user opens those files from their own disk. Nothing is
-   uploaded or stored by the app.
+2. **Open.** The user opens the song's folder from their own disk: the stem
+   audio, MIDI, `notes.json` and `beats.json`. Nothing is uploaded or stored
+   by the app.
 3. **Compare.** For each instrument, three rows on one timeline measured in
-   beats:
+   beats, with the stem's audio as an optional fourth row (G20):
 
    ```
                   bar 9            bar 17           bar 25
@@ -71,23 +72,25 @@ simplification tools.
 
 ## What is new
 
-| Piece | What it does |
-| --- | --- |
-| Reference import | Reads MIDI or `notes.json` + `beats.json`; maps to beats and cycles; names instruments by stem. |
-| Literal converter | Writes the selected notes as Strudel on a chosen grid, in TypeScript. |
-| Timeline | Whole-song view: three rows per instrument, zoom, range selection. |
-| Make section from range | One document edit: a section with its source bars. |
-| Reference marks in the sheet | Within the current section, the MIDI and converted notes drawn faintly behind the user's own. |
-| Simplify | Proposes shorter, structured Strudel for a section under user-set error limits. |
-| Copy out | The whole arrangement as Strudel text, with section and stem links in comments. |
+| Piece                   | What it does                                                                                                                  |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Reference import        | Reads MIDI or `notes.json` + `beats.json`; maps to beats and cycles; names instruments by stem.                               |
+| Literal converter       | Writes the selected notes as Strudel on a chosen grid, in TypeScript.                                                         |
+| Timeline                | Whole-song view: three rows per instrument, zoom, range selection.                                                            |
+| Make section from range | One document edit: a section with its source bars.                                                                            |
+| The lens                | The open section grows in place inside the timeline, with the MIDI and converted notes drawn behind the user's own (G9, G10). |
+| Simplify                | Proposes shorter, structured Strudel for a section under user-set error limits.                                               |
+| Copy out                | The whole arrangement as Strudel text, with section and stem links in comments.                                               |
 
 ## Out of scope for now
 
 - Running the transcription in the browser. It stays a local Python tool; see
   [the TypeScript study](../research/pipeline-in-typescript.md).
 - Saving, accounts, sharing. The user's copy is the save.
-- Tempo maps in the output. A band speeds up and slows down; the arrangement
-  plays at one tempo. Rows line up by beat, not by clock time.
+- A tempo that changes inside a section. A band speeds up and slows down;
+  rows line up by beat, not by clock time. In the app, playback follows the
+  band's beat map; the copied Strudel gives each place a section plays its
+  own tempo, steady within it (G28).
 - Judging sound. No agent can hear; checks compare notes, not audio.
 
 ## Known weaknesses of the input

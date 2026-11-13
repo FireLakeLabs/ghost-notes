@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Drawing the drums</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.n{position:absolute;border-radius:1px}
+.lane{position:relative;overflow:hidden;background-image:linear-gradient(to right,#2A2F3A 1px,transparent 1px);background-size:12.5% 100%}
+.cap{font-size:12.5px;color:#C9CDD4;line-height:1.5}
+.code{margin:0;background:#0D0F13;border:1px solid #22262E;border-radius:8px;padding:12px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;line-height:1.6;color:#D9D6CE;white-space:pre-wrap}
+</style>
+</helmet>
+<div style="width: 1200px; height: 840px; box-sizing: border-box; padding: 40px; background: #0F1115; color: #ECEAE4; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; gap: 20px">
+  <div>
+    <div style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 28px; font-weight: 600">Drums: one row, or one lane per drum</div>
+    <div style="color: #A4AAB5; font-size: 14px; margin-top: 6px">Questions 2 and 6. The transcriber gives five kinds of hit. The same 8 invented bars, with ghost notes, a fill and one double-triggered hi-hat.</div>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px">
+    <div style="background: #13161B; border: 1px solid #22262E; border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+      <div style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">1 · One row</div>
+      <div class="lane" style="height: 44px"><sc-for list="{{one}}" as="n" hint-placeholder-count="60"><span class="n" style="{{n.st}}"></span></sc-for></div>
+      <div style="display: flex; gap: 12px; font-size: 11.5px; color: #A4AAB5; flex-wrap: wrap"><sc-for list="{{key}}" as="k" hint-placeholder-count="5"><span style="display: inline-flex; gap: 5px; align-items: center"><span style="width: 4px; height: 12px; border-radius: 1px; {{k.st}}"></span>{{k.label}}</span></sc-for></div>
+      <div class="cap">Compact, and fine for spotting where fills happen. Telling a kick from a tom means reading height and shade at once, which fails at small sizes.</div>
+    </div>
+    <div style="background: #13161B; border: 1px solid #22262E; border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; align-items: center; gap: 8px"><span style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">2 · One lane per drum</span><span style="font-size: 11px; font-weight: 600; color: #14161A; background: #F2C14E; border-radius: 4px; padding: 2px 6px">recommended</span></div>
+      <div style="display: flex; flex-direction: column; gap: 2px">
+        <sc-for list="{{lanes}}" as="ln" hint-placeholder-count="5">
+          <div style="display: flex; align-items: center; gap: 8px"><span style="width: 48px; font-size: 11.5px; color: #A4AAB5">{{ln.label}}</span><div class="lane" style="flex: 1; height: 16px; background-color: #14171C"><sc-for list="{{ln.hits}}" as="n" hint-placeholder-count="12"><span class="n" style="{{n.st}}"></span></sc-for></div></div>
+        </sc-for>
+      </div>
+      <div class="cap">Each drum reads as its own rhythm. Ghost notes are short and faint; the double hi-hat (orange) stands out. Five times the height, so it collapses to a 44 px strip at whole-song zoom, as in the prototype.</div>
+    </div>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px">
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <div style="font-size: 13px; font-weight: 600">Kit as one pattern</div>
+      <pre class="code">s("&lt;[[bd,cr] hh [sd,hh] hh bd [hh,bd] sd hh] ...&gt;")</pre>
+      <div class="cap">What the literal converter writes. Hard to edit: changing the snare means finding it among the hats.</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <div style="font-size: 13px; font-weight: 600">Kit as one instrument, one line per drum</div>
+      <pre class="code">const kit = stack(
+  s("bd ~ ~ ~ ~ bd ~ ~"),   // kick
+  s("~ sd ~ sd"),           // snare
+  s("hh*8"),                // hi-hat
+)</pre>
+      <div class="cap">How a Strudel player writes drums. The lanes on screen and the lines in the code line up one to one. Recommended: the kit is one instrument in the score; each lane is one line of its stack.</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":840}}'>
+function rng(seed) { let s = seed >>> 0; return () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; }; }
+const KINDS = ['cr', 'hh', 'sd', 'lt', 'bd'], LABEL = { cr: 'Crash', hh: 'Hi-hat', sd: 'Snare', lt: 'Tom', bd: 'Kick' };
+const SHADE = { cr: '#C3D6EE', hh: '#9DBCE3', sd: '#ECEAE4', lt: '#7F95B3', bd: '#6F9FD8' };
+const pc = x => (x / 32 * 100).toFixed(3);
+class Component extends DCLogic {
+  renderVals() {
+    if (this._v) return this._v;
+    const R = rng(808), J = a => (R() - 0.5) * 2 * a, hits = [];
+    const add = (b, k, t, v, dbl) => hits.push({ s: b * 4 + t + J(0.02), k, v, dbl });
+    for (let b = 0; b < 8; b++) {
+      const fill = b === 7;
+      for (let t = 0; t < 4; t += 0.5) if (!(fill && t >= 3)) add(b, 'hh', t, t % 1 ? 55 : 80);
+      add(b, 'bd', 0, 100); add(b, 'bd', 2.5, 90); add(b, 'sd', 1, 100); if (!fill) add(b, 'sd', 3, 100);
+      if (b === 0) add(b, 'cr', 0, 110);
+      if (R() < 0.5) add(b, 'sd', [0.75, 1.75, 2.25][Math.floor(R() * 3)], 32);
+      if (b === 3) add(b, 'hh', 0.54, 42, true);
+      if (fill) [3, 3.25, 3.5, 3.75].forEach((t, j) => add(b, j < 2 ? 'sd' : 'lt', t, 90));
+    }
+    const col = h => (h.dbl ? '#FF8A5B' : SHADE[h.k]);
+    this._v = {
+      one: hits.map(h => ({ st: 'left:' + pc(h.s) + '%;width:3px;top:' + (4 + KINDS.indexOf(h.k) * 7) + 'px;height:' + (h.v < 50 ? 4 : 8) + 'px;background:' + col(h) + ';opacity:' + (h.v < 50 ? 0.55 : 1) })),
+      key: KINDS.map(k => ({ label: LABEL[k], st: 'background:' + SHADE[k] })),
+      lanes: KINDS.map(k => ({ label: LABEL[k], hits: hits.filter(h => h.k === k).map(h => ({ st: 'left:' + pc(h.s) + '%;width:' + (h.v < 50 ? 3 : 4) + 'px;top:' + (h.v < 50 ? 5 : 2) + 'px;height:' + (h.v < 50 ? 6 : 12) + 'px;background:' + (h.dbl ? '#FF8A5B' : '#6F9FD8') + ';opacity:' + (h.v < 50 ? 0.5 : 1) })) }))
+    };
+    return this._v;
+  }
+}
+</script>
+</body>
+</html>

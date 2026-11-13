@@ -8,21 +8,35 @@ Strudel conversion, and the user's own arrangement, one above the other.
 - [The idea](docs/idea.md): what the app is and the workflow it serves.
 - [Decisions](docs/decisions.md): what is settled.
 - [Next steps](docs/next-steps.md): the plan, in order, with what each step needs.
-- [Design study](design-study/README.md): the current phase.
+- [Model](docs/model.md), [standards](docs/standards.md) and
+  [lessons](docs/lessons.md): inherited from ODM; how the code works and is tested.
+- [Design study](design-study/outcomes.md): what was chosen, and why.
 - [Research](research/README.md): evidence, not authority.
 
 ## Current phase
 
-Phase 0, design study. There is no application code. The study is run with
-the owner present; do not start it, and do not start code, until asked.
+Steps 1 and 2 of [next steps](docs/next-steps.md) are done: the design study,
+and ODM's code copied in with the constellation and spiral removed (G17).
+Step 3 (prove the Strudel assumptions) is next; start it only when asked.
+`npm run check` and `npm run test:browser` must pass before any commit.
+
+## Skills
+
+Project skills live in `.agents/skills/`. [.agents/README.md](.agents/README.md)
+routes requests to them ("full send", "full stop", "orchestrate", "review loop",
+PR work) and sets the reviewer policy. For TypeScript work, apply
+[typescript-best-practices](.agents/skills/typescript-best-practices/SKILL.md) and
+the principles it links.
 
 ## Working rules
 
 - Use the Node version in `.node-version` and npm.
-- When code arrives, Strudel stays pinned as in ODM: `@strudel/core`,
+- Strudel stays pinned as in ODM: `@strudel/core`,
   `@strudel/mini`, `@strudel/tonal`, `@strudel/transpiler` at 1.2.6;
   `@strudel/web`, `@strudel/webaudio`, `superdough` at 1.3.0.
 - Never bind a fixed port. Dev servers and browser tests take a free one.
+- The browser suite holds a machine-wide lock, so suites started in parallel
+  worktrees queue rather than disturb each other's timing tests.
 - Other people's music stays out of the repository (G4). Test from a local path.
 - Report what was measured separately from what was seen. No agent can hear;
   never describe how something sounds.

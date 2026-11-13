@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Drawing pitch</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.n{position:absolute;border-radius:1px}
+.lane{position:relative;overflow:hidden;background-color:#101317;background-image:linear-gradient(to right,#2A2F3A 1px,transparent 1px);background-size:12.5% 100%;border-radius:4px}
+.cap{font-size:12.5px;color:#C9CDD4;line-height:1.5}
+.h{font-family:'Space Grotesk',Inter,sans-serif;font-size:17px;font-weight:600}
+.rl{width:56px;flex:none;font-size:11.5px;font-weight:600}
+</style>
+</helmet>
+<div style="width: 1200px; height: 760px; box-sizing: border-box; padding: 40px; background: #0F1115; color: #ECEAE4; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; gap: 20px">
+  <div>
+    <div style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 28px; font-weight: 600">Drawing pitch: piano roll or contour</div>
+    <div style="color: #A4AAB5; font-size: 14px; margin-top: 6px">Question 2b. The same 8 invented bars of bass, recording above yours. Yours is the riff repeated, so it drifts from the recording in places.</div>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; flex: 1">
+    <div style="background: #13161B; border: 1px solid #22262E; border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; align-items: center; gap: 8px"><span class="h">A · Piano roll</span><span style="font-size: 11px; font-weight: 600; color: #14161A; background: #F2C14E; border-radius: 4px; padding: 2px 6px">in the prototype</span></div>
+      <div style="display: flex; align-items: center; gap: 6px"><span class="rl" style="color: #9DBCE3">MIDI</span><div class="lane" style="flex: 1; height: 90px"><sc-for list="{{rollRef}}" as="n" hint-placeholder-count="40"><span class="n" style="{{n.st}}"></span></sc-for></div></div>
+      <div style="display: flex; align-items: center; gap: 6px"><span class="rl" style="color: #F1E6CC">Mine</span><div class="lane" style="flex: 1; height: 90px"><sc-for list="{{rollMine}}" as="n" hint-placeholder-count="40"><span class="n" style="{{n.st}}"></span></sc-for></div></div>
+      <div class="cap">Each note is a bar: where it starts, how long it lasts, how high it is. Exact, and what ODM's editors already use. Small pitch steps are hard to read at whole-song zoom.</div>
+    </div>
+    <div style="background: #13161B; border: 1px solid #22262E; border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+      <div class="h">B · Contour</div>
+      <div style="display: flex; align-items: center; gap: 6px"><span class="rl" style="color: #9DBCE3">MIDI</span><div class="lane" style="flex: 1; height: 90px"><svg width="100%" height="100%" viewBox="0 0 1000 90" preserveAspectRatio="none" aria-hidden="true" style="display: block"><path d="{{contRef}}" fill="none" stroke="#6F9FD8" stroke-width="2" vector-effect="non-scaling-stroke"></path></svg></div></div>
+      <div style="display: flex; align-items: center; gap: 6px"><span class="rl" style="color: #F1E6CC">Mine</span><div class="lane" style="flex: 1; height: 90px"><svg width="100%" height="100%" viewBox="0 0 1000 90" preserveAspectRatio="none" aria-hidden="true" style="display: block"><path d="{{contMine}}" fill="none" stroke="#F1E6CC" stroke-width="2" vector-effect="non-scaling-stroke"></path></svg></div></div>
+      <div class="cap">One line that steps up and down with the melody. The shape of a riff jumps out, and repeats are easy to spot. Note lengths and gaps disappear, and so do differences in rhythm.</div>
+    </div>
+    <div style="background: #13161B; border: 1px solid #22262E; border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+      <div class="h">C · Contour far, roll near</div>
+      <div style="display: flex; align-items: center; gap: 6px"><span class="rl" style="color: #A4AAB5">Song</span><div class="lane" style="flex: 1; height: 90px; background-size: 6.25% 100%"><svg width="100%" height="100%" viewBox="0 0 1000 90" preserveAspectRatio="none" aria-hidden="true" style="display: block; position: absolute; inset: 0"><path d="{{contFar}}" fill="none" stroke="#6F9FD8" stroke-width="1.5" vector-effect="non-scaling-stroke"></path></svg><div style="position: absolute; top: 0; bottom: 0; left: 37.5%; width: 25%; border: 1px solid #ECEAE4; border-radius: 3px"></div></div></div>
+      <div style="display: flex; align-items: center; gap: 6px"><span class="rl" style="color: #A4AAB5">Lens</span><div class="lane" style="flex: 1; height: 90px; background-size: 25% 100%"><sc-for list="{{rollNear}}" as="n" hint-placeholder-count="20"><span class="n" style="{{n.st}}"></span></sc-for></div></div>
+      <div class="cap">Outside the lens, where notes are tiny, pitch is a contour line, which reads well when squeezed. Inside the lens, where you compare and edit, it is a piano roll.</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":760}}'>
+function rng(seed) { let s = seed >>> 0; return () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; }; }
+const LO = 34, HI = 50;
+function song(bars, seed) {
+  const R = rng(seed), J = a => (R() - 0.5) * 2 * a, out = [];
+  const riff = [[[0, 0.7, 40], [1, 0.4, 40], [1.5, 0.4, 43], [2, 0.7, 45], [3, 0.4, 43], [3.5, 0.4, 40]], [[0, 0.7, 38], [1, 0.4, 38], [1.5, 0.4, 40], [2, 0.9, 43], [3.25, 0.6, 45]]];
+  for (let b = 0; b < bars; b++) {
+    riff[b % 2].forEach(r => { if (R() < 0.05) return; out.push({ s: b * 4 + r[0] + J(0.05), d: Math.max(0.15, r[1] + J(0.08)), p: r[2] + (b >= 4 && b < 6 ? 2 : 0) }); });
+    if (R() < 0.3) out.push({ s: b * 4 + Math.floor(R() * 15) / 4 + 0.12, d: 0.14, p: 42 + Math.floor(R() * 6) });
+  }
+  return out.sort((a, b) => a.s - b.s);
+}
+const y = (p, H, nh) => 4 + (HI - p) / (HI - LO) * (H - 8 - nh);
+function roll(ns, span, H, col, nh) { return ns.map(n => ({ st: 'left:' + (n.s / span * 100).toFixed(3) + '%;width:max(2px,' + (n.d / span * 100).toFixed(3) + '%);top:' + y(n.p, H, nh).toFixed(1) + 'px;height:' + nh + 'px;background:' + col })); }
+function contour(ns, span, H) {
+  let d = '', last = null;
+  ns.forEach((n, i) => { const x = n.s / span * 1000, yy = y(n.p, H, 0); d += (i ? (' L' + x.toFixed(1) + ' ' + last.toFixed(1) + ' L') : 'M') + x.toFixed(1) + ' ' + yy.toFixed(1); last = yy; });
+  return d + ' L1000 ' + (last || 45).toFixed(1);
+}
+class Component extends DCLogic {
+  renderVals() {
+    if (this._v) return this._v;
+    const ref = song(8, 4242), mine = [];
+    ref.filter(n => n.s < 8 && n.d > 0.2).forEach(n => { for (let r = 0; r < 4; r++) mine.push({ s: Math.round(n.s * 4) / 4 + r * 8, d: n.d, p: n.p }); });
+    mine.sort((a, b) => a.s - b.s);
+    const hit = m => ref.some(n => n.p === m.p && Math.abs(n.s - m.s) <= 0.13);
+    const far = song(16, 99), near = far.filter(n => n.s >= 24 && n.s < 40).map(n => Object.assign({}, n, { s: n.s - 24 }));
+    this._v = {
+      rollRef: roll(ref, 32, 90, '#6F9FD8', 4),
+      rollMine: roll(mine, 32, 90, '#F1E6CC', 4).map((r, i) => (hit(mine[i]) ? r : { st: r.st.replace('#F1E6CC', '#FF8A5B') })),
+      contRef: contour(ref, 32, 90), contMine: contour(mine, 32, 90),
+      contFar: contour(far, 64, 90),
+      rollNear: roll(near, 16, 90, '#6F9FD8', 6)
+    };
+    return this._v;
+  }
+}
+</script>
+</body>
+</html>
