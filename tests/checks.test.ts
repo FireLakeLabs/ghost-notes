@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { docBudgets, inspectDocs } from '../scripts/docs.mjs';
+import { budgets, docBudgets, inspectDocs, topicBudget } from '../scripts/docs.mjs';
 import { boundaryProblems } from '../scripts/boundaries.mjs';
 import { timingResult, BROWSER_LIMIT_SECONDS, NODE_LIMIT_SECONDS } from '../scripts/timing.mjs';
 
@@ -14,6 +14,19 @@ test('document budgets detect missing and oversized living docs', () => {
   ).toBe(true);
   expect(inspectDocs(() => '').every((r) => r.ok)).toBe(true);
   expect(Object.keys(docBudgets)).toHaveLength(4);
+});
+
+test('every decisions topic file is budgeted, and an oversized one fails', () => {
+  const all = budgets(() => ['design.md', 'notes.txt', 'new.md']);
+  expect(all).toMatchObject({
+    'docs/decisions/design.md': topicBudget,
+    'docs/decisions/new.md': topicBudget,
+  });
+  expect(Object.keys(all)).toHaveLength(6);
+  const read = (path: string) =>
+    path === 'docs/decisions/new.md' ? 'word '.repeat(topicBudget + 1) : '';
+  const failing = inspectDocs(read, all).filter((row) => !row.ok);
+  expect(failing.map((row) => row.path)).toEqual(['docs/decisions/new.md']);
 });
 
 test('boundary fixtures reject imports and fixed ports; allow the seam and OS ports', () => {

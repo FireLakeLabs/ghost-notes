@@ -35,6 +35,8 @@ the principles it links.
   `@strudel/mini`, `@strudel/tonal`, `@strudel/transpiler` at 1.2.6;
   `@strudel/web`, `@strudel/webaudio`, `superdough` at 1.3.0.
 - Never bind a fixed port. Dev servers and browser tests take a free one.
+- The browser suite holds a machine-wide lock, so suites started in parallel
+  worktrees queue rather than disturb each other's timing tests.
 - Other people's music stays out of the repository (G4). Test from a local path.
 - Report what was measured separately from what was seen. No agent can hear;
   never describe how something sounds.
