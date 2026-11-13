@@ -43,7 +43,7 @@ function assertProof(proof: ReturnType<typeof roundTripProof>) {
 test('pickup, changing tempo, gaps, uncovered tail, and empty stems share one first-pass length', async () => {
   const song = await fixture();
   song.stems = [...song.stems, { ...song.stems[0], id: 'empty', notes: [] }];
-  const conversion = convertInstrument({ song, stemId: 'bass' });
+  const conversion = convertInstrument({ grid: 'exact', song, stemId: 'bass' });
   expect(conversion.spans.map((s) => [s.kind, s.startCycle, s.endCycle])).toEqual([
     ['pickup', 0, 0.25],
     ['bar', 0.25, 1.25],
@@ -60,7 +60,7 @@ test('pickup, changing tempo, gaps, uncovered tail, and empty stems share one fi
   );
   assertProof(proof);
   expect(timingError(song, conversion.notes)).toEqual(proof.timing);
-  const empty = convertInstrument({ song, stemId: 'empty' });
+  const empty = convertInstrument({ grid: 'exact', song, stemId: 'empty' });
   expect(empty.spans).toEqual(conversion.spans);
   expect((await queryEventsNode(empty.source, 0, 2.35)).events).toEqual([]);
 });
@@ -79,7 +79,7 @@ test('near bar ends, exact boundaries, chords and identical overlaps remain dist
     [7.5, 8, 64, 80],
   ]);
   song.stems = [{ ...song.stems[0], notes: input }];
-  const conversion = convertInstrument({ song, stemId: 'bass' });
+  const conversion = convertInstrument({ grid: 'exact', song, stemId: 'bass' });
   const result = await queryEventsNode(conversion.source, 0, conversion.spans.at(-1)!.endCycle);
   const proof = roundTripProof(song, conversion, input, result);
   assertProof(proof);
@@ -120,7 +120,12 @@ test('bar-range output starts at zero, excludes notes on its end boundary, and r
       ]),
     },
   ];
-  const conversion = convertInstrument({ song, stemId: 'bass', range: { fromBar: 1, toBar: 2 } });
+  const conversion = convertInstrument({
+    grid: 'exact',
+    song,
+    stemId: 'bass',
+    range: { fromBar: 1, toBar: 2 },
+  });
   expect(conversion.spans.map((s) => [s.startCycle, s.endCycle])).toEqual([[0, 1]]);
   expect(conversion.notes.map((n) => n.sourceIndex)).toEqual([0]);
   const result = await queryEventsNode(conversion.source, 0, 1);
@@ -140,7 +145,7 @@ test('five drum classes become five sample lanes and preserve simultaneous ident
     [7.5, 8, 49, 70],
   ]);
   song.stems = [{ ...song.stems[0], id: 'drums', notes: input }];
-  const conversion = convertInstrument({ song, stemId: 'drums' });
+  const conversion = convertInstrument({ grid: 'exact', song, stemId: 'drums' });
   expect(conversion.expression.split('\n')).toHaveLength(7);
   assertProof(
     roundTripProof(song, conversion, input, await queryEventsNode(conversion.source, 0, 2.35)),
@@ -164,7 +169,7 @@ test('zero-duration onset at the map endpoint survives, and moved sustain ends c
       ]),
     },
   ];
-  const conversion = convertInstrument({ song, stemId: 'bass' });
+  const conversion = convertInstrument({ grid: 'exact', song, stemId: 'bass' });
   assertProof(
     roundTripProof(
       song,
@@ -221,7 +226,7 @@ test('uncovered edges use full-bar tempo even when the last numbered bar has onl
       ]),
     },
   ];
-  const conversion = convertInstrument({ song, stemId: 'bass' });
+  const conversion = convertInstrument({ grid: 'exact', song, stemId: 'bass' });
   // G12 retains one cycle for the numbered partial bar. Both uncovered edges use
   // the observed 120 BPM / four-beat full-bar scale: .5s = .25, 2s = 1 cycle.
   expect(conversion.spans.map((s) => [s.kind, s.endCycle - s.startCycle])).toEqual([
