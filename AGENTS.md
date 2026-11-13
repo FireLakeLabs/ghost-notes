@@ -15,9 +15,9 @@ Strudel conversion, and the user's own arrangement, one above the other.
 
 ## Current phase
 
-Steps 1 and 2 of [next steps](docs/next-steps.md) are done. Step 3's checks
-are proven locally; Opus review and merging are pending. Its results and
-limits are in [next steps](docs/next-steps.md#step-3-results-2026-11-13).
+Steps 1–4 of [next steps](docs/next-steps.md) are done. Step 3's measured
+results and limits are in [next steps](docs/next-steps.md#step-3-results-2026-11-13).
+Step 9 owns the implementation and timing proof of beat-map time warping (G36).
 `npm run check` and `npm run test:browser` must pass before any commit.
 
 ## Skills

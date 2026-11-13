@@ -119,7 +119,7 @@ test('G19: the pinned web bundle does not register General MIDI', async ({ page 
 });
 
 for (const held of [false, true])
-  test(`G28 limit: simultaneous downbeats split at ${held ? 'held' : 'drifting'} tempo changes; constant fallback preserves them`, async ({
+  test(`G28 limit: simultaneous downbeats split at ${held ? 'held' : 'drifting'} tempo changes; constant-tempo control preserves them`, async ({
     page,
   }) => {
     const bars = held ? heldBarSeconds : barSeconds;

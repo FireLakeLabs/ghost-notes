@@ -58,7 +58,7 @@ check:docs`); when a topic file fills, start a new one.
 
 ## [Strudel proof](decisions/strudel-proof.md)
 
-- G36: bar-by-bar `.cps()` splits simultaneous notes; use G28's editable average fallback.
+- G36: reject live `.cps()`; prove beat-map time warping in step 9 before using G28's fallback.
 - G37: a fractional pickup is a once-only prefix; restart before replay.
 - G38: pin soundfonts 1.3.0; bridge General MIDI through the Strudel seam.
 
