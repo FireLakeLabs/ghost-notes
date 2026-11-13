@@ -19,3 +19,17 @@
   Browser proof must also require positive scheduling lead: accurate timestamps
   alone would conceal callbacks arriving after their deadlines. This tolerance
   describes scheduled AudioContext times, not speaker output or perception.
+
+- **G73 (2026-11-13) Restart from a bar with a new common clock origin.**
+  `createSongPlayback` owns a song transport. A play call stops the preceding
+  transport and seeks to that bar's recorded seconds; the first scheduler query
+  supplies the exact AudioContext origin for all retained stem sources. Each
+  source starts at origin + seek seconds, with that same buffer offset, at rate
+  1. No decoding or stretching happens during playback. Omit the bar to include
+     leading uncovered audio and the pickup. Stop/replay resets fractional phase;
+     sustained notes starting before a seek are not retriggered. Live `update`
+     swaps Mine without moving the clock or restarting stems. Explicit tempo
+     setters are neutralized at the scheduler boundary during evaluation too.
+     Playback stops at the full mapping's end; effect tails follow the inherited
+     engine's behavior. This API exposes Recording/Mine/Both and stem selection
+     for part 2; it adds no visible row controls.

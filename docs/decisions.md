@@ -103,6 +103,7 @@ check:docs`); when a topic file fills, start a new one.
 ## [Playback](decisions/playback.md)
 
 - G72: fixed-clock onset and sustain warping through the chosen grid; 1 ms additional scheduling tolerance.
+- G73: one shared audio clock, bar seeks restart at recorded offsets, live edits retain stem phase.
 
 ## [Simplify](decisions/simplify.md)
 
