@@ -30,14 +30,15 @@ no queried onset fell in those unarranged bars. The system clipboard contained t
 copy panel's exact text. Two fresh-page pastes and explicit reference reopens
 preserved queried values, every source link, edited flag and tempo, with zero
 runtime errors. A single observation of input to refreshed Mine plus two
-animation callbacks took 561.6 ms; this is not an audio latency measurement or
+animation callbacks took 561.7 ms; this is not an audio latency measurement or
 a repeated performance estimate. Real-song screenshots stay local.
 
 The reused single-instrument query initially exceeded its five-second budget.
 G119 asks the full tagged program even for one row. A separate synthetic
 shared-initializer canary proves a correctness difference: full playback gives
 61/61; the former isolated expansion gave 62/63. The existing isolated fallback
-and timeout remain. A failed full query can add five seconds before fallback.
+and timeout remain. A failed multi-row query can add five seconds before fallback; a failed
+one-row answer is reported directly, without repeating its question.
 Full-song literal-fill query limits from the [score-query report](score-query-measurements.md)
 remain; this walk does not establish every-bar arrangement scalability.
 
@@ -146,12 +147,31 @@ arrangement of every song. Later row speakers and simplify controls have
 
 ## Checks and review
 
-`npm run check` passed 630 Node tests (nine skips); `npm run test:browser`
-passed 81 (one skip) in 133.826 s / 180 s before final documentation updates.
-The combined arrangement walk took 14.042 s against its 20-second limit.
-Both full suites are rerun before the final commit. Opus approved in three
+`npm run check` passed 631 Node tests (nine skips); `npm run test:browser`
+passed 82 (one skip) in 134.560 s / 180 s after the CI follow-up below.
+Both arrangement cases finished below the five slowest cases' 10.307 s,
+within the unchanged 20-second accounting limit. Opus approved in four
 rounds. Review found and fixtures reproduced wrong rewrite targeting in a split
 copy, stale clicks during an unsent playback swap, an interior-bar editor left
 open by a moving lens, and Remove → Add refusing a use-owned rewrite. Current
 checks cover those fixes, including recovery of failed source text after closing
 and reopening its editor. Reviewer usage was not exposed.
+
+### CI follow-up
+
+On the first PR #42 head, Check's functional browser cases passed (80, two
+platform/opt-in skips) in 150.136 s, but the combined arrangement case took
+21.523 s against the unchanged 20-second case budget. Hosting's separate runner
+measured 24.226 s for that case and exposed two assertion races. The shared
+arrangement setup now feeds two independent cases: shared editing/copy/reopen,
+and rows/differences/view drawing. The original bodies and assertions remain.
+
+A failed one-row score question had been followed by a duplicate isolated
+question, delaying its row error to a second five-second deadline. A focused
+controller test first failed with the row still pending, then verifies the
+error settles without a second request. The existing browser timeout canary
+still checks responsiveness, the seven-second user-facing error and recovery.
+Source Apply waits on the existing completion signal within the same test
+deadline; a sequence of legitimate questions is not assigned an unrelated
+five-second assertion deadline. Case and suite budgets are unchanged. These
+changes leave successful queries and the measured lens renderer unchanged.

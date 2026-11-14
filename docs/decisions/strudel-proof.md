@@ -74,5 +74,7 @@
   The real lens walk also exposed the five-second limit after accepting 21
   native reuse offers for one drum bar. Full questions keep the shared bindings;
   the existing isolated fallback, cancellation and per-question budget remain.
-  A timed-out full question can therefore add five seconds before fallback,
-  including for one row. No new worker or data limit is introduced.
+  A failed one-row answer is already that row's error; publish it without
+  repeating the question. Successful opaque/unattributed answers can still fall
+  back. Multi-row failures retain G115's fallback and its possible extra five
+  seconds. No new worker or data limit is introduced.

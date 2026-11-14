@@ -374,8 +374,8 @@ The fixture checks shared edits, a split copy, native bass editing and two
 copy/paste/reopens. On the first test session, song 1, a native repeated drum
 bar linked 22 places: one cell changed every place by one onset, and two
 clipboard/paste/reopens retained all links, edited flags and tempos. Copy's
-12 silent unarranged bars had zero queried onsets. Full checks passed 630 Node
-tests and 81 browser tests (nine/one skips), within the existing budgets.
+12 silent unarranged bars had zero queried onsets. Full checks passed 631 Node
+tests and 82 browser tests (nine/one skips), within the existing budgets.
 The requirements implemented by these three parts follow.
 
 The whole-song view, with the section sheet as a lens inside it (G9). This

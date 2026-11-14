@@ -133,3 +133,22 @@ test('an obsolete failed answer cannot launch fallback work or overwrite the new
     app.editor?.dispose();
   }
 });
+
+test('a failed one-row question reports its error without queuing the same work again', async () => {
+  const app = createApp();
+  try {
+    await app.load('note("c3").s("sine")');
+    const error: EventResult = {
+      events: [],
+      cps: 0.5,
+      opaqueValues: false,
+      error: { phase: 'query', message: 'Question timed out' },
+    };
+    boundary.requests[0].resolve(error);
+    await vi.waitFor(() => expect(app.pendingRows.size).toBe(0));
+    expect(boundary.requests).toHaveLength(1);
+    expect(app.state.events[app.state.rows[0].id].error).toEqual(error.error);
+  } finally {
+    app.editor?.dispose();
+  }
+});

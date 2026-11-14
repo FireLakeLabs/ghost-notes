@@ -2,7 +2,7 @@ import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { expect, type Page } from '@playwright/test';
-import { test, scoreReady } from './helpers';
+import { test, scoreReady, appSignal } from './helpers';
 import { timelineFixture } from '../fixtures/timeline';
 
 let folder = '';
@@ -128,6 +128,7 @@ test('moving a lens closes an interior-bar editor and retains its unapplied sour
   );
   await page.getByLabel('Source text', { exact: true }).fill('note( 62 ).s("triangle")');
   await page.locator('#editor').getByRole('button', { name: 'Apply', exact: true }).click();
+  await appSignal(page, () => document.getElementById('editor')!.textContent!.includes('Applied.'));
   await expect(page.locator('#editor')).toContainText('Applied.');
   await scoreReady(page);
   await page.locator('#editor .editor-done').click();

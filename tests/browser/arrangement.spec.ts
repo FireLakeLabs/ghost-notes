@@ -2,13 +2,12 @@ import { paintTimeline } from './timeline-paint';
 import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { expect } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 import { test, scoreReady } from './helpers';
 import { timelineFixture } from '../fixtures/timeline';
 
-test('make a linked section, reuse, split, warn, copy and reopen', async ({ page }) => {
+async function openArrangement(page: Page) {
   const folder = await mkdtemp(join(tmpdir(), 'ghost-arrangement-'));
-  let otherFolder: string | undefined;
   const errors: string[] = [];
   page.on('pageerror', () => errors.push('Browser runtime error'));
   try {
@@ -69,222 +68,23 @@ test('make a linked section, reuse, split, warn, copy and reopen', async ({ page
     });
     await expect(drumsMine).toHaveAttribute('aria-description', /^6 notes/);
     await expect(page.locator('#timeline')).toHaveAttribute('data-animating', 'false');
-    const literal = page.getByRole('img', { name: 'drums Notes literal conversion', exact: true });
-    await literal.scrollIntoViewIfNeeded();
-    await literal.focus();
-    const explanations = new Set<string>();
-    let previousExplanation = '';
-    for (let i = 0; i < 40; i++) {
-      await literal.press('ArrowDown');
-      const text = await page.getByRole('tooltip').textContent();
-      expect(text).not.toBe(previousExplanation);
-      previousExplanation = text ?? '';
-      for (const name of ['Moved:', 'Moved across a bar line:', 'Shortened:', 'Merged:'])
-        if (text?.includes(name)) explanations.add(name);
-      if (explanations.size === 4) break;
-    }
-    expect(explanations.size).toBe(4);
-    await literal.press('Escape');
-    const orange = await literal.evaluate((c: HTMLCanvasElement) => {
-      const pixels = c.getContext('2d')!.getImageData(0, 0, c.width, c.height).data;
-      for (let i = 0; i < pixels.length; i += 4)
-        if (pixels[i] > 230 && pixels[i + 1] > 100 && pixels[i + 1] < 180 && pixels[i + 2] < 140)
-          return {
-            x: (((i / 4) % c.width) + 0.5) / c.width,
-            y: (Math.floor(i / 4 / c.width) + 0.5) / c.height,
-          };
-      throw Error('Expected a painted difference');
-    });
-    const box = await literal.boundingBox();
-    await page.mouse.move(box!.x + orange.x * box!.width, box!.y + orange.y * box!.height);
-    await expect(page.getByRole('tooltip')).toContainText(/Moved|Shortened|Merged/);
-    async function inputPaints(stage: 'animating' | 'quiet') {
-      return page.evaluate((stage) => {
-        const canvas = document.querySelector<HTMLCanvasElement>(
-          '[data-stem="drums"] [data-layer="notes"]',
-        )!;
-        const overview = document.querySelector<HTMLCanvasElement>('.tl-overview canvas')!;
-        const original = CanvasRenderingContext2D.prototype.clearRect;
-        let paints = 0;
-        CanvasRenderingContext2D.prototype.clearRect = function (...args) {
-          paints++;
-          original.apply(this, args);
-        };
-        try {
-          if (stage === 'animating') {
-            window.ghostTimeline.openLens({ firstBar: 13, lastBar: 13 });
-            window.dispatchEvent(new Event('scroll'));
-          }
-          for (let i = 0; i < 8; i++) {
-            for (const target of [canvas, overview]) {
-              const rect = target.getBoundingClientRect();
-              target.dispatchEvent(
-                new PointerEvent('pointermove', {
-                  bubbles: true,
-                  clientX: rect.left + 20 + i,
-                  clientY: rect.top + 10,
-                }),
-              );
-            }
-            if (stage === 'quiet')
-              canvas.dispatchEvent(
-                new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }),
-              );
-          }
-          return paints;
-        } finally {
-          CanvasRenderingContext2D.prototype.clearRect = original;
-        }
-      }, stage);
-    }
-    expect(await inputPaints('animating')).toBe(0);
-    await expect(page.locator('#timeline')).toHaveAttribute('data-animating', 'false');
-    await page.evaluate(
-      () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
-    );
-    expect(await inputPaints('quiet')).toBe(0);
-    await page.evaluate(() => window.ghostTimeline.openLens(null));
-    await expect(page.locator('#timeline')).toHaveAttribute('data-animating', 'false');
-    await page.evaluate(() => {
-      const slider = document.querySelector<HTMLInputElement>('[data-zoom]')!;
-      slider.value = '4';
-      slider.dispatchEvent(new Event('input'));
-      document.querySelector('.tl-scroll')!.scrollLeft = 0;
-    });
-    await literal.scrollIntoViewIfNeeded();
-    await page.mouse.move(0, 0);
-    await literal.focus();
-    let chosenExplanation = '';
-    for (let i = 0; i < 40; i++) {
-      await literal.press('ArrowDown');
-      const text = await page.getByRole('tooltip').textContent();
-      if (text?.includes('2.530')) {
-        chosenExplanation = text;
-        break;
-      }
-    }
-    expect(chosenExplanation).not.toBe('');
-    await page.evaluate(() => {
-      document.querySelector('.tl-scroll')!.scrollLeft = 40;
-    });
-    await page.evaluate(
-      () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
-    );
-    await expect(page.getByRole('tooltip')).toHaveText(chosenExplanation);
-    await literal.press('Escape');
-    await page.evaluate(() => {
-      document.querySelector<HTMLButtonElement>('[data-fit]')!.click();
-      window.ghostTimeline.openLens({ firstBar: 2, lastBar: 2 });
-    });
-    await expect(page.locator('#timeline')).toHaveAttribute('data-animating', 'false');
-    // An actual queried rewrite changes Mine, then the existing match setting
-    // changes the comparison without changing the arrangement or its answers.
-    await page.evaluate(() => {
-      const app = window.odmApp,
-        doc = structuredClone(app.state.doc!);
-      doc.body.push({
-        kind: 'transform',
-        id: 'comparison-transpose',
-        tier: 3,
-        name: 'all',
-        args: [
-          {
-            kind: 'opaque',
-            code: 'p=>p.fmap(v=>v.note===undefined?v:{...v,note:Number(v.note)+12})',
-          },
-        ],
-      });
-      app.editor!.apply(doc);
-    });
-    await scoreReady(page);
-    const bassMine = page.getByRole('img', { name: 'bass Mine queried arrangement', exact: true });
-    await expect(bassMine).toHaveAttribute('aria-description', /Bar 2: 0% match/);
-    await bassMine.scrollIntoViewIfNeeded();
-    await bassMine.focus();
-    const mineExplanations = new Set<string>();
-    for (let i = 0; i < 30; i++) {
-      await bassMine.press('ArrowDown');
-      const text = await page.getByRole('tooltip').textContent();
-      if (text?.includes('Only in yours:')) mineExplanations.add('yours');
-      if (text?.includes('Only in the recording:')) mineExplanations.add('recording');
-      if (mineExplanations.size === 2) break;
-    }
-    expect([...mineExplanations].sort()).toEqual(['recording', 'yours']);
-    const beforeMatch = await bassMine.evaluate((c: HTMLCanvasElement) => c.toDataURL());
-    if (process.env.GHOST_DIFFERENCES_SHOT) {
-      await paintTimeline(page);
-      await page.locator('#timeline').screenshot({ path: process.env.GHOST_DIFFERENCES_SHOT });
-    }
-    const queried = await page.evaluate(() => JSON.stringify(window.odmApp.state.events));
-    await page.locator('#settings').click();
-    await page.getByLabel('Pitch match').selectOption('any-octave');
-    await page.getByRole('button', { name: 'Done', exact: true }).click();
-    await expect(bassMine).toHaveAttribute('aria-description', /Bar 2: 67% match/);
-    await bassMine.scrollIntoViewIfNeeded();
-    await page.evaluate(
-      () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
-    );
-    expect(await bassMine.evaluate((c: HTMLCanvasElement) => c.toDataURL())).not.toBe(beforeMatch);
-    expect(await page.evaluate(() => JSON.stringify(window.odmApp.state.events))).toBe(queried);
-    await page.locator('#settings').click();
-    await page.getByLabel('Pitch match').selectOption('exact');
-    await page.getByRole('button', { name: 'Done', exact: true }).click();
-    await page.evaluate(() => window.odmApp.editor!.undo());
-    await scoreReady(page);
     await drumsMine.scrollIntoViewIfNeeded();
     await page.evaluate(
-      () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
-    );
-    const pixels = await drumsMine.evaluate((c: HTMLCanvasElement) => c.toDataURL());
-    await page.getByLabel('keys view', { exact: true }).selectOption('layers');
-    await expect(page.locator('[data-row="layers"][data-stem="keys"]')).toHaveCount(1);
-    await page.evaluate(
       () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
     );
-    expect(await drumsMine.evaluate((c: HTMLCanvasElement) => c.toDataURL())).toBe(pixels);
-    await page.locator('#settings').click();
-    await page.evaluate(() => {
-      scrollTo(0, 0);
-      document.getElementById('reference-panel')!.style.height = '1200px';
-    });
-    await page.getByLabel('All instrument views', { exact: true }).selectOption('layers');
-    await page.getByRole('button', { name: 'Done', exact: true }).click();
-    await expect(page.locator('[data-row="layers"]')).toHaveCount(6);
-    const isPainted = () =>
-      drumsMine.evaluate((c: HTMLCanvasElement) =>
-        c
-          .getContext('2d')!
-          .getImageData(0, 0, c.width, c.height)
-          .data.some((v) => v !== 0),
-      );
-    await page.evaluate(
-      () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
-    );
-    expect(await isPainted()).toBe(false);
-    await page.evaluate(() => (document.getElementById('reference-panel')!.style.height = ''));
-    expect(await drumsMine.evaluate((c) => c.getBoundingClientRect().top < innerHeight)).toBe(true);
-    await expect.poll(isPainted).toBe(true);
-    await drumsMine.focus();
-    await drumsMine.press('ArrowDown');
-    await expect(page.getByRole('tooltip')).toContainText(/Moved|Shortened|Merged/);
-    await drumsMine.press('Escape');
-    await expect(
-      page.getByRole('img', { name: 'bass Mine queried arrangement', exact: true }),
-    ).toHaveAttribute('aria-description', /^6 notes/);
-    if (process.env.GHOST_ROWS_SHOT) {
-      await paintTimeline(page);
-      await page.locator('#timeline').screenshot({ path: process.env.GHOST_ROWS_SHOT });
-    }
-    await page.locator('#settings').click();
-    await page.getByLabel('All instrument views', { exact: true }).selectOption('rows');
-    await page.getByRole('button', { name: 'Done', exact: true }).click();
-    await expect(page.locator('[data-row="mine"]')).toHaveCount(6);
-    if (process.env.GHOST_ROWS_SHOT) {
-      await paintTimeline(page);
-      await page.locator('#timeline').screenshot({
-        path: process.env.GHOST_ROWS_SHOT.replace('.png', '-rows.png'),
-      });
-    }
+    return { folder, files, open, dialog, drumsMine, errors };
+  } catch (error) {
+    await rm(folder, { recursive: true, force: true });
+    throw error;
+  }
+}
+
+test('make a linked section, edit shared places, split, warn, copy and reopen', async ({
+  page,
+}) => {
+  const { folder, files, open, dialog, drumsMine, errors } = await openArrangement(page);
+  let otherFolder: string | undefined;
+  try {
     const before = await page.evaluate(() => window.odmApp.state.sections.filter((p) => p.source));
     expect(before.map((p) => p.source?.fromBar)).toEqual([2, 6, 10]);
     const grid = page.getByRole('grid', { name: 'Edit drums in the lens', exact: true });
@@ -521,5 +321,232 @@ test('make a linked section, reuse, split, warn, copy and reopen', async ({ page
   } finally {
     await rm(folder, { recursive: true, force: true });
     if (otherFolder) await rm(otherFolder, { recursive: true, force: true });
+  }
+});
+
+test('linked rows explain all differences and preserve views and visible drawing', async ({
+  page,
+}) => {
+  const { folder, drumsMine, errors } = await openArrangement(page);
+  try {
+    const literal = page.getByRole('img', { name: 'drums Notes literal conversion', exact: true });
+    await literal.scrollIntoViewIfNeeded();
+    await literal.focus();
+    const explanations = new Set<string>();
+    let previousExplanation = '';
+    for (let i = 0; i < 40; i++) {
+      await literal.press('ArrowDown');
+      const text = await page.getByRole('tooltip').textContent();
+      expect(text).not.toBe(previousExplanation);
+      previousExplanation = text ?? '';
+      for (const name of ['Moved:', 'Moved across a bar line:', 'Shortened:', 'Merged:'])
+        if (text?.includes(name)) explanations.add(name);
+      if (explanations.size === 4) break;
+    }
+    expect(explanations.size).toBe(4);
+    await literal.press('Escape');
+    const orange = await literal.evaluate((c: HTMLCanvasElement) => {
+      const pixels = c.getContext('2d')!.getImageData(0, 0, c.width, c.height).data;
+      for (let i = 0; i < pixels.length; i += 4)
+        if (pixels[i] > 230 && pixels[i + 1] > 100 && pixels[i + 1] < 180 && pixels[i + 2] < 140)
+          return {
+            x: (((i / 4) % c.width) + 0.5) / c.width,
+            y: (Math.floor(i / 4 / c.width) + 0.5) / c.height,
+          };
+      throw Error('Expected a painted difference');
+    });
+    const box = await literal.boundingBox();
+    await page.mouse.move(box!.x + orange.x * box!.width, box!.y + orange.y * box!.height);
+    await expect(page.getByRole('tooltip')).toContainText(/Moved|Shortened|Merged/);
+    async function inputPaints(stage: 'animating' | 'quiet') {
+      return page.evaluate((stage) => {
+        const canvas = document.querySelector<HTMLCanvasElement>(
+          '[data-stem="drums"] [data-layer="notes"]',
+        )!;
+        const overview = document.querySelector<HTMLCanvasElement>('.tl-overview canvas')!;
+        const original = CanvasRenderingContext2D.prototype.clearRect;
+        let paints = 0;
+        CanvasRenderingContext2D.prototype.clearRect = function (...args) {
+          paints++;
+          original.apply(this, args);
+        };
+        try {
+          if (stage === 'animating') {
+            window.ghostTimeline.openLens({ firstBar: 13, lastBar: 13 });
+            window.dispatchEvent(new Event('scroll'));
+          }
+          for (let i = 0; i < 8; i++) {
+            for (const target of [canvas, overview]) {
+              const rect = target.getBoundingClientRect();
+              target.dispatchEvent(
+                new PointerEvent('pointermove', {
+                  bubbles: true,
+                  clientX: rect.left + 20 + i,
+                  clientY: rect.top + 10,
+                }),
+              );
+            }
+            if (stage === 'quiet')
+              canvas.dispatchEvent(
+                new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }),
+              );
+          }
+          return paints;
+        } finally {
+          CanvasRenderingContext2D.prototype.clearRect = original;
+        }
+      }, stage);
+    }
+    expect(await inputPaints('animating')).toBe(0);
+    await expect(page.locator('#timeline')).toHaveAttribute('data-animating', 'false');
+    await page.evaluate(
+      () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
+    );
+    expect(await inputPaints('quiet')).toBe(0);
+    await page.evaluate(() => window.ghostTimeline.openLens(null));
+    await expect(page.locator('#timeline')).toHaveAttribute('data-animating', 'false');
+    await page.evaluate(() => {
+      const slider = document.querySelector<HTMLInputElement>('[data-zoom]')!;
+      slider.value = '4';
+      slider.dispatchEvent(new Event('input'));
+      document.querySelector('.tl-scroll')!.scrollLeft = 0;
+    });
+    await literal.scrollIntoViewIfNeeded();
+    await page.mouse.move(0, 0);
+    await literal.focus();
+    let chosenExplanation = '';
+    for (let i = 0; i < 40; i++) {
+      await literal.press('ArrowDown');
+      const text = await page.getByRole('tooltip').textContent();
+      if (text?.includes('2.530')) {
+        chosenExplanation = text;
+        break;
+      }
+    }
+    expect(chosenExplanation).not.toBe('');
+    await page.evaluate(() => {
+      document.querySelector('.tl-scroll')!.scrollLeft = 40;
+    });
+    await page.evaluate(
+      () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
+    );
+    await expect(page.getByRole('tooltip')).toHaveText(chosenExplanation);
+    await literal.press('Escape');
+    await page.evaluate(() => {
+      document.querySelector<HTMLButtonElement>('[data-fit]')!.click();
+      window.ghostTimeline.openLens({ firstBar: 2, lastBar: 2 });
+    });
+    await expect(page.locator('#timeline')).toHaveAttribute('data-animating', 'false');
+    // An actual queried rewrite changes Mine, then the existing match setting
+    // changes the comparison without changing the arrangement or its answers.
+    await page.evaluate(() => {
+      const app = window.odmApp,
+        doc = structuredClone(app.state.doc!);
+      doc.body.push({
+        kind: 'transform',
+        id: 'comparison-transpose',
+        tier: 3,
+        name: 'all',
+        args: [
+          {
+            kind: 'opaque',
+            code: 'p=>p.fmap(v=>v.note===undefined?v:{...v,note:Number(v.note)+12})',
+          },
+        ],
+      });
+      app.editor!.apply(doc);
+    });
+    await scoreReady(page);
+    const bassMine = page.getByRole('img', { name: 'bass Mine queried arrangement', exact: true });
+    await expect(bassMine).toHaveAttribute('aria-description', /Bar 2: 0% match/);
+    await bassMine.scrollIntoViewIfNeeded();
+    await bassMine.focus();
+    const mineExplanations = new Set<string>();
+    for (let i = 0; i < 30; i++) {
+      await bassMine.press('ArrowDown');
+      const text = await page.getByRole('tooltip').textContent();
+      if (text?.includes('Only in yours:')) mineExplanations.add('yours');
+      if (text?.includes('Only in the recording:')) mineExplanations.add('recording');
+      if (mineExplanations.size === 2) break;
+    }
+    expect([...mineExplanations].sort()).toEqual(['recording', 'yours']);
+    const beforeMatch = await bassMine.evaluate((c: HTMLCanvasElement) => c.toDataURL());
+    if (process.env.GHOST_DIFFERENCES_SHOT) {
+      await paintTimeline(page);
+      await page.locator('#timeline').screenshot({ path: process.env.GHOST_DIFFERENCES_SHOT });
+    }
+    const queried = await page.evaluate(() => JSON.stringify(window.odmApp.state.events));
+    await page.locator('#settings').click();
+    await page.getByLabel('Pitch match').selectOption('any-octave');
+    await page.getByRole('button', { name: 'Done', exact: true }).click();
+    await expect(bassMine).toHaveAttribute('aria-description', /Bar 2: 67% match/);
+    await bassMine.scrollIntoViewIfNeeded();
+    await page.evaluate(
+      () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
+    );
+    expect(await bassMine.evaluate((c: HTMLCanvasElement) => c.toDataURL())).not.toBe(beforeMatch);
+    expect(await page.evaluate(() => JSON.stringify(window.odmApp.state.events))).toBe(queried);
+    await page.locator('#settings').click();
+    await page.getByLabel('Pitch match').selectOption('exact');
+    await page.getByRole('button', { name: 'Done', exact: true }).click();
+    await page.evaluate(() => window.odmApp.editor!.undo());
+    await scoreReady(page);
+    await drumsMine.scrollIntoViewIfNeeded();
+    await page.evaluate(
+      () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
+    );
+    const pixels = await drumsMine.evaluate((c: HTMLCanvasElement) => c.toDataURL());
+    await page.getByLabel('keys view', { exact: true }).selectOption('layers');
+    await expect(page.locator('[data-row="layers"][data-stem="keys"]')).toHaveCount(1);
+    await page.evaluate(
+      () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+    );
+    expect(await drumsMine.evaluate((c: HTMLCanvasElement) => c.toDataURL())).toBe(pixels);
+    await page.locator('#settings').click();
+    await page.evaluate(() => {
+      scrollTo(0, 0);
+      document.getElementById('reference-panel')!.style.height = '1200px';
+    });
+    await page.getByLabel('All instrument views', { exact: true }).selectOption('layers');
+    await page.getByRole('button', { name: 'Done', exact: true }).click();
+    await expect(page.locator('[data-row="layers"]')).toHaveCount(6);
+    const isPainted = () =>
+      drumsMine.evaluate((c: HTMLCanvasElement) =>
+        c
+          .getContext('2d')!
+          .getImageData(0, 0, c.width, c.height)
+          .data.some((v) => v !== 0),
+      );
+    await page.evaluate(
+      () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+    );
+    expect(await isPainted()).toBe(false);
+    await page.evaluate(() => (document.getElementById('reference-panel')!.style.height = ''));
+    expect(await drumsMine.evaluate((c) => c.getBoundingClientRect().top < innerHeight)).toBe(true);
+    await expect.poll(isPainted).toBe(true);
+    await drumsMine.focus();
+    await drumsMine.press('ArrowDown');
+    await expect(page.getByRole('tooltip')).toContainText(/Moved|Shortened|Merged/);
+    await drumsMine.press('Escape');
+    await expect(
+      page.getByRole('img', { name: 'bass Mine queried arrangement', exact: true }),
+    ).toHaveAttribute('aria-description', /^6 notes/);
+    if (process.env.GHOST_ROWS_SHOT) {
+      await paintTimeline(page);
+      await page.locator('#timeline').screenshot({ path: process.env.GHOST_ROWS_SHOT });
+    }
+    await page.locator('#settings').click();
+    await page.getByLabel('All instrument views', { exact: true }).selectOption('rows');
+    await page.getByRole('button', { name: 'Done', exact: true }).click();
+    await expect(page.locator('[data-row="mine"]')).toHaveCount(6);
+    if (process.env.GHOST_ROWS_SHOT) {
+      await paintTimeline(page);
+      await page.locator('#timeline').screenshot({
+        path: process.env.GHOST_ROWS_SHOT.replace('.png', '-rows.png'),
+      });
+    }
+    expect(errors).toEqual([]);
+  } finally {
+    await rm(folder, { recursive: true, force: true });
   }
 });

@@ -62,7 +62,7 @@ check:docs`); when a topic file fills, start a new one.
 - G37: a fractional pickup is a once-only prefix; restart before replay.
 - G38: pin soundfonts 1.3.0; bridge General MIDI through the Strudel seam.
 - G115: split a whole-score question by queried row tags, with isolated-question fallback.
-- G119: whole-program score questions also preserve shared one-instrument evaluation.
+- G119: whole-program score questions preserve shared one-instrument evaluation and report its error once.
 
 ## [Transcription](decisions/transcription.md)
 

@@ -95,7 +95,9 @@ one-instrument score.
 PlainEvent.instrumentId comes from Hap context and never changes sound
 values. The score adapter partitions events in their complete playback context;
 edits refresh neighbours too because group transforms can couple rows.
-Broken/opaque/unattributed whole answers use isolated questions, guarded
+Failed multi-row or opaque/unattributed whole answers use isolated questions.
+A failed one-row whole answer is published directly, without a duplicate
+question. All results are guarded
 against an obsolete request. Workers remain fresh and
 independently bounded.
 [The measured scope](score-query-measurements.md) is separate from playback

@@ -86,10 +86,14 @@ export function createApp() {
     if (rows.length) {
       const answer = await queries.query(generate(doc, { instrumentTags: true }), from, to);
       if (piece !== epoch || revision !== windowRevision) return;
-      answers = scoreRows(
-        answer,
-        rows.map((row) => row.id),
-      );
+      // One failed whole-program question already answers its only row.
+      answers =
+        rows.length === 1 && answer.error
+          ? { [rows[0].id]: answer }
+          : scoreRows(
+              answer,
+              rows.map((row) => row.id),
+            );
     }
     if (!answers) {
       const results = await Promise.all(

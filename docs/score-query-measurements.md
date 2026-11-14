@@ -103,4 +103,7 @@ returned 242 onsets; an actual grid edit added one at all 22 places. Two
 copies and explicit folder reopening retained 264 queried/Mine onsets, every
 link and tempo, and zero onsets in unarranged bars. This is one correctness
 walk, not a paired speedup claim. Full-question timeout followed by isolated
-fallback can still add five seconds, including for one row.
+multi-row fallback can still add five seconds. A failed one-row whole answer
+is published directly: repeating the same whole-piece work delayed its error
+and made CI race two five-second questions. Successful opaque/unattributed
+answers retain isolated fallback.
