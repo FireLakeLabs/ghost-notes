@@ -7,7 +7,9 @@ const releaseLock = await acquireSuiteLock();
 process.once('exit', releaseLock);
 const start = performance.now();
 const mode = process.argv[2] ?? 'ci';
-if (!['ci', 'online', 'measure', 'edit-demo', 'timeline-measure'].includes(mode))
+if (
+  !['ci', 'ci-ui', 'ci-audio', 'online', 'measure', 'edit-demo', 'timeline-measure'].includes(mode)
+)
   throw Error('Unknown browser mode');
 // ODM_BROWSER_LIMIT_SECONDS is a lower-only override for exercising the failure path.
 const limit = Number(process.env.ODM_BROWSER_LIMIT_SECONDS ?? BROWSER_LIMIT_SECONDS);
@@ -21,6 +23,8 @@ for (let i = 0; i < args.length; i++) {
   if (args[i] === '--reporter') reporters = args.splice(i--, 2)[1];
   else if (args[i].startsWith('--reporter=')) reporters = args.splice(i--, 1)[0].slice(11);
 }
+const ordinary = mode === 'ci' || mode === 'ci-ui' || mode === 'ci-audio';
+const project = mode === 'ci-ui' ? 'default' : ordinary ? 'audio' : 'optional';
 const reportPath = `${outDir}/timings.json`;
 let server;
 try {
@@ -37,8 +41,9 @@ try {
       [
         'node_modules/@playwright/test/cli.js',
         'test',
-        `--project=${mode === 'ci' ? 'audio' : 'optional'}`,
-        ...(mode === 'ci' ? [] : [`tests/browser/${mode}.spec.ts`]),
+        `--project=${project}`,
+        ...(mode === 'ci-ui' || mode === 'ci-audio' ? ['--no-deps'] : []),
+        ...(ordinary ? [] : [`tests/browser/${mode}.spec.ts`]),
         ...args,
         '--reporter',
         `${reporters},./scripts/browser-report.mjs`,
@@ -94,7 +99,7 @@ try {
     console.log(report);
     if (process.env.GITHUB_STEP_SUMMARY)
       appendFileSync(process.env.GITHUB_STEP_SUMMARY, `\n\`\`\`text\n${report}\n\`\`\`\n`);
-    if (mode === 'ci' && !summary.ok) process.exitCode = 1;
+    if (ordinary && !summary.ok) process.exitCode = 1;
   }
   console.log(message);
   if (process.env.GITHUB_STEP_SUMMARY)

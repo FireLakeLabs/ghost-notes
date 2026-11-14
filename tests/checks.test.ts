@@ -1,7 +1,46 @@
 import { expect, test } from 'vitest';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { budgets, docBudgets, inspectDocs, topicBudget } from '../scripts/docs.mjs';
 import { boundaryProblems } from '../scripts/boundaries.mjs';
 import { timingResult, BROWSER_LIMIT_SECONDS, NODE_LIMIT_SECONDS } from '../scripts/timing.mjs';
+
+test('completed browser timings survive without the end-of-suite callback', async () => {
+  const { default: BrowserReport } = await import('../scripts/browser-report.mjs');
+  const dir = mkdtempSync(join(tmpdir(), 'browser-report-'));
+  const prior = process.env.ODM_REPORT_PATH;
+  const priorProfile = process.env.ODM_PROFILE_PATH;
+  delete process.env.ODM_PROFILE_PATH;
+  const path = join(dir, 'timings.json');
+  process.env.ODM_REPORT_PATH = path;
+  try {
+    const reporter = new BrowserReport();
+    reporter.onTestEnd(
+      { titlePath: () => ['audio', 'clock proof'] },
+      { status: 'passed', duration: 1200, startTime: 0, steps: [], attachments: [] },
+    );
+    expect(JSON.parse(readFileSync(path, 'utf8'))).toEqual([
+      expect.objectContaining({ title: 'audio > clock proof', status: 'passed', ms: 1200 }),
+    ]);
+    reporter.onTestEnd(
+      { titlePath: () => ['ui', 'row controls'] },
+      { status: 'timedOut', duration: 20001, startTime: 0, steps: [], attachments: [] },
+    );
+    const { browserSummary } = await import('../scripts/browser-summary.mjs');
+    expect(browserSummary(JSON.parse(readFileSync(path, 'utf8')), 22)).toMatchObject({
+      count: 2,
+      ok: false,
+      over: [expect.objectContaining({ title: 'ui > row controls' })],
+    });
+  } finally {
+    if (prior === undefined) delete process.env.ODM_REPORT_PATH;
+    else process.env.ODM_REPORT_PATH = prior;
+    if (priorProfile === undefined) delete process.env.ODM_PROFILE_PATH;
+    else process.env.ODM_PROFILE_PATH = priorProfile;
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
 
 test('document budgets detect missing and oversized living docs', () => {
   const read = (path: string) => (path === 'AGENTS.md' ? 'word '.repeat(401) : '');
