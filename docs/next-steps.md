@@ -593,10 +593,10 @@ What was planned:
 **Done when:** the copied text for a fixture arrangement loads in Strudel at
 the pinned versions and plays the expected events, measured as in step 3.
 
-## 11. Simplify
+## 11. Simplify: done
 
-**Part 1 (logic and measurements): done in #28.** Part 2, timeline controls,
-remains in #9 after step 7 part 3. Limits and match criteria are session user
+**Part 1 (logic and measurements): done in #28. Part 2 (controls): done.**
+Timeline and lens share the section/instrument proposal dialog. Limits and match criteria are session user
 settings (G16/G21/G23); every instrument is included (G30).
 
 `src/simplify/` proposes drum bar templates with `arrange` and run lengths,
@@ -625,8 +625,8 @@ exact pitch. These shares include converter movements and merges. Drum summary:
 [Full per-song, per-technique tables](simplify-measurements.md) include bass,
 keys/other pitched stems, M/X/S/G/D/A marks and limit trials. The velocity-32
 cleaning default made no extra repairs on these six songs; 48/64 trials quantify
-more aggressive proposals. No listening, perceived quality or timeline controls
-were verified. Expanded candidates are not a measured improvement.
+more aggressive proposals. This part 1 study did not verify listening,
+perceived quality or timeline controls. Expanded candidates are not a measured improvement.
 
 The onset-only structure study was separately repeated on all six detected
 maps. On the first test session, song 3, the current Python script and TypeScript
@@ -638,8 +638,31 @@ uncovered edges; it is not the full-note result above.
 Proof: `npm test -- tests/simplify.test.ts tests/simplify-pitched.test.ts`;
 `GHOST_SIMPLIFY_ROOT="$HOME/projects/ghost-notes/reference" npm test -- tests/simplify-local.test.ts --silent=false`.
 The local proof skips when absent; CI uses invented fixtures. Decisions G77–G80
-are in [simplify decisions](decisions/simplify.md). Part 2 still owns applying
-proposals, session controls and drawing their marks in the timeline.
+are in [simplify decisions](decisions/simplify.md).
+
+### Part 2 results (2026-11-14)
+
+Timeline and lens offer recording-derived proposals for a selected section and
+instrument, with retention/match shares and denominators, moved/dropped/added
+counts, G31 drawings and keyboard/pointer explanations. Apply is one undoable
+shared edit, preserving sound/effects and links; Discard changes nothing.
+Session Settings owns limits. Whole-program queries verify proposed pitches and
+endpoints before Apply; stale settings/documents and incompatible rewrites cannot
+apply. G124/G125 and the [controls proof](simplify-controls.md) record the scope.
+
+Browser fixture: drums and bass each change 33 → 32 notes at the expected
+onsets/pitches, keep the other instrument unchanged, and exercise Apply,
+Discard, Undo and setting invalidation. Node proof checks independent copies,
+link round-trip and rejection of an outer transpose. Looked at desktop and
+390 px dialog screenshots; only invented material is retained in git.
+
+Locally, on the first test session, song 1, bars 1–8: drums offered 1 proposal,
+applied 77 notes (67/79 source matched, 87.0% proposal match); bass offered all 7,
+applied 56 notes (27/56 matched, 48.2%). Two visits each reached the painted,
+checked report in 919–954 ms, including automation and two animation frames.
+Both Apply/Undo paths restored the exact document, with zero browser errors.
+These are observed local visits, not a general latency or quality claim. No
+listening, device-output quality or full-song simplify interaction was measured.
 
 ## 12. Hosting on AWS: code ready, provisioning remains
 

@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" /><meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  /><title>Simplify report mockup · invented material</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font: 15px/1.5 system-ui;
+      color: #eceae4;
+      background: #0f1115;
+    }
+    body {
+      margin: 24px auto;
+      max-width: 940px;
+      padding: 20px;
+      background: #161920;
+      border: 1px solid #5a6273;
+      border-radius: 8px;
+    }
+    h1 {
+      font-size: 24px;
+    }
+    button,
+    select {
+      color: inherit;
+      background: #1c2029;
+      border: 1px solid #5a6273;
+      border-radius: 6px;
+      padding: 12px;
+      font: inherit;
+    }
+    nav {
+      display: flex;
+      gap: 12px;
+      align-items: end;
+      flex-wrap: wrap;
+    }
+    label {
+      display: grid;
+      gap: 4px;
+    }
+    small {
+      color: #a4aab5;
+    }
+    svg {
+      width: 100%;
+      height: 180px;
+      background: #0f1115;
+      border: 1px solid #2a2f3a;
+    }
+    pre {
+      white-space: pre-wrap;
+    }
+    footer {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+  </style>
+  <h1>Simplify section</h1>
+  <p>
+    Suggest a replacement from the recording's notes. Your arrangement changes only when you Apply.
+  </p>
+  <nav>
+    <label
+      >Section<select>
+        <option>Section · bars 1–8</option>
+      </select></label
+    ><label
+      >Instrument<select>
+        <option>bass</option>
+      </select></label
+    ><button>Ask for suggestions</button><button>Limits…</button>
+  </nav>
+  <p>
+    Every place using this section changes with it. Split off a place first to give it its own
+    section. Existing sound and effects stay. Suggesting replaces current note edits.
+  </p>
+  <label
+    >Suggestion<select>
+      <option>Stray notes · shorter</option>
+    </select></label
+  >
+  <p>
+    <b>97.0% of recording notes kept · 100.0% of proposal notes matching.</b><br />32 matched / 33
+    counted recording / 32 counted proposal notes.
+  </p>
+  <p>1 moved · 0 crossed a bar line · 0 shortened · 0 merged · 1 dropped · 0 added.</p>
+  <svg viewBox="0 0 900 180" role="img" aria-label="Invented note differences">
+    <g stroke="#2a2f3a">
+      <path
+        d="M10 18V180M120 18V180M230 18V180M340 18V180M450 18V180M560 18V180M670 18V180M780 18V180"
+      />
+    </g>
+    <g fill="#a4aab5" font-size="12">
+      <text x="14" y="13">1</text>
+      <text x="124" y="13">2</text>
+      <text x="234" y="13">3</text>
+      <text x="344" y="13">4</text>
+      <text x="454" y="13">5</text>
+      <text x="564" y="13">6</text>
+      <text x="674" y="13">7</text>
+      <text x="784" y="13">8</text>
+    </g>
+    <path
+      stroke="#f1e6cc"
+      stroke-width="6"
+      d="M14 140h14m14-50h14m26 50h14m26-50h14m26 50h14m26-50h14m26 50h14m26-50h14m26 50h14m26-50h14m26 50h14m26-50h14m26 50h14m26-50h14m26 50h14m26-50h14"
+    />
+    <path stroke="#ff8a5b" stroke-width="6" d="M14 140h14" />
+    <path fill="none" stroke="#6f9fd8" d="M108 45h10v6h-10z" />
+    <path stroke="#ff8a5b" d="M14 165h5m0-3v6" />
+  </svg>
+  <small
+    >Recording · faint blue. Proposal · cream. Changes · orange. Hollow blue · dropped. Use up and
+    down arrows for difference explanations.</small
+  >
+  <details>
+    <summary>Proposal code and size</summary>
+    <p>3260 → 1180 standalone bytes · shorter. Invented illustration.</p>
+  </details>
+  <p>Proposal checked in context. Undo restores the previous version.</p>
+  <footer><button>Apply to section</button><button>Discard</button></footer>
+</html>

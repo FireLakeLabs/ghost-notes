@@ -22,6 +22,53 @@
   color: var(--text);
   background: var(--canvas);
 }
+.about-dialog.simplify-dialog {
+  --tl-panel: var(--panel);
+  --tl-text: var(--text);
+  --tl-line: var(--border);
+  width: min(1000px, calc(100vw - 28px));
+  max-width: min(1000px, calc(100vw - 28px));
+  max-height: calc(100dvh - 28px);
+  overflow: auto;
+}
+.simplify-choices,
+.simplify-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+}
+.simplify-choices label {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+}
+.simplify-dialog select {
+  max-width: 100%;
+}
+.simplify-dialog canvas {
+  display: block;
+  width: 100%;
+  height: 180px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.simplify-dialog pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 240px;
+  overflow: auto;
+  padding: 12px;
+  background: var(--canvas);
+}
+.simplify-legend {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.simplify-actions {
+  margin-top: 18px;
+}
 * {
   box-sizing: border-box;
 }

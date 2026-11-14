@@ -1,5 +1,25 @@
 # Decisions: simplify
 
+- **G124 (2026-11-14) Review a recording-derived replacement before Apply.**
+  Timeline and lens open one section/instrument dialog, following Main and the
+  Simplify study board. Offer all independent techniques, label expanded code
+  honestly, initially choose the smallest. Show both match denominators, change
+  counts and the same G31 drawing/explanations. Limits open session Settings.
+  Apply is one undoable shared-definition edit; Discard changes nothing. State
+  that current note edits are replaced, every shared place changes, and splitting
+  first gives a place its own section. The report panel mockup is
+  `design-study/sketches/simplify-report.html`.
+- **G125 (2026-11-14) Keep effects and verify the proposal in context.**
+  Replace only the selected instrument's note expression, preserving its sound,
+  effects, identity and links through existing shared-edit rules. Query the whole
+  tagged candidate over the chosen place in a bounded worker. Apply requires
+  the proposed pitches and onset/endpoints there, including multiplicity; unknown
+  voices, unmapped values, query failures or altered coordinates leave Apply
+  disabled with a reason. Sound/gain remain user choices; the report describes
+  notes before those effects. Document, grid, reference or session-limit changes
+  invalidate the proposal. Several definitions for one instrument at a place
+  require its source editor rather than choosing one silently.
+
 - **G77 (2026-11-13) Compare proposals with source evidence.** Retention and
   match shares use one-to-one onset/pitch matching in recorded seconds, with
   G21 settings. Duration and gain changes remain in the change ledger. Quiet

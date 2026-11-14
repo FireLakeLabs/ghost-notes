@@ -159,7 +159,7 @@ export function mountDifferenceTip(
 ) {
   const tip = document.createElement('div');
   tip.className = 'tl-difference-tip';
-  tip.id = 'timeline-difference-tip';
+  tip.id = `${root.id || 'timeline'}-difference-tip`;
   tip.setAttribute('role', 'tooltip');
   tip.hidden = true;
   root.append(tip);

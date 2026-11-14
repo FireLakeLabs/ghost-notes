@@ -22,7 +22,8 @@
     "shots:editors": "ODM_EDITOR_SHOTS=1 playwright test tests/browser/shots.spec.ts --project=optional --workers=1 --output=.browser-build-shots-results",
     "check:skills": "node scripts/check-skills.mts && node --test scripts/check-skills.test.mts",
     "measure:timeline": "node scripts/browser.mjs timeline-measure",
-    "measure:playback": "node scripts/browser.mjs playback-measure"
+    "measure:playback": "node scripts/browser.mjs playback-measure",
+    "measure:simplify": "node scripts/browser.mjs simplify-measure"
   },
   "dependencies": {
     "@strudel/core": "1.2.6",
