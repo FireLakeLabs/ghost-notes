@@ -57,7 +57,11 @@ test.skipIf(!root || !existsSync(root))(
               } = value as Record<string, unknown>;
               return rest;
             };
-            expect(musicalValue(warped[i].value)).toEqual(musicalValue(original[i].value));
+            expect(
+              JSON.stringify(musicalValue(warped[i].value)) ===
+                JSON.stringify(musicalValue(original[i].value)),
+              `${label}: note settings retained`,
+            ).toBe(true);
             errors.push(Math.abs(actual - cycleToSeconds(song, conversion.grid, cycle)) * 1000);
             const previous = chordTimes.get(cycle);
             if (previous !== undefined) {

@@ -3,13 +3,21 @@ import { capturedRms } from '../engine/logic';
 import type { PCM } from '../engine/logic';
 
 /** A rolling minute of PCM; expired or incomplete windows reject rather than claim silence. */
-export async function createTap(context: AudioContext, output: AudioNode): Promise<OutputTap> {
+export async function createTap(
+  context: AudioContext,
+  output: AudioNode,
+): Promise<OutputTap & { close(): void }> {
   const url = URL.createObjectURL(
     new Blob(
       [
         `
 class ODMTap extends AudioWorkletProcessor {
+  constructor() {
+    super();
+    this.port.onmessage = () => { this.closed = true; };
+  }
   process(inputs, outputs) {
+    if (this.closed) return false;
     // Web Audio supplies zero channels for a silent input bus. Capture that
     // rendered quantum too, otherwise RMS windows crossing a voice end have gaps.
     const channels = inputs[0]?.length ? inputs[0] : [new Float32Array(outputs[0][0].length)];
@@ -41,9 +49,22 @@ registerProcessor('odm-output-tap', ODMTap);
     chunks.push(data);
     while (chunks[0]?.frame < data.frame - context.sampleRate * 60) chunks.shift();
   };
+  let closed = false;
   return {
+    close() {
+      if (closed) return;
+      closed = true;
+      tap.port.postMessage(null);
+      tap.port.onmessage = null;
+      output.disconnect(tap);
+      tap.disconnect();
+      muted.disconnect();
+      tap.port.close();
+      chunks.length = 0;
+    },
     sampleRate: context.sampleRate,
     async rms(from, to) {
+      if (closed) throw Error('Output tap is closed');
       if (!Number.isFinite(to) || to - context.currentTime > 10)
         throw Error('RMS window is too far in the future');
       return capturedRms(chunks, context.sampleRate, from, to);

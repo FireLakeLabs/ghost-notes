@@ -10,9 +10,11 @@ import {
   samples,
   getSuperdoughAudioController,
 } from '@strudel/web';
-import { silence } from '@strudel/core';
+import { Pattern, silence } from '@strudel/core';
 import { playheadCycle, seekTo } from './index';
-import type { Hap, Pattern } from './index';
+import type { Hap } from './index';
+import type { SongTime } from '../engine/song-time';
+import { warpPattern } from './warp';
 import type { AudioBackend, Dispatch, SilentWindow } from '../engine';
 import { soundName } from '../engine/logic';
 import { createTap } from './audio-tap';
@@ -47,8 +49,16 @@ async function defaults() {
 }
 export async function createAudio({
   inspect,
-}: { inspect?: (pattern: Pattern, cps: number) => void } = {}): Promise<
+  timing,
+  onClockStart,
+}: {
+  inspect?: (pattern: Pattern, cps: number) => void;
+  timing?: SongTime;
+  onClockStart?: (origin: number) => void;
+} = {}): Promise<
   Omit<AudioBackend, 'preflight'> & {
+    context: AudioContext;
+    close(): void;
     cps(): number;
     connect(dispatch: Dispatch, error: (e: unknown) => void, silent: SilentWindow): void;
   }
@@ -77,11 +87,24 @@ export async function createAudio({
       return work;
     },
   });
+  if (timing) {
+    repl.setCps(1);
+    // Pinned REPL setcpm/setcps call scheduler.setCps dynamically. Lock it here,
+    // including during evaluate(false), so live revisions never reset phase.
+    repl.scheduler.setCps = () => {};
+  }
+  let clockOrigin: number | undefined;
   const unavailable = await defaults(),
     context = getAudioContext();
   // Depends on Superdough's private final gain, downstream of all orbit effects.
   const tap = await createTap(context, getSuperdoughAudioController().output.destinationGain);
   return {
+    context,
+    close() {
+      repl.stop();
+      clockOrigin = undefined;
+      tap.close();
+    },
     connect(output, error, empty) {
       silent = empty;
       dispatch = output;
@@ -106,7 +129,17 @@ export async function createAudio({
         repl.setCps(oldCps);
       }
       if (!candidate) throw Error('Strudel evaluation produced no pattern');
-      const pattern = candidate;
+      const warped = timing ? warpPattern(candidate, timing) : candidate;
+      const pattern = timing
+        ? new Pattern((state) => {
+            if (clockOrigin === undefined) {
+              const boundary = schedulingBoundary(repl.scheduler, state);
+              clockOrigin = boundary.time - boundary.cycle;
+              onClockStart?.(clockOrigin);
+            }
+            return warped.query(state);
+          })
+        : warped;
       inspect?.(pattern, cps);
       return {
         values: [],
@@ -211,7 +244,10 @@ export async function createAudio({
       await context.resume();
       await initAudio();
     },
-    stop: () => repl.stop(),
+    stop: () => {
+      repl.stop();
+      clockOrigin = undefined;
+    },
     playing: () => repl.scheduler.started,
     now: () => playheadCycle(repl.scheduler),
     time: () => context.currentTime,

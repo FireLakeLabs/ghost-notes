@@ -17,7 +17,7 @@ declare module '@strudel/web' {
       autoplay: boolean,
     ): Promise<import('./index').Pattern>;
     setCps(cps: number): void;
-    scheduler: import('./index').Scheduler;
+    scheduler: import('./index').Scheduler & { setCps(cps: number): void };
     stop(): void;
     state: { error?: Error };
   }
@@ -48,7 +48,7 @@ declare module 'superdough' {
   export function getAudioContext(): AudioContext;
   export function initAudio(): Promise<void>;
   export interface Sound {
-    onTrigger(time: number, value: unknown, onended: () => void): Promise<unknown>;
+    onTrigger(time: number, value: unknown, onended: () => void, cps?: number): Promise<unknown>;
     data: { type?: string; samples?: unknown; fonts?: string[] };
   }
   export function getSound(name: string): Sound | undefined;

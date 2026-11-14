@@ -93,9 +93,9 @@ export function referenceFixture(): Map<string, Uint8Array> {
     ['stems/bass.wav', generatedWav()],
   ]);
 }
-/** 0.1 s, stereo, 44.1 kHz PCM16, matching the transcription tool's audio rate. */
-export function generatedWav(): Uint8Array {
-  const frames = 4410,
+/** Stereo 44.1 kHz PCM16, matching the transcription tool's audio rate. */
+export function generatedWav(seconds = 0.1): Uint8Array {
+  const frames = Math.round(seconds * 44100),
     rate = 44100;
   const bytes = new Uint8Array(44 + frames * 4),
     view = new DataView(bytes.buffer);

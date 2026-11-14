@@ -398,6 +398,27 @@ measured time warping cannot meet that bound does G28's one editable
 song-average fallback apply; disclose the resulting stem misalignment.
 Nobody judges by ear.
 
+### Part 1 results (2026-11-13)
+
+The warp and transport are implemented; #7 stays open for part 2's row speakers
+and Recording/Mine/Both interface presets, which depend on step 7. The small
+[playback API and proof](playback.md) give parts 2 and step 10 a shared clock,
+bar start/stop, live revision swaps and bar/beat position.
+
+At fixed cps=1, every one of 28 browser-scheduled note triggers across the
+8-second fixture has **0 ms** added error against its written grid position,
+**0 ms** chord split and **0 ms** stem-start/seek deviation. Minimum observed
+trigger lead is **88.633 ms**; the stated tolerance is **1 ms**, stricter than
+G36's rejected 50 ms mechanism. Including exact conversion, fixture error is
+0.390625 ms. Whole-song and 50 ms Node queries retain every fixture note.
+
+All six local songs' exact conversions retain **14,047 notes**: maximum added
+warp error **0.000028 ms**, zero chord split; source-error median/p95/max by
+song are in the API page. Musical quantization deliberately moves/merges notes
+(G67–G69); this precision proof selects exact mode. The warp maps written
+positions regardless of that setting. No G28 fallback is needed. No speaker,
+audio-device or perceived timing is established. G72–G73 record the choices.
+
 ## 10. Copy out and the app shell
 
 - A copy panel (G18) that asks how to write unedited sections (as made,
