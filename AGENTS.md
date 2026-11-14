@@ -15,9 +15,10 @@ Strudel conversion, and the user's own arrangement, one above the other.
 
 ## Current phase
 
-Steps 1–4 of [next steps](docs/next-steps.md) are done. Step 3's measured
-results and limits are in [next steps](docs/next-steps.md#step-3-results-2026-11-13).
-Step 9 owns the implementation and timing proof of beat-map time warping (G36).
+Steps 1–12 of [next steps](docs/next-steps.md) are done. The app is live at
+<https://ghostnotes.firelakelabs.com>, and every merge to `main` publishes it
+([hosting runbook](infra/README.md)): keep `main` green. Open follow-ups are
+comments on tracking issue #11 and their own issues.
 `npm run check` and `npm run test:browser` must pass before any commit.
 
 ## Skills

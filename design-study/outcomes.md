@@ -79,3 +79,26 @@ edited, so listening and pitched editing are untested.
 
 Sketches: [sketches/](sketches/README.md). The [next steps](../docs/next-steps.md)
 were revised to match on 2026-11-13.
+
+## Built, and decided without the owner (2026-11-14)
+
+Steps 3–12 were built while the owner was away. Every decision above shipped.
+The waves made 63 further decisions on their own, G36–G125 in
+[decisions](../docs/decisions.md), each with its reason, for the owner to
+revisit. The ones that most change what the owner sees:
+
+- **Playback follows the band by placing each note at the beat map's time**
+  (G36, G72), not by changing tempo while playing, which split chords by up to
+  120 ms. G28's one-tempo fallback was not needed.
+- **An even bar grid is the default** (G53–G56); the beat tracker's own bars
+  stay available. A doubtful tempo or bar grouping is asked once, side by side
+  (G87, G88).
+- **Literal notes snap to four steps per beat by default** (G67–G69); exact
+  timing stays a setting.
+- **The copy panel, settings, installable shell and dark palette** (G107–G112).
+- **Row speakers and simplify controls** (G122–G125).
+
+Mockups for designs the prototype did not cover are in
+[sketches](sketches/README.md): the tempo and bars question, linked sections,
+row states, difference marks, lens editing, copy settings, row playback and the
+simplify report. A test with someone new to the design is still not done.

@@ -35,9 +35,20 @@ something that went wrong at least once. Written 2026-11-12.
   had. It also flags behaviour that is intended: read each limitation before
   calling it a defect.
 
+- **Open the real app on real material after every wave.** Three course
+  corrections came from that, not from tests: the mixed bar lengths above, a
+  converter that wrote notes too finely to edit, and a tempo fallback that
+  would have let the user's parts drift from the recording.
+- **A full-page screenshot of a canvas that paints only what is on screen
+  looks empty below the fold.** Scroll to the part and capture the viewport
+  before calling it a bug.
+
 ## Measuring
 
-- **Check derived data on every real song before building on it.**
+- **Check derived data on every real song before building on it.** Most of one
+  song's 160 reported beat-map gaps were the tracker switching between
+  counting at half and full speed; 10 real gaps remained once those were
+  reported separately. Four of six songs had bars of mixed lengths.
 
 - **Measure the thing the person experiences.** "364 ms from edit to sound"
   timed the first note of the new code, which could belong to another
@@ -60,6 +71,14 @@ something that went wrong at least once. Written 2026-11-12.
 - **A swap is not a complete cycle.** Observe beyond the scheduling horizon, in a section where the asserted instrument actually plays.
 - **Strudel's web bundle carries its own scheduler.** Patching `@strudel/core`
   alone changes nothing in playback.
+
+- **Timestamps from different processes do not compare unless they share a
+  clock.** A lock test compared `performance.timeOrigin + performance.now()`
+  across processes and saw a 0.95 ms overlap that never happened; it now uses
+  the system-wide monotonic clock.
+- **Every timing-sensitive suite takes the same machine-wide lock.** Only the
+  browser suite queued at first; with several worktrees checking at once, four
+  whole-song Node tests hit their 5-second limits.
 
 ## Working with the owner
 

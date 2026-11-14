@@ -318,7 +318,7 @@ and reproduction are in [convert](convert.md). The setting is an argument for th
 session UI to own; no control or section creation is implemented here. Playback
 alignment, musical correctness and perceived output remain unmeasured.
 
-## 7. Timeline and the lens
+## 7. Timeline and the lens: done
 
 **Done: parts 1–3 (2026-11-14).** The user's linked arrangement now lives on
 the timeline. The final [editing and timing report](lens-editing-measurements.md)
@@ -409,7 +409,7 @@ moving and closing the lens animates without dropped frames on the owner's
 machine (measured with the browser's performance tools); and the browser suite
 stays under its time budget.
 
-## 8. Sections, reuse and links
+## 8. Sections, reuse and links: done
 
 **Done: document operations and timeline controls (2026-11-14).** Make section,
 pre-ticked reuse offers, split/takeover, pickup and source/tempo reopening are
@@ -664,30 +664,31 @@ Both Apply/Undo paths restored the exact document, with zero browser errors.
 These are observed local visits, not a general latency or quality claim. No
 listening, device-output quality or full-song simplify interaction was measured.
 
-## 12. Hosting on AWS: code ready, provisioning remains
+## 12. Hosting on AWS: done
 
-The owner approved step 12 on 2026-11-13 (issue #10). `infra/` and the Deploy
-and Infrastructure workflows adapt the upstream hosting at `b0d9fb3`: the
-`GhostNotes` stack owns private retained website/releases buckets, CloudFront
-with OAC, response headers, DNS for `ghostnotes.firelakelabs.com`, and two
-repository/environment-specific GitHub roles. Shared certificate, zone, OIDC
-provider and bootstrap roles are referenced only; no lookups or rebootstrap.
-G103–G105 record the workflow, licence-response and manifest adjustments.
+Live at <https://ghostnotes.firelakelabs.com> since 2026-11-14, approved by the
+owner on 2026-11-13 (issue #10). `infra/` and the Deploy and Infrastructure
+workflows (#34) adapt ODM's hosting at `b0d9fb3`: the `GhostNotes` stack owns
+private retained website/releases buckets, CloudFront with OAC, response
+headers, DNS for the hostname, and two repository/environment-specific GitHub
+roles. Shared certificate, zone, OIDC provider and bootstrap roles are
+referenced only (G103–G105). The About list includes soundfonts 1.3.0, checked
+against package.json by a test (G8, G38).
 
-The About source list now includes soundfonts 1.3.0 (G8/G38), and a browser test
-compares every listed package/version/link with package.json. The licence
-build includes soundfonts' full AGPL text. PR checks run the full app/browser
-and model-free Python suites plus infra tests and strict synthesis without AWS.
+Provisioned by the orchestrator, in this order: `production` and
+`infrastructure` environments restricted to branch `main` with no tag rules;
+`cdk diff` (13 additions, all in the new stack); role trust read from the
+template (exact repository subject plus environment, audience
+`sts.amazonaws.com`); `cdk deploy GhostNotes` (217 s); environment variables
+from the outputs; `GN_DEPLOY_ENABLED=true`; first publish. Every merge to
+`main` now publishes after the full checks.
 
-**Orchestrator next, after merge:** follow the [runbook](../infra/README.md) to
-refresh the read-only preflight/diff, create `production` and
-`infrastructure` environments restricted to main branches (no tags), deploy
-the stack, set their
-role/output variables, then set repository variable `GN_DEPLOY_ENABLED=true`
-and dispatch the first publish. Verify HTTPS, private buckets, artifact bytes,
-headers, workers/worklets, samples, licence/source links and an older tab.
-Nothing has been provisioned or published by the code PR. Issue #10 stays open
-until the orchestrator deploys and verifies it; never modify other stacks.
+Verified on the live site: HTTPS 200, HTTP redirects with 301, a missing asset
+is an error, scripts are immutable and HTML revalidates, HSTS and nosniff are
+set, anonymous reads of both buckets are refused, `/licenses.txt` carries
+soundfonts' full AGPL text, About links the deployed commit, and Play schedules
+notes with no page errors. Not checked: listening, and an older tab after a
+later publish.
 
 ## Later
 
