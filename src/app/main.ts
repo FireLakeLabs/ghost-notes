@@ -1,3 +1,5 @@
+import { mountCopy } from '../copy/panel';
+import { mountSettings, sessionSettings } from './settings';
 import { pendingWords } from '../editor/pending';
 import { describeTarget } from '../document/edit';
 import { definitionMuted, setMuted } from '../document/edits/set-muted';
@@ -17,6 +19,7 @@ document.body.innerHTML = `
     <output id="tempo" aria-label="Tempo">Tempo —</output>
     <button id="undo" disabled>Undo</button><button id="redo" disabled>Redo</button>
     <button id="paste" aria-expanded="true" aria-controls="paste-panel">Paste Strudel</button>
+    <button id="copy">Copy</button><button id="settings">Settings</button>
   ${aboutControls}</div><p id="solo-banner" hidden><span></span> <button id="stop-solo">Stop solo</button></p><p id="message" role="status"></p><div id="sound-notice" hidden><span role="status">Default sounds could not load. Check your connection, then press Play again.</span><button id="dismiss-sound-notice" aria-label="Dismiss sound notice">Dismiss</button></div></header>
   <main>
     <section id="reference-panel" aria-label="Open reference folder"></section>
@@ -44,6 +47,21 @@ const paste = get<HTMLButtonElement>('paste'),
 const play = get<HTMLButtonElement>('play'),
   stop = get<HTMLButtonElement>('stop');
 const follow = get<HTMLButtonElement>('follow');
+const settings = sessionSettings();
+const copyPanel = mountCopy(get<HTMLButtonElement>('copy'), () => ({
+  doc: app.state.doc,
+  song: reference.current?.song,
+  folder: reference.current?.folder,
+  options: {
+    unedited: 'as-made',
+    unarranged: 'silence',
+    grid: settings.grid,
+    simplify: settings.simplify,
+    match: settings.match,
+  },
+}));
+mountSettings(get<HTMLButtonElement>('settings'), settings, () => copyPanel.refresh());
+referenceRoot.addEventListener('referencechange', () => copyPanel.refresh());
 paste.onclick = () => {
   panel.hidden = !panel.hidden;
   paste.setAttribute('aria-expanded', String(!panel.hidden));
@@ -185,7 +203,8 @@ function openEditor(id: string, cell: HTMLElement) {
 get('undo').onclick = () => app.editor?.undo();
 get('redo').onclick = () => app.editor?.redo();
 document.addEventListener('keydown', (event) => {
-  if (aboutDialog.open) return;
+  if (aboutDialog.open || (event.target instanceof Element && event.target.closest('dialog[open]')))
+    return;
   if (event.key === 'Escape' && targetId) {
     event.preventDefault();
     closeEditor();
@@ -203,6 +222,7 @@ document.addEventListener('keydown', (event) => {
 let previousNotes: unknown;
 let previousSheet: unknown[] = [];
 app.subscribe((state) => {
+  copyPanel.refresh();
   if (app.editor !== selectedSession) {
     targetId = null;
     selectedSession = app.editor;

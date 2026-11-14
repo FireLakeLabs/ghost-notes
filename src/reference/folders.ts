@@ -9,6 +9,7 @@ export interface FolderAccess {
 }
 function scoped(files: SongFiles, prefix: string): SongFiles {
   return {
+    folderName: prefix.split('/').at(-1),
     read: async (p) => files.read(`${prefix}/${relativePath(p)}`),
     exists: async (p) => files.exists(`${prefix}/${relativePath(p)}`),
   };
@@ -46,6 +47,7 @@ export function directoryFiles(root: FileSystemDirectoryHandle): SongFiles {
     return (await dir.getFileHandle(name)).getFile();
   }
   return {
+    folderName: root.name,
     read: async (path) => {
       try {
         return new Uint8Array(await (await file(path)).arrayBuffer());
@@ -126,6 +128,7 @@ export function uploadedFiles(files: readonly File[]): SongFiles {
     map.set(slash < 0 ? path : path.slice(slash + 1), file);
   }
   return {
+    folderName: files[0]?.webkitRelativePath.split('/')[0] || undefined,
     exists: async (p) => map.has(relativePath(p)),
     read: async (p) => {
       const file = map.get(relativePath(p));
@@ -200,6 +203,7 @@ export function droppedFiles(transfer: DataTransfer): SongFiles {
     return null;
   }
   return {
+    folderName: directory.name,
     exists: async (p) => (await find(p)) !== null,
     read: async (p) => {
       const file = await find(p);

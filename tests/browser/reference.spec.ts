@@ -5,6 +5,14 @@ import { tmpdir, homedir } from 'node:os';
 import { test, expect } from '@playwright/test';
 import { referenceFixture } from '../fixtures/reference';
 
+// These checks intentionally reload an opened reference to test retained handles.
+// Accept G18's new native leave warning; the copy panel tests dismissal separately.
+test.beforeEach(async ({ page }) => {
+  page.on('dialog', (dialog) => {
+    if (dialog.type() === 'beforeunload') dialog.accept().catch(() => {});
+    else dialog.dismiss().catch(() => {});
+  });
+});
 test('real OPFS directory picker, session reopen and retained handle on reload', async ({
   page,
 }) => {

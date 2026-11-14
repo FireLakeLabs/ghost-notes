@@ -11,6 +11,7 @@ import {
 import { readReference } from '../reference/reader';
 import type { GridMultiplier, ReferenceSong, SongFiles } from '../reference/types';
 export type OpenReference = {
+  folder?: string;
   song: ReferenceSong;
   audio: ReadonlyMap<string, StemAudio<AudioBuffer>>;
 };
@@ -100,7 +101,7 @@ export function mountReference(root: HTMLElement) {
     status.textContent = 'Reading reference and decoding stem audio…';
     const song = await readReference(files),
       audio = await browserAudio(song, files);
-    current = { song, audio };
+    current = { song, audio, folder: files.folderName };
     currentFiles = files;
     summarize(song);
     tempoChoice.hidden = !song.beatMap.tempoReview.flagged;
@@ -114,7 +115,7 @@ export function mountReference(root: HTMLElement) {
       void run(async () => {
         if (!current || !currentFiles) return;
         const song = await readReference(currentFiles, multiplier);
-        current = { song, audio: current.audio };
+        current = { song, audio: current.audio, folder: current.folder };
         summarize(song);
         tempoChoice.hidden = true; // G27: one choice per opened song.
         root.dispatchEvent(new Event('referencechange'));
