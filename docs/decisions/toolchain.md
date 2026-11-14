@@ -1,4 +1,4 @@
-# Decisions: code and toolchain (G33–G34)
+# Decisions: code and toolchain
 
 How the code was brought in and built. The index is [decisions](../decisions.md).
 
@@ -20,3 +20,20 @@ How the code was brought in and built. The index is [decisions](../decisions.md)
   it stays, and the page became an index of one line per decision. Full
   entries moved unchanged into topic files under `docs/decisions/`, each with
   its own 1,500-word budget, checked by `npm run check:docs`.
+
+- **G121 (2026-11-14) Isolate CI's existing UI and audio phases.** Decided for
+  the absent owner. #42's Check took 172.443/180 s: UI occupied about 86 s,
+  audio about 83 s, with build/runner overhead. Hosting on the same head took
+  147.358 s. Three approximately 11.6 s tempo canaries and the 11.9 s copy
+  check wait on actual advancing clocks; removing observation would skip proof.
+  Five fixture groups already share setup. More sharing cannot remove the
+  serial audio floor; changing workers on two-core CI would require new timing
+  qualification. Separating only historical canaries would leave UI and the
+  remaining audio on the same critical path. Instead, the existing two projects
+  run on separate runners through one reusable workflow used by Check and
+  Deploy. Each group keeps 180 s; every case keeps 20 s. This spends another
+  runner/build to remove their sum from the critical path. Local remains the
+  complete suite under one machine-wide lock and one 180 s limit. Qualify each
+  group at ≤135 s twice consecutively (25% margin for observed variation and
+  upcoming tests). The [report](../browser-budget-measurements.md) records
+  evidence and limits; no application speedup is claimed.

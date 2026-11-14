@@ -55,6 +55,7 @@ check:docs`); when a topic file fills, start a new one.
 - G33: ODM's corpus comes in whole.
 - G34: TypeScript 7 and Oxlint.
 - G35: decisions are an index plus topic files, each under a word budget.
+- G121: isolated UI/audio CI runners, unchanged local suite and per-group budgets.
 
 ## [Strudel proof](decisions/strudel-proof.md)
 

@@ -1,6 +1,6 @@
 // One clock for Playwright steps and browser performance marks, counted once.
 import { dirname } from 'node:path';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, renameSync } from 'node:fs';
 export function phaseTimings(result) {
   const phases = {
     page: 0,
@@ -85,13 +85,16 @@ export default class BrowserReport {
         return body ? JSON.parse(body.toString()).ms : undefined;
       })(),
     });
+    // Keep completed cases even if the suite's wall guard kills Playwright.
+    this.onEnd();
   }
   onEnd() {
     for (const path of [process.env.ODM_REPORT_PATH, process.env.ODM_PROFILE_PATH].filter(
       Boolean,
     )) {
       mkdirSync(dirname(path), { recursive: true });
-      writeFileSync(path, JSON.stringify(this.rows, null, 2) + '\n');
+      writeFileSync(`${path}.tmp`, JSON.stringify(this.rows, null, 2) + '\n');
+      renameSync(`${path}.tmp`, path);
     }
   }
 }

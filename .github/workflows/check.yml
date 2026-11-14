@@ -6,7 +6,11 @@ on:
 permissions:
   contents: read
 jobs:
+  browser:
+    uses: ./.github/workflows/browser.yml
   check:
+    needs: browser
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -24,8 +28,10 @@ jobs:
       - run: npm run check:docs
       - run: npm run check:boundaries
       - run: npm run build
-      - run: npx playwright install --with-deps chromium
-      - run: npm run test:browser
+      - name: Require both browser groups
+        env:
+          BROWSER_RESULT: ${{ needs.browser.result }}
+        run: test "$BROWSER_RESULT" = success
   transcription:
     runs-on: ubuntu-24.04
     timeout-minutes: 2

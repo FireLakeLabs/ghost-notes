@@ -14,6 +14,16 @@ and GitHub step summary. The timing unit test exercises the limit without waitin
 Each run gets its own build directory. Every server asks the OS for a free port
 with port 0, including local development; two copies must run together.
 
+CI uses the same reusable Browser workflow from Check and Deploy. UI and serial
+audio run on separate two-core runners, each with the unchanged 180 s wall and
+20 s per-case budgets (G121). Both must pass before `check` or `hosting` passes;
+publication depends on hosting. Qualification targets ≤135 s per group on two
+consecutive runs, leaving at least 25% for variation and the remaining wave.
+`npm run test:browser` remains one complete, locked, 180 s local command.
+`ci-ui` and `ci-audio` select the existing projects without dependencies; neither
+changes workers, assertions or deadlines. CI retains every test's timing and
+phase accounting as an artifact, including on failure.
+
 Directory ownership keeps later implementers apart:
 
 | Directory       | Responsibility                                             |
