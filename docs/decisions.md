@@ -99,6 +99,8 @@ check:docs`); when a topic file fills, start a new one.
 - G63: prototype row order and sizes, optional audio, quiet-stem warnings.
 - G64: the song strip navigates the visible window before sections exist.
 - G65: affected bars show the chosen grid's inference reasons.
+- G85: reference lens hosts the future linked sheet; current program/score are one unlinked draft.
+- G86: session selection shares a half-open note interval and containing bars with sections.
 
 ## [Playback](decisions/playback.md)
 

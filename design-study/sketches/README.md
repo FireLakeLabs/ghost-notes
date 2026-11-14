@@ -23,3 +23,8 @@ Part 1 implementation proof: [synthetic fit](timeline-part1.png) and [zoom](time
 its [navigation mockup and measured sizes](timeline-part1.html). Recording rows
 only; lens, Notes/Mine and section controls belong to the later parts. No real
 song data or pixels are included.
+
+Part 2's recording lens: [synthetic fit](timeline-lens-fit.png) and
+[open lens](timeline-lens.png). All marks and waves are invented. The lens uses
+Main's 450 ms growth, 160 ms drag movement, and 68% width; the grid review and
+quiet inference marks follow in the second PR.

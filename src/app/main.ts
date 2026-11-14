@@ -31,13 +31,22 @@ document.body.innerHTML = `
       <p id="load-error" role="alert"></p>
     </section>
     <details id="notes" hidden><summary>Notes</summary><ul></ul></details>
-    <div class="score-toolbar"><h2>The score</h2><button id="follow" aria-pressed="true">Follow</button><output id="window"></output></div>
+    <p id="draft-context" hidden></p><div class="score-toolbar"><h2>The score <small>· whole-program draft</small></h2><button id="follow" aria-pressed="true">Follow</button><output id="window"></output></div>
     <div id="score-workspace"><div id="score"><p class="welcome">Paste a Strudel program or choose an original to see its score. Press Play when you're ready.</p></div><aside id="editor" hidden></aside></div>
   </main><footer>Read the score. Follow the cycles.</footer>`;
 const timeline = mountTimeline(document.getElementById('timeline')!);
 const referenceRoot = document.getElementById('reference-panel')!;
 const reference = mountReference(referenceRoot);
-referenceRoot.addEventListener('referencechange', () => timeline.setReference(reference.current));
+function draftContext() {
+  const note = document.getElementById('draft-context')!;
+  note.hidden = !reference.current;
+  note.textContent = `${timeline.lens ? `Reference lens: bars ${timeline.lens.firstBar}–${timeline.lens.lastBar}. ` : ''}Your Strudel program and score below are one whole-program draft. They are not yet linked to reference bars; section links will bring the draft into the lens.`;
+}
+referenceRoot.addEventListener('referencechange', () => {
+  timeline.setReference(reference.current);
+  draftContext();
+});
+document.getElementById('timeline')!.addEventListener('lenschange', draftContext);
 const aboutDialog = mountAbout();
 const get = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id)! as T;
 const source = get<HTMLTextAreaElement>('source'),
@@ -316,9 +325,14 @@ function frame() {
 requestAnimationFrame(frame);
 // Opt-in diagnostics. Bounded event history; no engine is created by inspection.
 if (new URLSearchParams(location.search).has('inspect'))
-  Object.defineProperties(window, { odmApp: { value: app }, ghostReference: { value: reference } });
+  Object.defineProperties(window, {
+    odmApp: { value: app },
+    ghostReference: { value: reference },
+    ghostTimeline: { value: timeline },
+  });
 declare global {
   interface Window {
+    ghostTimeline: ReturnType<typeof mountTimeline>;
     ghostReference: ReturnType<typeof mountReference>;
     odmApp: typeof app;
   }

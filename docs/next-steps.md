@@ -329,7 +329,16 @@ The [structure and viewport API](timeline.md) are the handoff to parts 2/3;
 row sizes. G61–G65 record choices made for the owner. #5 stays open.
 
 Step 6 (#21) and the consistent grid (#20, closing #19) have landed.
-Part 2 can now add the lens, selection and doubtful-tempo integration.
+**Part 2, lens and selection: implemented and measured.** The recording lens
+follows Main's 68% width, 450 ms growth and 160 ms drag, with piano-roll pitches,
+drum lanes and stem audio. Band/instrument selection and bar/beat snapping share
+positions and containing bars with step 8. The program/score below are one
+unlinked draft until section links reach the UI (G85–G86). The shell can move
+`settingsHost` into its session Settings panel. Five final six-song runs recorded
+2,581 lens intervals, all at most 16.8 ms; earlier missed callbacks and the
+initial cache cost remain in the [lens report](lens-measurements.md). Local
+gates passed 582 Node tests and 70 browser tests (114.779 s / 180 s). Tempo/meter
+review and ruler/inference fixes follow in the second PR; #5 stays open for part 3.
 Part 3: Notes/Mine rows, six difference marks, unarranged bars, match strip,
 and rows-or-layers. Their original requirements follow.
 

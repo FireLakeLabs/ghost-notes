@@ -45,6 +45,105 @@ test('six local songs: first draw, scroll and zoom frame times', async ({ page, 
         });
         expect(shape.rows).toBe(12);
         expect(shape.stems).toBe(6);
+        let lensFrames: Record<string, number[]> = {};
+        if (process.env.GHOST_LENS_MEASURE) {
+          const chunks: unknown[] = [];
+          const collect = (event: { value: unknown[] }) => chunks.push(...event.value);
+          cdp.on('Tracing.dataCollected', collect);
+          await cdp.send('Tracing.start', {
+            categories: 'devtools.timeline,blink.user_timing',
+            transferMode: 'ReportEvents',
+          });
+          if (process.env.GHOST_LENS_PROFILE) {
+            await cdp.send('Profiler.enable');
+            await cdp.send('Profiler.start');
+          }
+          lensFrames = await page.evaluate(async () => {
+            const first = document.querySelector<HTMLInputElement>('[data-first]')!,
+              last = document.querySelector<HTMLInputElement>('[data-last]')!;
+            const song = window.ghostReference.current!.song;
+            const bars = song.bars.filter((b) => b.number > 0 && b.endSeconds > b.startSeconds);
+            let best = 0,
+              bestCount = -1;
+            for (let i = 0; i + 4 < bars.length; i++) {
+              const count = song.stems.reduce(
+                (n, s) =>
+                  n +
+                  s.notes.filter(
+                    (note) =>
+                      note.startSeconds >= bars[i].startSeconds &&
+                      note.startSeconds < bars[i + 3].endSeconds,
+                  ).length,
+                0,
+              );
+              if (count > bestCount) {
+                best = i;
+                bestCount = count;
+              }
+            }
+            const firstBar = bars[best].number;
+            first.value = String(firstBar);
+            last.value = String(bars[best + 3].number);
+            document.querySelector<HTMLButtonElement>('[data-select]')!.click();
+            const next = () => new Promise<number>((resolve) => requestAnimationFrame(resolve));
+            const record = async (name: string, action: () => void) => {
+              const result: number[] = [];
+              let before = await next();
+              performance.mark(`Ghost:lens-${name}-start`, { detail: { timestamp: before } });
+              action();
+              do {
+                const now = await next();
+                result.push(now - before);
+                performance.mark(`Ghost:lens-${name}-frame`, { detail: { timestamp: now } });
+                before = now;
+              } while (document.getElementById('timeline')!.dataset.animating === 'true');
+              const tail = await next();
+              result.push(tail - before);
+              performance.mark(`Ghost:lens-${name}-frame`, { detail: { timestamp: tail } });
+              performance.mark(`Ghost:lens-${name}-end`);
+              return result;
+            };
+            const open = await record('open', () =>
+              document.querySelector<HTMLButtonElement>('[data-closer]')!.click(),
+            );
+            if (window.ghostTimeline.lens?.firstBar !== firstBar) throw Error('Lens did not open');
+            const move = await record('move', () =>
+              document.querySelector<HTMLButtonElement>('[data-later]')!.click(),
+            );
+            if (Number(window.ghostTimeline.lens?.firstBar) !== firstBar + 1)
+              throw Error('Lens did not move');
+            const close = await record('close', () =>
+              document.querySelector<HTMLButtonElement>('[data-close]')!.click(),
+            );
+            if (window.ghostTimeline.lens !== null) throw Error('Lens did not close');
+            return { open, move, close };
+          });
+          if (process.env.GHOST_LENS_PROFILE) {
+            const cpu = await cdp.send('Profiler.stop');
+            await writeFile(
+              `/tmp/ghost-lens-cpu-${report.length + 1}.json`,
+              JSON.stringify(cpu.profile),
+            );
+            await cdp.send('Profiler.disable');
+          }
+          const done = new Promise<void>((resolve) =>
+            cdp.once('Tracing.tracingComplete', () => resolve()),
+          );
+          await cdp.send('Tracing.end');
+          await done;
+          cdp.off('Tracing.dataCollected', collect);
+          await writeFile(
+            `/tmp/ghost-lens-trace-${process.env.GHOST_LENS_RUN ?? '1'}-${report.length + 1}.json`,
+            JSON.stringify({ traceEvents: chunks }),
+          );
+          await page.getByRole('button', { name: 'Look closer', exact: true }).click();
+          await expect(page.locator('#timeline')).toHaveAttribute('data-animating', 'false');
+          await page
+            .locator('.tl-scroll')
+            .screenshot({ path: `/tmp/ghost-lens-local-${report.length + 1}.png` });
+          await page.getByRole('button', { name: 'Close the lens', exact: true }).click();
+          await expect(page.locator('#timeline')).toHaveAttribute('data-animating', 'false');
+        }
         const before = await cdp.send('Performance.getMetrics');
         if (process.env.GHOST_TIMELINE_PROFILE && source === 'first-test-session' && number === 4) {
           await cdp.send('Profiler.enable');
@@ -97,6 +196,7 @@ test('six local songs: first draw, scroll and zoom frame times', async ({ page, 
           ...shape,
           openMs,
           ...frames,
+          lensFrames,
           taskMs:
             (metric(after.metrics, 'TaskDuration') - metric(before.metrics, 'TaskDuration')) * 1000,
           scriptMs:
@@ -127,4 +227,13 @@ test('six local songs: first draw, scroll and zoom frame times', async ({ page, 
       2,
     ),
   );
+  if (process.env.GHOST_LENS_MEASURE)
+    for (const row of report)
+      for (const [operation, frames] of Object.entries(row.lensFrames)) {
+        expect(frames.length, `${row.input} ${operation} frame count`).toBeGreaterThan(10);
+        // 60 Hz timestamps are quantized to 16.6/16.7 ms; allow 0.2 ms rounding.
+        expect(Math.max(...frames), `${row.input} ${operation} worst frame`).toBeLessThanOrEqual(
+          16.9,
+        );
+      }
 });

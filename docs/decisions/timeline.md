@@ -38,3 +38,24 @@ Decided for the owner during step 7 part 1, 2026-11-13.
   own inference. True gap hatching is separate. Ruler text is clipped to the song extent;
   tail labels face left so even short uncovered tails have readable marks. The mark says that this bar's
   grid was inferred, not that every line in the bar was detected.
+
+Decided for the owner during step 7 part 2, 2026-11-13:
+
+- **G85: one reference lens, with a host for the linked score.** Keep Main's
+  68% lens width, 150 px labels, 36 px header and 450 ms eased growth/movement (160 ms while dragging).
+  Audio grows from 32 to 44 px, MIDI from 44 to 58 px. Outside bars remain
+  squeezed, dimmed and blurred; pitched notes become a piano roll inside.
+  Opening temporarily fits the song; closing restores the previous zoom and
+  scroll. Reduced motion finishes on the next drawing frame. Until step 8
+  provides source links, the existing program and score are explicitly one
+  unlinked whole-program draft below the reference. Do not pretend its cycles
+  match these bars. The lens exposes a host for the linked sheet and its editor;
+  step 8 can move that workspace there without making another score view.
+- **G86: share a selection contract with sections.** Session controls choose
+  band/instrument and bar/beat snap; dragging either audio or MIDI selects.
+  Typed first/last bars also work. Retain a half-open note interval in positions,
+  plus inclusive containing bars and a discriminated scope. Look closer opens
+  those containing bars; Make section will use the same contract. A section
+  can call the lens's bar-range port directly. Changing settings clears the
+  previous selection. Uncovered tails cannot invent selectable bars. The
+  coordinate cache is bounded at 50,000 entries before handling live pointers.
