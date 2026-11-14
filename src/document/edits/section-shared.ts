@@ -88,7 +88,7 @@ export function newSection(doc: Doc, label?: string, content?: Pattern) {
 }
 export function copyPattern(doc: Doc, pattern: Pattern, fresh = freshIds(doc)) {
   const copy = structuredClone(pattern);
-  const leaves = new Set(instruments(doc).map((r) => r.pattern.id));
+  const leaves = new Set(instruments(doc).flatMap((r) => r.patterns.map((p) => p.id)));
   walk(
     {
       version: 2,

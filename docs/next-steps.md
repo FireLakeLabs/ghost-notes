@@ -381,6 +381,53 @@ stays under its time budget.
 **Done when:** making a section, copying out, pasting back and reopening the
 reference restores every link and tempo.
 
+### Step 8 part 1 results (2026-11-13)
+
+The document operations and copied-text links are implemented. Timeline controls
+remain part 2 of #6, after step 7's lens/selection: Make section, matching-place
+checklist, split confirmation and takeover warnings. The document proposal
+returns every takeover before the caller applies it. #6 stays open.
+
+[Sections](sections.md) defines the operations and canonical cycle/export-tempo
+contract (G91–G96). Node fixtures cover literal creation, the default grid,
+beat-limited and one-instrument selections, a fractional pickup, three shared
+places plus an independent edited copy, whole-place takeover, tempo changes,
+source/mute edited flags, and repeated copy/paste/reopen. They compare queried
+notes as well as every metadata field. G72 playback uses canonical song cycles;
+only `generateCopy` stretches tempo. G37's first-pass restriction still applies.
+
+On six local songs, first eight bars of all 36 stems: **1,365 source notes →
+1,343 written events + 22 documented converter merges**. All notes, link fields,
+tempos, flags and stems survive copy/paste/reopen; the reference stays unchanged.
+The copied tempo output is queried too. Each song restores two source links
+(definition and place), and six stem links.
+
+| Anonymous input            | Source notes | Written events | Native offers | Planted repeats recovered |
+| -------------------------- | -----------: | -------------: | ------------: | ------------------------: |
+| first test session, song 1 |          373 |            362 |             0 |                     2 / 2 |
+| first test session, song 2 |          157 |            156 |             0 |                     2 / 2 |
+| first test session, song 3 |          154 |            154 |             0 |                     2 / 2 |
+| first test session, song 4 |          445 |            439 |             0 |                     2 / 2 |
+| diversity-1                |           98 |             96 |             0 |                     2 / 2 |
+| diversity-2                |          138 |            136 |             0 |                     2 / 2 |
+
+Default matching (0.13 beat, quiet notes counted, exact pitch, Jaccard ≥0.5)
+offered no other eight-bar place for those opening windows. Controlled known
+repeats copy the real reference notes into two equal-beat windows in memory:
+**12 / 12 recovered at score 1**. This is controlled recall, not independent
+labels of actual song form; native-offer precision/recall remain unmeasured.
+The prototype's settings and score counts are exposed for part 2 to show.
+
+Proof: `npm test -- tests/section-operations.test.ts tests/section-links.test.ts`;
+for N=1–6, `GHOST_SECTIONS_ROOT="$HOME/projects/ghost-notes/reference"
+GHOST_SECTIONS_SONG=N npm test -- tests/sections-local.test.ts --silent=false`.
+Per-song runs take 1.8–36.1 s inside the 60 s Node wall budget; the combined
+run exceeds its 55 s test budget, so use the bounded commands. The fractional
+prefix proof queries from song zero, avoiding a boundary onset being clipped
+by floating/rational conversion; comparison normalizes negative zero only.
+No timing assertions or suite limits were widened. UI behavior and perceived
+output were not assessed by these document tests.
+
 ## 9. Playback and listening
 
 - A speaker on every row decides what Play plays, with presets for Recording,

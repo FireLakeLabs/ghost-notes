@@ -16,6 +16,7 @@ export function setInstrumentInSection(doc: Doc, id: string, instrumentId: strin
   let row = instruments(doc).find((r) => r.id === instrumentId);
   if (!owner) return refuse();
   if (!row) return refuse('This instrument no longer exists');
+  const belongs = (id: string | undefined) => row?.patterns.some((p) => p.id === id);
   let uses = row.uses.filter((u) => u.path.some((n) => n.id === id));
   if (plays && definitionMuted(doc, instrumentId))
     return refuse('This instrument is muted everywhere. Open its instrument editor to unmute it');
@@ -27,7 +28,7 @@ export function setInstrumentInSection(doc: Doc, id: string, instrumentId: strin
   uses = row.uses.filter((u) => u.path.some((n) => n.id === id));
   if (uses.length) {
     // The section itself can be a single leaf; its occurrence is the mute boundary.
-    if (owner.content.id === row.pattern.id) {
+    if (belongs(owner.content.id)) {
       return replaceParts(
         doc,
         owner.root,
@@ -42,7 +43,7 @@ export function setInstrumentInSection(doc: Doc, id: string, instrumentId: strin
       .flatMap((u) => u.path.slice(u.path.findIndex((p) => p.id === owner!.content.id) + 1, -1))
       .filter(
         (p): p is Pattern =>
-          'core' in p && p.core.kind === 'ref' && shared(doc, p.core.name)?.id !== row!.pattern.id,
+          'core' in p && p.core.kind === 'ref' && !belongs(shared(doc, p.core.name)?.id),
       );
     for (const group of nestedGroups) doc = shareInlineLeaves(doc, group.id);
     owner = sectionOwner(doc, id)!;
@@ -57,7 +58,7 @@ export function setInstrumentInSection(doc: Doc, id: string, instrumentId: strin
       if (!ancestry.has(p.id)) return p;
       if (p.core.kind === 'ref') {
         const target = shared(doc, p.core.name);
-        if (target?.id === row!.pattern.id) return { ...p, muted: !plays };
+        if (belongs(target?.id)) return { ...p, muted: !plays };
         if (target && ancestry.has(target.id)) {
           const copy = copyPattern(doc, local(target), copyIds);
           copy.label ??= p.core.name;
@@ -75,7 +76,7 @@ export function setInstrumentInSection(doc: Doc, id: string, instrumentId: strin
             parts: p.core.parts.map((part) => ({ ...part, pattern: local(part.pattern) })),
           },
         };
-      return (p.origin ?? p.id) === row!.pattern.id ? { ...p, muted: !plays } : p;
+      return belongs(p.origin ?? p.id) ? { ...p, muted: !plays } : p;
     }
     return replaceAtPath(doc, findWithPath(doc, owner.content.id)!.path, local(owner.content));
   }

@@ -81,6 +81,6 @@ test('source edits preserve links and rhythm fragments hide metadata', () => {
     if ('ok' in next) throw Error(next.reason);
     const entry = next.body[0];
     if (entry.kind !== 'shared') throw Error('fixture');
-    expect(entry.pattern).toMatchObject({ source, stem: 'bass', edited: false });
+    expect(entry.pattern).toMatchObject({ source, stem: 'bass', edited: true });
   }
 });

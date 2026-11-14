@@ -1,3 +1,4 @@
+import { markEdited } from '../edited';
 import {
   instruments,
   sections,
@@ -50,12 +51,12 @@ export function replaceAtPath(doc: Doc, path: Path, value: unknown): Doc {
     if ('core' in node && (node as Pattern).origin)
       copies.push({ pattern: node as Pattern, path: p });
   });
-  if (!copies.length) return next;
+  if (!copies.length) return markEdited(doc, next);
   const rows = instruments(doc);
   const owner = rows
     .map((r) => ({ row: r, found: findWithPath(doc, r.pattern.id)! }))
     .find(({ found }) => found.path.every((key, i) => path[i] === key));
-  if (!owner) return next;
+  if (!owner) return markEdited(doc, next);
   const changes = contentChanges(owner.row.pattern, at(next, owner.found.path));
   let result = next;
   const kept = new Set<string>();
@@ -144,7 +145,7 @@ export function replaceAtPath(doc: Doc, path: Path, value: unknown): Doc {
     }
   }
   if (kept.size) statuses.set(result, [...kept]);
-  return result;
+  return markEdited(doc, result);
 }
 export function replaceNode(doc: Doc, id: string, node: DocumentNode): Doc | Refusal {
   const found = findWithPath(doc, id);
