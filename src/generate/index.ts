@@ -103,9 +103,11 @@ export function generatePattern(
           if (
             part.label !== undefined ||
             part.labelSource !== undefined ||
-            part.muted !== undefined
+            part.muted !== undefined ||
+            part.source !== undefined ||
+            part.tempo !== undefined
           )
-            p = `(${annotation('part', { label: part.label, labelSource: part.labelSource, muted: part.muted })} ${p})`;
+            p = `(${annotation('part', { label: part.label, labelSource: part.labelSource, muted: part.muted, source: part.source, tempo: part.tempo })} ${p})`;
           return c.how === 'arrange' ? `[${part.cycles ?? 1}, ${p}]` : p;
         })
         .join(', ')})`;
@@ -128,9 +130,12 @@ export function generatePattern(
     pattern.comment !== undefined ||
     pattern.muted !== undefined ||
     pattern.origin !== undefined ||
+    pattern.source !== undefined ||
+    pattern.edited !== undefined ||
+    pattern.stem !== undefined ||
     serialization?.identities.has(pattern.id)
   )
-    code = `(${annotation('pattern', { label: pattern.label, comment: pattern.comment, muted: pattern.muted, originMuted: originMuted || undefined, origin: pattern.origin, identity: serialization?.identities.has(pattern.id) ? pattern.id : undefined })} ${code})`;
+    code = `(${annotation('pattern', { label: pattern.label, source: pattern.source, edited: pattern.edited, stem: pattern.stem, comment: pattern.comment, muted: pattern.muted, originMuted: originMuted || undefined, origin: pattern.origin, identity: serialization?.identities.has(pattern.id) ? pattern.id : undefined })} ${code})`;
   const instrument = serialization?.instrumentTags?.get(pattern.origin ?? pattern.id);
   if (instrument) code += `.tag(${literal(`odm:instrument:${instrument}`)})`;
   return code;

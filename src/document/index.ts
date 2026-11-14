@@ -1,3 +1,4 @@
+import { sectionSource } from './links';
 import { at, contentChanges } from './content';
 import { instruments, sections } from './instruments';
 import type { Arg, Core, Doc, Layer, DocumentNode, Pattern, Step } from './types';
@@ -150,6 +151,18 @@ export function checkDoc(
   const names = new Set(doc.body.filter((n) => n.kind === 'shared').map((n) => n.name));
   if (doc.version !== 2) problems.push(`Unsupported document version: ${doc.version}`);
   walk(doc, (node) => {
+    if ('source' in node && node.source !== undefined && !sectionSource(node.source))
+      problems.push(`Invalid section source: ${node.id}`);
+    if (
+      'tempo' in node &&
+      node.tempo !== undefined &&
+      (!Number.isFinite(node.tempo) || node.tempo <= 0)
+    )
+      problems.push(`Invalid place tempo: ${node.id}`);
+    if ('edited' in node && node.edited !== undefined && typeof node.edited !== 'boolean')
+      problems.push(`Invalid edited flag: ${node.id}`);
+    if ('stem' in node && node.stem !== undefined && typeof node.stem !== 'string')
+      problems.push(`Invalid stem: ${node.id}`);
     if (typeof node.id !== 'string' || !node.id) problems.push('Missing node id');
     if (
       'labelSource' in node &&
