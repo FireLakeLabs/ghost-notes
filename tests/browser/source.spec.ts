@@ -1,6 +1,15 @@
 import { mkdir } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
-import { openProgram, play, selectNode, signal, waitForPending, triggerValues } from './helpers';
+import {
+  openProgram,
+  play,
+  selectNode,
+  signal,
+  waitForPending,
+  triggerValues,
+  scoreReady,
+  appSignal,
+} from './helpers';
 import { instruments } from '../../src/document';
 test.use({ launchOptions: { args: ['--autoplay-policy=no-user-gesture-required'] } });
 
@@ -72,4 +81,44 @@ test('real piece source screenshots', async ({ page }) => {
     await page.setViewportSize(size);
     await page.screenshot({ path: `test-results/source/house-${size.width}.png` });
   }
+});
+
+test('applied source is not a draft, and a rejected playback edit keeps its text after reopening', async ({
+  page,
+}) => {
+  await openProgram(page, { source: 'note("c3").s("sine")' });
+  const editor = page.locator('#editor');
+  async function sourceEditor() {
+    await page.locator('#score [data-control="rhythm"]').click();
+    await editor.getByRole('button', { name: 'Edit as source', exact: true }).click();
+  }
+  await sourceEditor();
+  await page.getByLabel('Source text', { exact: true }).fill('note( 62 ).s("triangle")');
+  await editor.getByRole('button', { name: 'Apply', exact: true }).click();
+  await appSignal(page, () => document.getElementById('editor')!.textContent!.includes('Applied.'));
+  await expect(editor).toContainText('Applied.');
+  await scoreReady(page);
+  await editor.locator('.editor-done').click();
+  await sourceEditor();
+  await expect(editor).not.toContainText('Unapplied text restored');
+  await play(page);
+  await page.evaluate(() => {
+    const engine = window.odmApp.engine!,
+      original = engine.play;
+    engine.play = () => {
+      engine.play = original;
+      return Promise.reject(Error('injected source swap refusal'));
+    };
+  });
+  const failedText = 'note( 64 ).s("triangle")';
+  await page.getByLabel('Source text', { exact: true }).fill(failedText);
+  await editor.getByRole('button', { name: 'Apply', exact: true }).click();
+  await appSignal(page, () =>
+    document.getElementById('editor-status')!.textContent!.includes('Change failed'),
+  );
+  await expect(page.locator('#editor-status')).toContainText('Change failed');
+  await editor.locator('.editor-done').click();
+  await sourceEditor();
+  await expect(page.getByLabel('Source text', { exact: true })).toHaveValue(failedText);
+  await page.getByRole('button', { name: 'Stop', exact: true }).click();
 });

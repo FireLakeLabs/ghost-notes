@@ -82,8 +82,7 @@ async function openArrangement(page: Page) {
 test('make a linked section, edit shared places, split, warn, copy and reopen', async ({
   page,
 }) => {
-  const { folder, files, open, dialog, drumsMine, errors } = await openArrangement(page);
-  let otherFolder: string | undefined;
+  const { folder, open, dialog, drumsMine, errors } = await openArrangement(page);
   try {
     const before = await page.evaluate(() => window.odmApp.state.sections.filter((p) => p.source));
     expect(before.map((p) => p.source?.fromBar)).toEqual([2, 6, 10]);
@@ -265,62 +264,9 @@ test('make a linked section, edit shared places, split, warn, copy and reopen', 
     await expect(dialog.locator('[data-takeover]')).toHaveCount(0);
     await expect(dialog.getByRole('button', { name: 'Make section', exact: true })).toBeEnabled();
     await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
-    // Copied literal fills remain unarranged, but their actual Mine notes stay visible
-    // when a lens also contains editable section cells.
-    await page.locator('#copy').click();
-    await copy.locator('[data-unarranged]').selectOption('literal');
-    const withFills = await copy.locator('textarea').inputValue();
-    await page.keyboard.press('Escape');
-    await page.evaluate(async (text) => window.odmApp.load(text), withFills);
-    await scoreReady(page);
-    await page.evaluate(() => window.ghostTimeline.openLens({ firstBar: 0, lastBar: 2 }));
-    await expect(page.locator('#timeline')).toHaveAttribute('data-animating', 'false');
-    await drumsMine.scrollIntoViewIfNeeded();
-    await page.evaluate(
-      () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
-    );
-    const unarrangedPaint = await drumsMine.evaluate((canvas: HTMLCanvasElement) => {
-      const first = document.querySelector<HTMLElement>('[data-bar="1"]')!;
-      const last = document.querySelector<HTMLElement>('[data-bar="2"]')!;
-      const a = Math.ceil(parseFloat(first.style.left)) + 2;
-      const b = Math.floor(parseFloat(last.style.left)) - 2;
-      const data = canvas.getContext('2d')!.getImageData(a, 6, b - a, 74).data;
-      let notes = 0;
-      for (let i = 0; i < data.length; i += 4)
-        if (
-          data[i] > 140 &&
-          data[i + 1] > 130 &&
-          data[i + 2] > 100 &&
-          data[i] >= data[i + 1] &&
-          data[i] - data[i + 1] < 40 &&
-          data[i + 1] > data[i + 2]
-        )
-          notes++;
-      return notes;
-    });
-    expect(unarrangedPaint).toBeGreaterThan(0);
-    otherFolder = await mkdtemp(join(tmpdir(), 'ghost-short-reference-'));
-    const shortened = JSON.parse(new TextDecoder().decode(files.get('beats.json')));
-    shortened.beats = shortened.beats.slice(0, 10);
-    shortened.downbeats = shortened.downbeats.filter((s: number) => s <= 4.5);
-    shortened.coverage.last_beat_seconds = 4.5;
-    shortened.coverage.trailing_seconds = 47.5;
-    shortened.coverage.gaps = [];
-    files.set('beats.json', new TextEncoder().encode(JSON.stringify(shortened)));
-    for (const [path, bytes] of files) {
-      const file = join(otherFolder, path);
-      await mkdir(join(file, '..'), { recursive: true });
-      await writeFile(file, bytes);
-    }
-    await open(otherFolder);
-    await expect(page.locator('[data-row="mine"]')).toHaveCount(6);
-    await expect(page.locator('[data-row="mine"][data-stem="bass"]')).toContainText(
-      'no linked arrangement',
-    );
     expect(errors).toEqual([]);
   } finally {
     await rm(folder, { recursive: true, force: true });
-    if (otherFolder) await rm(otherFolder, { recursive: true, force: true });
   }
 });
 
@@ -548,5 +494,71 @@ test('linked rows explain all differences and preserve views and visible drawing
     expect(errors).toEqual([]);
   } finally {
     await rm(folder, { recursive: true, force: true });
+  }
+});
+
+test('copied literal fills stay visible and switching to a shorter reference unlinks the score', async ({
+  page,
+}) => {
+  const { folder, files, open, drumsMine, errors } = await openArrangement(page);
+  let otherFolder: string | undefined;
+  const copy = page.getByRole('dialog', { name: 'Copy arrangement', exact: true });
+  try {
+    // Copied literal fills remain unarranged, but their actual Mine notes stay visible
+    // when a lens also contains editable section cells.
+    await page.locator('#copy').click();
+    await copy.locator('[data-unarranged]').selectOption('literal');
+    const withFills = await copy.locator('textarea').inputValue();
+    await page.keyboard.press('Escape');
+    await page.evaluate(async (text) => window.odmApp.load(text), withFills);
+    await scoreReady(page);
+    await page.evaluate(() => window.ghostTimeline.openLens({ firstBar: 0, lastBar: 2 }));
+    await expect(page.locator('#timeline')).toHaveAttribute('data-animating', 'false');
+    await drumsMine.scrollIntoViewIfNeeded();
+    await page.evaluate(
+      () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
+    );
+    const unarrangedPaint = await drumsMine.evaluate((canvas: HTMLCanvasElement) => {
+      const first = document.querySelector<HTMLElement>('[data-bar="1"]')!;
+      const last = document.querySelector<HTMLElement>('[data-bar="2"]')!;
+      const a = Math.ceil(parseFloat(first.style.left)) + 2;
+      const b = Math.floor(parseFloat(last.style.left)) - 2;
+      const data = canvas.getContext('2d')!.getImageData(a, 6, b - a, 74).data;
+      let notes = 0;
+      for (let i = 0; i < data.length; i += 4)
+        if (
+          data[i] > 140 &&
+          data[i + 1] > 130 &&
+          data[i + 2] > 100 &&
+          data[i] >= data[i + 1] &&
+          data[i] - data[i + 1] < 40 &&
+          data[i + 1] > data[i + 2]
+        )
+          notes++;
+      return notes;
+    });
+    expect(unarrangedPaint).toBeGreaterThan(0);
+    otherFolder = await mkdtemp(join(tmpdir(), 'ghost-short-reference-'));
+    const shortened = JSON.parse(new TextDecoder().decode(files.get('beats.json')));
+    shortened.beats = shortened.beats.slice(0, 10);
+    shortened.downbeats = shortened.downbeats.filter((s: number) => s <= 4.5);
+    shortened.coverage.last_beat_seconds = 4.5;
+    shortened.coverage.trailing_seconds = 47.5;
+    shortened.coverage.gaps = [];
+    files.set('beats.json', new TextEncoder().encode(JSON.stringify(shortened)));
+    for (const [path, bytes] of files) {
+      const file = join(otherFolder, path);
+      await mkdir(join(file, '..'), { recursive: true });
+      await writeFile(file, bytes);
+    }
+    await open(otherFolder);
+    await expect(page.locator('[data-row="mine"]')).toHaveCount(6);
+    await expect(page.locator('[data-row="mine"][data-stem="bass"]')).toContainText(
+      'no linked arrangement',
+    );
+    expect(errors).toEqual([]);
+  } finally {
+    await rm(folder, { recursive: true, force: true });
+    if (otherFolder) await rm(otherFolder, { recursive: true, force: true });
   }
 });

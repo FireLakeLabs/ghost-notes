@@ -2,7 +2,7 @@ import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { expect, type Page } from '@playwright/test';
-import { test, scoreReady, appSignal } from './helpers';
+import { test, scoreReady } from './helpers';
 import { timelineFixture } from '../fixtures/timeline';
 
 let folder = '';
@@ -126,41 +126,6 @@ test('moving a lens closes an interior-bar editor and retains its unapplied sour
   await expect(page.getByLabel('Source text', { exact: true })).toHaveValue(
     'note("62").s("triangle")',
   );
-  await page.getByLabel('Source text', { exact: true }).fill('note( 62 ).s("triangle")');
-  await page.locator('#editor').getByRole('button', { name: 'Apply', exact: true }).click();
-  await appSignal(page, () => document.getElementById('editor')!.textContent!.includes('Applied.'));
-  await expect(page.locator('#editor')).toContainText('Applied.');
-  await scoreReady(page);
-  await page.locator('#editor .editor-done').click();
-  await page.locator('#score [data-control="rhythm"]').click();
-  await page
-    .locator('#editor')
-    .getByRole('button', { name: 'Edit as source', exact: true })
-    .click();
-  await expect(page.locator('#editor')).not.toContainText('Unapplied text restored');
-  await page.evaluate(async () => {
-    const app = window.odmApp;
-    app.follow(false);
-    await app.play();
-    const engine = app.engine!,
-      original = engine.play;
-    engine.play = () => {
-      engine.play = original;
-      return Promise.reject(Error('injected source swap refusal'));
-    };
-  });
-  const failedText = 'note( 64 ).s("triangle")';
-  await page.getByLabel('Source text', { exact: true }).fill(failedText);
-  await page.locator('#editor').getByRole('button', { name: 'Apply', exact: true }).click();
-  await expect(page.locator('#editor-status')).toContainText('Change failed');
-  await page.locator('#editor .editor-done').click();
-  await page.locator('#score [data-control="rhythm"]').click();
-  await page
-    .locator('#editor')
-    .getByRole('button', { name: 'Edit as source', exact: true })
-    .click();
-  await expect(page.getByLabel('Source text', { exact: true })).toHaveValue(failedText);
-  await page.evaluate(() => window.odmApp.stop());
 });
 
 test('drum cells ignore rapid clicks while a playback edit is still queued', async ({ page }) => {

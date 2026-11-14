@@ -148,9 +148,9 @@ arrangement of every song. Later row speakers and simplify controls have
 ## Checks and review
 
 `npm run check` passed 631 Node tests (nine skips); `npm run test:browser`
-passed 82 (one skip) in 134.560 s / 180 s after the CI follow-up below.
-Both arrangement cases finished below the five slowest cases' 10.307 s,
-within the unchanged 20-second accounting limit. Opus approved in four
+passed 84 (one skip) in 133.919 s / 180 s after the CI follow-up below.
+All three arrangement cases finished below the five slowest cases' 10.111 s,
+within the unchanged 20-second accounting limit. Opus approved in five
 rounds. Review found and fixtures reproduced wrong rewrite targeting in a split
 copy, stale clicks during an unsent playback swap, an interior-bar editor left
 open by a moving lens, and Remove → Add refusing a use-owned rewrite. Current
@@ -162,9 +162,9 @@ and reopening its editor. Reviewer usage was not exposed.
 On the first PR #42 head, Check's functional browser cases passed (80, two
 platform/opt-in skips) in 150.136 s, but the combined arrangement case took
 21.523 s against the unchanged 20-second case budget. Hosting's separate runner
-measured 24.226 s for that case and exposed two assertion races. The shared
-arrangement setup now feeds two independent cases: shared editing/copy/reopen,
-and rows/differences/view drawing. The original bodies and assertions remain.
+measured 24.226 s for that case and exposed two assertion races. The first
+follow-up split shared editing/copy/reopen from rows/differences/view drawing,
+retaining the original bodies and assertions.
 
 A failed one-row score question had been followed by a duplicate isolated
 question, delaying its row error to a second five-second deadline. A focused
@@ -175,3 +175,13 @@ Source Apply waits on the existing completion signal within the same test
 deadline; a sequence of legitimate questions is not assigned an unrelated
 five-second assertion deadline. Case and suite budgets are unchanged. These
 changes leave successful queries and the measured lens renderer unchanged.
+
+The next Hosting run passed the timeout and difference cases but reached the
+same assertion-deadline problem during the second Source Apply; its navigation
+case was already at 19.912 s and editing/copy at 19.814 s. Applied/failed
+source-buffer lifecycle checks now use a separate one-instrument source
+fixture, with explicit playback and completion signals. The lens case retains
+its exact place/bar navigation, Follow and unsaved-text reopening checks.
+The literal-fill/reference-switch body moved unchanged to its own fixture
+case. These test changes leave runtime code, all budgets and the completed
+frame/real-song proofs unchanged.
