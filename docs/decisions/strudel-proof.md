@@ -46,3 +46,21 @@
   Failed preset downloads remain cached by the pinned upstream loader: reload
   the page before retrying after a network failure. Its direct-`eval` build
   warning is expected; the loader is in a lazy chunk.
+
+- **G115 (2026-11-14) Ask multi-row score windows in their complete playback context.**
+  For two or more rows, query the generated program with the same instrument
+  tags used by playback. Read row identity from Hap context, outside sound
+  values, and partition actual queried events. Refresh every row after edits:
+  group rewrites such as arp can make one row depend on its neighbours, so
+  mixing whole and isolated answers would make the display inconsistent.
+  Single-row documents keep isolated questions. Errors, opaque values or
+  missing/unknown identities fall back to that path; cancelled obsolete work
+  cannot start its fallback.
+  Every question still gets a fresh worker and the existing five-second limit.
+  No result cache, new data cap or worker reuse is introduced. Independent play
+  preflight remains. This removes repeated generation/evaluation before the
+  timeline can show Mine. A full-context row can differ from its isolated/solo
+  answer for cross-row transforms; isolated fallback retains the old behaviour.
+  Decided for the absent owner after repeated CI budget failures. The
+  [score-query report](../score-query-measurements.md) records the measured
+  scope and full-program limitation; no visual design changes.

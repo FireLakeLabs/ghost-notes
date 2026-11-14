@@ -5,6 +5,7 @@ import { generate } from '../generate';
 import { importStrudel } from '../import';
 import { createEngine } from '../engine';
 import { createBrowserQueries } from '../strudel/evaluate-browser';
+import { scoreRows } from '../strudel/score-rows';
 import {
   initialState,
   editedPiece,
@@ -61,7 +62,9 @@ export function createApp() {
       piece = epoch;
     const { doc, fromCycle, toCycle, rows } = state;
     if (!doc) return;
-    if (affected && rows.some((row) => !state.events[row.id])) affected = undefined;
+    // A group rewrite can make an edit to one row change its neighbours too.
+    if (rows.length > 1 || (affected && rows.some((row) => !state.events[row.id])))
+      affected = undefined;
     const last = state.sections.at(-1);
     const length = last ? last.start + last.cycles : 0;
     const from = length && fromCycle < length ? 0 : fromCycle;
@@ -70,20 +73,32 @@ export function createApp() {
       update({ ...state, events: cachedWindow.events, sounds: sounds() });
       return;
     }
-    const results = await Promise.all(
-      rows
-        .filter((row) => !affected || affected.includes(row.id))
-        .map(
-          async (row) =>
-            [row.id, await queries.query(generate(doc, { only: row.id }), from, to)] as const,
-        ),
-    );
+    let answers: Record<string, EventResult> | null = null;
+    if (!affected && rows.length > 1) {
+      const answer = await queries.query(generate(doc, { instrumentTags: true }), from, to);
+      if (piece !== epoch || revision !== windowRevision) return;
+      answers = scoreRows(
+        answer,
+        rows.map((row) => row.id),
+      );
+    }
+    if (!answers) {
+      const results = await Promise.all(
+        rows
+          .filter((row) => !affected || affected.includes(row.id))
+          .map(
+            async (row) =>
+              [row.id, await queries.query(generate(doc, { only: row.id }), from, to)] as const,
+          ),
+      );
+      answers = Object.fromEntries(results);
+    }
     if (piece !== epoch || revision !== windowRevision) return;
     dirtyRows.clear();
     cachedWindow = {
       from,
       to,
-      events: { ...(affected ? state.events : {}), ...Object.fromEntries(results) },
+      events: { ...(affected ? state.events : {}), ...answers },
     };
     update({ ...state, events: cachedWindow.events });
     update({ ...state, sounds: sounds() });

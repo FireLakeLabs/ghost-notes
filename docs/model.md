@@ -89,3 +89,13 @@ breadcrumb. Nothing else is editable while it is open.
 Section definitions and their reference places extend ODM's existing patterns
 and arrangement parts; [sections](sections.md) defines their optional metadata
 and reopening contract.
+
+Multi-row score refreshes use one tagged Strudel question for all rows.
+PlainEvent.instrumentId comes from Hap context and never changes sound
+values. The score adapter partitions events in their complete playback context;
+edits refresh neighbours too because group transforms can couple rows.
+Single-row documents and broken/opaque/unattributed whole answers use isolated
+questions, guarded against an obsolete request. Workers remain fresh and
+independently bounded.
+[The measured scope](score-query-measurements.md) is separate from playback
+and speaker timing.

@@ -4,8 +4,14 @@ import { importStrudel } from '../src/import';
 import { instruments } from '../src/document';
 import { generate } from '../src/generate';
 import { queryEvents, queryEventsWithBudget } from '../src/strudel/evaluate';
-import { query, plainEvent } from '../src/strudel';
+import { query, plainEvent, type PlainEvent } from '../src/strudel';
 import { instrumentIdentity } from '../src/strudel/instrument-identity';
+
+function withoutIdentity(event: PlainEvent) {
+  const result = { ...event };
+  delete result.instrumentId;
+  return result;
+}
 
 for (const source of [
   'a: note("c2").s("sine"); b: note("c2").s("sine")',
@@ -16,7 +22,10 @@ for (const source of [
     const actual = new Map<string, unknown[]>();
     const tagged = generate(doc, { instrumentTags: true });
     const untagged = await queryEvents(generate(doc), 0, 28);
-    expect(await queryEvents(tagged, 0, 28)).toEqual(untagged);
+    const taggedAnswer = await queryEvents(tagged, 0, 28);
+    const ids = new Set(instruments(doc).map((row) => row.id));
+    expect(taggedAnswer.events.every((event) => ids.has(event.instrumentId ?? ''))).toBe(true);
+    expect({ ...taggedAnswer, events: taggedAnswer.events.map(withoutIdentity) }).toEqual(untagged);
     const result = await queryEventsWithBudget(tagged, 0, 28, 100_000, undefined, 0.5, (p) => {
       for (const hap of query(p, 0, 28)) {
         const id = instrumentIdentity(hap);
@@ -24,7 +33,7 @@ for (const source of [
           id,
           'Pattern.tag must retain canonical row identity through arrangement',
         ).toBeDefined();
-        actual.set(id!, [...(actual.get(id!) ?? []), plainEvent(hap)]);
+        actual.set(id!, [...(actual.get(id!) ?? []), withoutIdentity(plainEvent(hap))]);
       }
     });
     expect(result.error).toBe(null);
