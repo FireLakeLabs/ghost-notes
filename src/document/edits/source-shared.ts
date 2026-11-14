@@ -85,7 +85,16 @@ export function sourceSlot(doc: Doc, address: string) {
         p.core.kind === 'opaque'
           ? p.core.code
           : generatePattern(
-              { ...p, layers: [], label: undefined, comment: undefined, muted: undefined },
+              {
+                ...p,
+                layers: [],
+                label: undefined,
+                comment: undefined,
+                muted: undefined,
+                source: undefined,
+                edited: undefined,
+                stem: undefined,
+              },
               hole,
             );
     }
@@ -276,6 +285,9 @@ export function installSource(
             };
         if ('core' in slot.node) {
           const old = slot.node as Pattern;
+          if (old.source && !p.source) p.source = old.source;
+          if (old.edited !== undefined && p.edited === undefined) p.edited = old.edited;
+          if (old.stem !== undefined && p.stem === undefined) p.stem = old.stem;
           if (old.origin) p.origin = old.origin;
           if (old.muted !== undefined) p.muted = old.muted;
         }

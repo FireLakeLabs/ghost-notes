@@ -32,7 +32,16 @@ export interface Voice extends Meta {
   muted: boolean;
   pattern: Pattern;
 }
+/** Half-open numbered bars; bar 0 is the pickup. Folder is a basename, never a path. */
+export interface SectionSource {
+  folder: string;
+  fromBar: number;
+  toBar: number;
+}
 export interface Pattern extends Meta {
+  source?: SectionSource;
+  edited?: boolean;
+  stem?: string;
   origin?: string;
   label?: string;
   comment?: string;
@@ -41,6 +50,9 @@ export interface Pattern extends Meta {
   layers: Layer[];
 }
 export interface GroupPart {
+  source?: SectionSource;
+  /** Cycles per minute (one numbered bar per cycle), steady within this place. */
+  tempo?: number;
   id: string;
   labelSource?: 'author' | 'generated';
   pattern: Pattern;

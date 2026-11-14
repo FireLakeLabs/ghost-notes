@@ -85,3 +85,7 @@ breadcrumb. Nothing else is editable while it is open.
 - How a room shows a conflict whose outcome cannot be predicted.
 - Whether heard length is drawn at all, and if so from what.
 - How the selected instrument's own system is drawn beside the editor.
+
+Section definitions and their reference places extend ODM's existing patterns
+and arrangement parts; [sections](sections.md) defines their optional metadata
+and reopening contract.

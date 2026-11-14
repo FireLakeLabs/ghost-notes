@@ -2,7 +2,20 @@ import type { Path } from './index';
 import { printSteps } from '../import/mini';
 import type { Pattern, Step } from './types';
 // Presentation and identity never decide whether two content addresses agree.
-const metadata = new Set(['id', 'span', 'tier', 'role', 'label', 'comment', 'origin', 'muted']);
+const metadata = new Set([
+  'id',
+  'span',
+  'tier',
+  'role',
+  'label',
+  'comment',
+  'origin',
+  'muted',
+  'source',
+  'edited',
+  'stem',
+  'tempo',
+]);
 const ignored = (node: object, key: string) =>
   ('id' in node && ('tier' in node || 'pattern' in node) && metadata.has(key)) ||
   ('kind' in node && node.kind === 'sequence' && key === 'notation');

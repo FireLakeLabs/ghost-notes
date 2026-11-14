@@ -1,3 +1,4 @@
+import { sectionSource } from '../document/links';
 import { parse, type Comment } from 'acorn';
 import type * as JS from 'estree';
 import type { ImportResult, ImportStrudel, ImportWarning } from '../contract';
@@ -190,6 +191,10 @@ export const importStrudel: ImportStrudel = (source): ImportResult => {
       if (typeof data.label === 'string') p.label = data.label;
       if (typeof data.comment === 'string') p.comment = data.comment;
       if (typeof data.muted === 'boolean') p.muted = data.muted;
+      const source = sectionSource(data.source);
+      if (source) p.source = source;
+      if (typeof data.edited === 'boolean') p.edited = data.edited;
+      if (typeof data.stem === 'string') p.stem = data.stem;
     } else if (comment && !comment.value.startsWith('@odm-')) p.comment = comment.value.trim();
     return p;
   }
@@ -378,6 +383,10 @@ export const importStrudel: ImportStrudel = (source): ImportResult => {
         if (data?.labelSource === 'author' || data?.labelSource === 'generated')
           part.labelSource = data.labelSource;
         if (data && typeof data.muted === 'boolean') part.muted = data.muted;
+        const source = sectionSource(data?.source);
+        if (source) part.source = source;
+        if (typeof data?.tempo === 'number' && Number.isFinite(data.tempo) && data.tempo > 0)
+          part.tempo = data.tempo;
         parts.push(part);
       }
       return make(node, 1, { kind: 'group', how: name, parts }, 'section');

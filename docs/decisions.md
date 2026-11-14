@@ -110,3 +110,7 @@ check:docs`); when a topic file fills, start a new one.
 - G78: independent deterministic proposals, including those that expand.
 - G79: conservative session limits; record their measured effects.
 - G80: retain source lineage and converter-shaped changes through suggestions.
+
+## [Sections and links](decisions/sections.md)
+
+- G91: optional source, place tempo, edited flag and stem fields in ODM metadata.
