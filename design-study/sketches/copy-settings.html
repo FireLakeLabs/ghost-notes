@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" /><title>Copy and settings proposal</title>
+  <style>
+    body {
+      margin: 0;
+      background: #0f1115;
+      color: #eceae4;
+      font: 15px/1.5 system-ui;
+    }
+    header {
+      padding: 20px;
+      border-bottom: 1px solid #343a46;
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+    header strong {
+      margin-right: auto;
+    }
+    button,
+    select {
+      background: #1c2029;
+      color: inherit;
+      border: 1px solid #5a6273;
+      border-radius: 6px;
+      padding: 9px;
+    }
+    main {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      padding: 32px;
+    }
+    article {
+      background: #161920;
+      padding: 24px;
+      border: 1px solid #343a46;
+      border-radius: 10px;
+      width: 440px;
+    }
+    label {
+      display: flex;
+      justify-content: space-between;
+      margin: 16px 0;
+    }
+    p,
+    small {
+      color: #a4aab5;
+    }
+    pre {
+      background: #0f1115;
+      padding: 20px;
+    }
+    em {
+      color: #ff8a5b;
+    }
+    svg {
+      width: 40px;
+    }
+  </style>
+  <header>
+    <svg viewBox="0 0 64 64" aria-label="Ghost Notes icon">
+      <rect width="64" height="64" rx="14" fill="#161920" />
+      <path d="M16 18h32M16 32h32M16 46h32" stroke="#6f9fd8" stroke-width="3" />
+      <path d="M22 13v11m10 2v12m10 1v12" stroke="#f1e6cc" stroke-width="7" /></svg
+    ><strong>Ghost Notes</strong><button>Paste Strudel</button><button>Copy •</button
+    ><button>Settings</button><button>About</button>
+  </header>
+  <main>
+    <article>
+      <h2>Copy arrangement</h2>
+      <label
+        >Unedited sections
+        <select>
+          <option>As made</option>
+          <option>Literal</option>
+          <option>Simplified</option>
+        </select></label
+      ><label
+        >Unarranged bars
+        <select>
+          <option>Silence</option>
+          <option>Literal</option>
+          <option>Simplified</option>
+        </select></label
+      >
+      <p><em>3 unarranged bars will be silent.</em></p>
+      <p>
+        Pickup plays first. A fractional pickup is correct on the first pass only: stop and restart
+        Strudel before replaying; do not loop.
+      </p>
+      <pre>
+setcpm(60);
+const verse = …;
+arrange(…)</pre>
+      <button>Copy text</button> <button>Close</button>
+    </article>
+    <article>
+      <h2>Settings</h2>
+      <p>For this session only. Reloading resets these choices.</p>
+      <label
+        >Notes grid (steps per beat)
+        <select>
+          <option>4</option>
+          <option>exact</option>
+        </select></label
+      ><label
+        >Selection
+        <select>
+          <option>band</option>
+          <option>instrument</option>
+        </select></label
+      ><label
+        >Snap
+        <select>
+          <option>bars</option>
+          <option>beats</option>
+        </select></label
+      ><label
+        >Starting content
+        <select>
+          <option>literal</option>
+          <option>simplified</option>
+          <option>silence</option>
+        </select></label
+      >
+      <p>Pitch match · timing tolerance · quiet threshold · simplify limits · protect fills</p>
+      <button>Done</button>
+    </article>
+  </main>
+</html>

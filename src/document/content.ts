@@ -8,6 +8,7 @@ const metadata = new Set([
   'tier',
   'role',
   'label',
+  'labelSource',
   'comment',
   'origin',
   'muted',

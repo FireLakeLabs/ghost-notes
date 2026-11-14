@@ -301,3 +301,36 @@ a {
     min-height: 44px;
   }
 }
+
+.copy-dialog,
+.settings-dialog {
+  width: min(640px, calc(100vw - 28px));
+}
+.copy-dialog label,
+.settings-dialog label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 12px 0;
+}
+.copy-dialog select,
+.settings-dialog select,
+.settings-dialog input {
+  color: var(--text);
+  background: var(--canvas);
+  border: 1px solid var(--border);
+  padding: 6px;
+  max-width: 100%;
+}
+.settings-dialog input[type='number'] {
+  width: 100px;
+}
+.copy-dialog textarea {
+  min-height: 180px;
+}
+.copy-dialog [data-warning],
+#copy[data-changed='true'] {
+  color: var(--warning);
+}

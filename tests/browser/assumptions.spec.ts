@@ -1,3 +1,4 @@
+import type {} from '../../src/copy/harness';
 import { test } from './helpers';
 import { expect } from '@playwright/test';
 import type {} from '../../src/strudel/assumptions-harness';
@@ -160,3 +161,68 @@ for (const held of [false, true])
     expect(rows[0].maxSplit).toBeGreaterThan(0.003);
     if (held) expect(rows[0].maxSplit).toBeGreaterThan(ALIGNMENT_SECONDS);
   });
+
+test('copied arrangement schedules the expected first-pass events in every gap mode', async ({
+  page,
+}) => {
+  await page.goto('/harness/copy.html');
+  await page.waitForFunction(() => !!window.copyProof);
+  const programs = await page.evaluate(() => window.copyProof.programs);
+  await page.goto('/harness/assumptions.html');
+  await page.waitForFunction(() => !!window.strudelProof);
+  for (const output of programs) {
+    const mode = output.mode;
+    const expected =
+      mode === 'silence'
+        ? [
+            [0.5, 60],
+            [0.5, 67],
+            [1, 64],
+            [3.5, 60],
+            [3.5, 67],
+            [3.75, 64],
+          ]
+        : [
+            [0, 55],
+            [0.5, 60],
+            [0.5, 67],
+            [1, 64],
+            [1.5, 67],
+            [3.5, 60],
+            [3.5, 67],
+            [3.75, 64],
+            [4, 69],
+          ];
+    await page.evaluate((source) => window.strudelProof.play(source), output.text);
+    await page.waitForFunction((n) => window.strudelProof.triggers.length >= n, expected.length);
+    const events = await page.evaluate(() => {
+      window.strudelProof.stop();
+      return window.strudelProof.triggers
+        .slice()
+        .sort(
+          (a, b) =>
+            a.cycle - b.cycle ||
+            Number((a.value as { note: number }).note) - Number((b.value as { note: number }).note),
+        );
+    });
+    expect(events).toHaveLength(expected.length);
+    const origin = events[0].time - expected[0][0];
+    for (const [i, e] of events.entries()) {
+      expect(e.cycle).toBeCloseTo(expected[i][0], 8);
+      expect(e.time - origin).toBeCloseTo(expected[i][0], 8);
+      expect(e.value).toMatchObject({ note: expected[i][1] });
+      expect(e.lead).toBeGreaterThan(0);
+    }
+    console.log(
+      'COPY SCHEDULE',
+      JSON.stringify({
+        mode,
+        count: events.length,
+        maxErrorMs: Math.max(
+          ...events.map((e, i) => Math.abs(e.time - origin - expected[i][0]) * 1000),
+        ),
+        minimumLead: Math.min(...events.map((e) => e.lead)),
+      }),
+    );
+  }
+});

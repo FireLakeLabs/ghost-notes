@@ -126,3 +126,9 @@ check:docs`); when a topic file fills, start a new one.
 - G103: offline PR hosting checks and a repository gate on both AWS workflows.
 - G104: serve licence notices as plain text; guard the complete pinned source list.
 - G105: publish the install manifest and icons as static files with correct headers.
+
+## [Copy and shell](decisions/copy.md)
+
+- G107: fixed-clock per-place export timing, explicitly reversible on reopening.
+- G108: as-made/silence defaults, shortest valid simplify proposal, explicit copy failure.
+- G109: one session settings dialog and a successful-copy fingerprint.

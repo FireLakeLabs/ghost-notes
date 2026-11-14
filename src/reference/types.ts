@@ -92,6 +92,8 @@ export type ReferenceSong = {
 };
 /** The only input dependency of the reader. Implementations must stay local. */
 export interface SongFiles {
+  /** Local basename used only in copied links, never a path. */
+  folderName?: string;
   read(path: string): Promise<Uint8Array>;
   exists(path: string): Promise<boolean>;
 }
