@@ -12,6 +12,7 @@ import type { ReferenceNote, ReferenceSong, ReferenceStem } from '../reference/t
 import { secondsToPosition } from '../reference/beats';
 import { drumLane } from './layout';
 import { scoredNotes } from '../strudel/notes';
+import type { MatchSettings } from '../simplify';
 
 export type TimelineScore = {
   doc: Doc | null;
@@ -20,6 +21,7 @@ export type TimelineScore = {
   events: Record<string, EventResult>;
   linked: boolean;
   grid: ConversionGrid;
+  match?: MatchSettings;
 };
 export type MaterialPlace = {
   id: string;

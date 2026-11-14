@@ -1,5 +1,26 @@
 # Decisions: whole-song timeline
 
+- **G116 (2026-11-14) Explain converter evidence and compare same-bar onsets.**
+  Decided for the absent owner. Notes' four marks use converter lineage and
+  original/written seconds, including sustain-end crossings. Mine compares
+  original MIDI onsets with actual queried events, one-to-one within each
+  half-open authored bar, using the session match settings. Quiet filtering
+  applies to recorded notes; drums compare by lane, excluding classes outside
+  the five displayed lanes. The strip uses matched /
+  union, with two empty arranged sets at 100%; unarranged or unanswered bars
+  have no comparison. Its 4 px height, 2 px bottom inset and 90/70% colours
+  follow Main. Hollow recording notes share Mine's 200-event drawing allowance;
+  counts retain all events. Hover explains every mark, with up/down keys as
+  an equivalent. Outside the lens, pitched annotations use a bottom rail while
+  the music remains a contour; inside, they follow the piano roll. Focusing
+  lens controls preserves the working row's scroll position. Animated row
+  heights use whole CSS pixels between the existing sizes; the 450/160 ms
+  projection stays eased. The outside view uses one cached blurred context.
+  Layers shares its visible surface and grid while keeping separate source
+  data and hit regions. The
+  [mockup](../../design-study/sketches/difference-marks.html) records the rail
+  and hover card; [the contract](../differences.md) defines the ports.
+
 Decided for the owner during step 7 part 1, 2026-11-13.
 
 - **G61: share the chosen grid, keep uncovered edges unnumbered.** The

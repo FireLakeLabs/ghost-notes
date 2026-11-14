@@ -119,22 +119,17 @@ export function timelineRows(
 }
 export type NoteMark = { x: number; end: number; pitch: number; velocity: number };
 /** Cap each bar cell, evenly across its full contents. Never cap the whole song at 200. */
-export function noteMarks(stem: ReferenceStem, axis: TimelineAxis) {
-  const cells = new Map<number | null, NoteMark[]>();
-  for (const note of stem.notes) {
-    const position = note.start;
+export function capCells<T>(items: readonly T[], point: (item: T) => Position): T[] {
+  const cells = new Map<number | null, T[]>();
+  for (const item of items) {
+    const position = point(item);
     const key = position.kind === 'uncovered' ? null : position.bar;
     const list = cells.get(key) ?? [];
-    list.push({
-      x: axis.xAtSeconds(note.startSeconds, 1),
-      end: axis.xAtSeconds(note.endSeconds, 1),
-      pitch: note.pitch,
-      velocity: note.velocity,
-    });
+    list.push(item);
     cells.set(key, list);
   }
   return [...cells.values()].flatMap((list) => {
-    list.sort((a, b) => a.x - b.x);
+    list.sort((a, b) => point(a).seconds - point(b).seconds);
     return list.length <= CELL_CAP
       ? list
       : Array.from(
@@ -142,6 +137,14 @@ export function noteMarks(stem: ReferenceStem, axis: TimelineAxis) {
           (_, i) => list[Math.round((i * (list.length - 1)) / (CELL_CAP - 1))],
         );
   });
+}
+export function noteMarks(stem: ReferenceStem, axis: TimelineAxis) {
+  return capCells(stem.notes, (n) => n.start).map((note) => ({
+    x: axis.xAtSeconds(note.startSeconds, 1),
+    end: axis.xAtSeconds(note.endSeconds, 1),
+    pitch: note.pitch,
+    velocity: note.velocity,
+  }));
 }
 
 /** The overview's contour is a summary of simultaneous pitches, not a piano roll. */

@@ -1,4 +1,19 @@
-import { createMaterial, type TimelineScore, type MaterialPlace } from './material';
+import {
+  createMaterial,
+  type TimelineScore,
+  type MaterialPlace,
+  type InstrumentMaterial,
+} from './material';
+import { defaultMatch } from '../simplify';
+import { compareMaterial, differenceNames, type Differences, type BarMatch } from './differences';
+import {
+  differenceDrawing,
+  mountDifferenceTip,
+  paintDifferences,
+  paintMatchStrip,
+  type DifferenceHit,
+  type DrawingDifference,
+} from './difference-layer';
 import type { OpenReference } from '../app/reference';
 import {
   selectRange,
@@ -35,7 +50,12 @@ function element(tag: string, text = '', className = '') {
   node.className = className;
   return node;
 }
-function surface(canvas: HTMLCanvasElement, width: number, height: number) {
+function surface(
+  canvas: HTMLCanvasElement,
+  width: number,
+  height: number,
+  band?: readonly [number, number],
+) {
   const ratio = window.devicePixelRatio || 1;
   if (canvas.width !== Math.round(width * ratio) || canvas.height !== Math.round(height * ratio)) {
     canvas.width = Math.round(width * ratio);
@@ -45,7 +65,7 @@ function surface(canvas: HTMLCanvasElement, width: number, height: number) {
   }
   const ctx = canvas.getContext('2d')!;
   ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-  ctx.clearRect(0, 0, width, height);
+  ctx.clearRect(0, band?.[0] ?? 0, width, band ? band[1] - band[0] : height);
   return ctx;
 }
 type DrawingRow = {
@@ -67,6 +87,12 @@ type DrawingRow = {
   waveform: HTMLCanvasElement | null;
   lo: number;
   hi: number;
+  differences: (DrawingDifference & { startUnit: number; endUnit: number })[];
+  matches: BarMatch[];
+  hits: DifferenceHit[];
+  outsideHits: DifferenceHit[];
+  matchKey: string;
+  painted: boolean;
 };
 function noteRect(
   ctx: CanvasRenderingContext2D,
@@ -79,9 +105,98 @@ function noteRect(
   if (row.layered && row.kind === 'notes') ctx.strokeRect(x, y, w, h);
   else ctx.fillRect(x, y, w, h);
 }
+function createHatching() {
+  const hatchImages = new Map<
+    number,
+    { width: number; ratio: number; color: string; image: ImageBitmap | HTMLCanvasElement }
+  >();
+  /** Materialize the repeated hatch once per row size, rather than replaying its strokes. */
+  function paintHatching(
+    ctx: CanvasRenderingContext2D,
+    regions: readonly { a: number; b: number }[],
+    pixels: number,
+    height: number,
+    color: string,
+    shade = 0.07,
+  ) {
+    const visible = regions
+      .map(({ a, b }) => ({ a: Math.max(0, a), b: Math.min(pixels, b) }))
+      .filter(({ a, b }) => b > a);
+    if (!visible.length) return;
+    const ratio = window.devicePixelRatio || 1;
+    let cached = hatchImages.get(height);
+    if (!cached || cached.width !== pixels || cached.ratio !== ratio || cached.color !== color) {
+      if (cached && 'close' in cached.image) cached.image.close();
+      const canvas =
+        typeof OffscreenCanvas === 'undefined'
+          ? document.createElement('canvas')
+          : new OffscreenCanvas(1, 1);
+      canvas.width = Math.ceil(pixels * ratio);
+      canvas.height = Math.ceil(height * ratio);
+      const brush = canvas.getContext('2d')!;
+      brush.setTransform(ratio, 0, 0, ratio, 0, 0);
+      brush.strokeStyle = color;
+      brush.beginPath();
+      for (let x = -height; x < pixels; x += 7) {
+        brush.moveTo(x, height);
+        brush.lineTo(x + height, 0);
+      }
+      brush.stroke();
+      const image = 'transferToImageBitmap' in canvas ? canvas.transferToImageBitmap() : canvas;
+      cached = { width: pixels, ratio, color, image };
+      hatchImages.set(height, cached);
+    }
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    for (const { a, b } of visible) ctx.rect(a, 0, b - a, height);
+    ctx.clip();
+    if (shade) {
+      ctx.globalAlpha = shade;
+      ctx.fillRect(0, 0, pixels, height);
+    }
+    ctx.globalAlpha = 0.25;
+    ctx.drawImage(cached.image, 0, 0, pixels, height);
+    ctx.restore();
+  }
+  return {
+    paint: paintHatching,
+    destroy() {
+      for (const entry of hatchImages.values()) if ('close' in entry.image) entry.image.close();
+      hatchImages.clear();
+    },
+  };
+}
 /** Public viewport port for the lens, selection, and difference marks. X is song-track pixels. */
 export function mountTimeline(root: HTMLElement) {
   root.classList.add('timeline');
+  const hatching = createHatching();
+  const pianoGrids = new Map<string, ImageBitmap | HTMLCanvasElement>();
+  function clearPianoGrids() {
+    for (const image of pianoGrids.values()) if ('close' in image) image.close();
+    pianoGrids.clear();
+  }
+  function pianoGrid(height: number, lo: number, hi: number, color: string) {
+    const ratio = window.devicePixelRatio || 1;
+    const key = `${height}:${lo}:${hi}:${ratio}:${color}`;
+    let image = pianoGrids.get(key);
+    if (!image) {
+      const canvas =
+        typeof OffscreenCanvas === 'undefined'
+          ? document.createElement('canvas')
+          : new OffscreenCanvas(1, 1);
+      canvas.width = Math.ceil(ratio);
+      canvas.height = Math.round(height * ratio);
+      const brush = canvas.getContext('2d')!;
+      brush.setTransform(ratio, 0, 0, ratio, 0, 0);
+      brush.fillStyle = color;
+      for (let pitch = lo; pitch <= hi; pitch++)
+        brush.fillRect(0, 4 + ((hi - pitch) / (hi - lo)) * (height - 10), canvas.width / ratio, 1);
+      image = 'transferToImageBitmap' in canvas ? canvas.transferToImageBitmap() : canvas;
+      pianoGrids.set(key, image);
+    }
+    return image;
+  }
   let reference: OpenReference | null = null;
   let score: TimelineScore = {
     doc: null,
@@ -92,9 +207,48 @@ export function mountTimeline(root: HTMLElement) {
     grid: 4,
   };
   const material = createMaterial();
+  const comparisons = new WeakMap<InstrumentMaterial, { key: string; value: Differences }>();
+  const matchKey = (value: TimelineScore) => JSON.stringify(value.match ?? defaultMatch);
   const modes = new Map<string, 'rows' | 'layers'>();
   let axis: TimelineAxis | null = null;
   let rows: DrawingRow[] = [];
+  const layerContexts = new Map<
+    string,
+    { image: ImageBitmap | HTMLCanvasElement; pixels: number }
+  >();
+  function clearLayerContexts() {
+    for (const { image } of layerContexts.values()) {
+      if ('close' in image) image.close();
+      else image.width = 0;
+    }
+    layerContexts.clear();
+  }
+  function layerContext(row: DrawingRow, pixels: number, color: (token: string) => string) {
+    const cached = layerContexts.get(row.instrument.stem.id);
+    if (cached?.pixels === pixels) return cached.image;
+    const canvas = document.createElement('canvas');
+    const ctx = surface(canvas, pixels, row.openHeight);
+    ctx.fillStyle = color('background');
+    ctx.fillRect(0, 0, pixels, row.openHeight);
+    for (const source of rows.filter((r) => r.instrument === row.instrument && r.layered)) {
+      ctx.globalAlpha = source.kind === 'midi' ? 0.38 : 1;
+      ctx.drawImage(source.outsidePlain, 0, 0, pixels, row.openHeight);
+    }
+    ctx.globalAlpha = 1;
+    ctx.filter = 'blur(4px) saturate(.7)';
+    ctx.drawImage(canvas, 0, 0, pixels, row.openHeight);
+    ctx.filter = 'none';
+    let image: ImageBitmap | HTMLCanvasElement = canvas;
+    if (typeof OffscreenCanvas !== 'undefined') {
+      const raster = new OffscreenCanvas(canvas.width, canvas.height);
+      raster.getContext('2d')!.drawImage(canvas, 0, 0);
+      image = raster.transferToImageBitmap();
+    }
+    if (cached && 'close' in cached.image) cached.image.close();
+    layerContexts.set(row.instrument.stem.id, { image, pixels });
+    return image;
+  }
+  let boundaries: number[] = [];
   let zoom = 1,
     frame = 0,
     firstDraw = false,
@@ -130,6 +284,21 @@ export function mountTimeline(root: HTMLElement) {
   const scroll = root.querySelector<HTMLElement>('.tl-scroll')!;
   const content = root.querySelector<HTMLElement>('.tl-content')!;
   const overview = root.querySelector<HTMLCanvasElement>('.tl-overview canvas')!;
+  const differenceTip = mountDifferenceTip(root, (canvas, fresh) => {
+    const row = rows.find((r) => r.canvas === canvas);
+    const sources =
+      row?.layered && row.kind === 'mine'
+        ? rows.filter((r) => r.layered && r.instrument === row.instrument)
+        : row
+          ? [row]
+          : [];
+    // A revealed source can receive input before the scroll event schedules its paint.
+    if (fresh && sources.some((r) => !r.painted)) {
+      cancelAnimationFrame(frame);
+      draw();
+    }
+    return sources.flatMap((r) => r.hits);
+  });
   const overviewNotes = document.createElement('canvas');
   let overviewWidth = 0;
   const audio = root.querySelector<HTMLInputElement>('[data-audio]')!;
@@ -229,6 +398,7 @@ export function mountTimeline(root: HTMLElement) {
   }
   function openLens(range: BarRange | null) {
     if (!reference || !axis || (!lens && !range)) return;
+    differenceTip.hide();
     const bars = reference.song.bars.filter((b) => b.endSeconds > b.startSeconds);
     const a = bars.find((b) => b.number === range?.firstBar),
       b = bars.find((b) => b.number === range?.lastBar);
@@ -288,7 +458,7 @@ export function mountTimeline(root: HTMLElement) {
   closer.onclick = () => {
     if (selection) {
       openLens(selection);
-      header.focus();
+      header.focus({ preventScroll: true });
     }
   };
   clear.onclick = () => {
@@ -313,8 +483,8 @@ export function mountTimeline(root: HTMLElement) {
   root.querySelector<HTMLButtonElement>('[data-later]')!.onclick = () => moveLens(1);
   root.querySelector<HTMLButtonElement>('[data-close]')!.onclick = () => {
     openLens(null);
-    if (closer.disabled) overview.focus();
-    else closer.focus();
+    if (closer.disabled) overview.focus({ preventScroll: true });
+    else closer.focus({ preventScroll: true });
   };
   function lensKeys(e: KeyboardEvent) {
     if (!lens) return;
@@ -324,8 +494,8 @@ export function mountTimeline(root: HTMLElement) {
     }
     if (e.key === 'Escape') {
       openLens(null);
-      if (closer.disabled) overview.focus();
-      else closer.focus();
+      if (closer.disabled) overview.focus({ preventScroll: true });
+      else closer.focus({ preventScroll: true });
     }
   }
   header.onkeydown = lensKeys;
@@ -426,7 +596,10 @@ export function mountTimeline(root: HTMLElement) {
     if (!frame) frame = requestAnimationFrame(draw);
   }
   function rebuild() {
+    differenceTip.hide();
+    clearLayerContexts();
     overviewWidth = 0;
+    const gridColor = getComputedStyle(root).getPropertyValue('--tl-line').trim();
     const previousRows = rows;
     content.replaceChildren();
     rulerWidth = 0;
@@ -539,6 +712,15 @@ export function mountTimeline(root: HTMLElement) {
       };
       heading.append(view);
       const data = material(reference.song, stem, score);
+      let comparison = comparisons.get(data);
+      const key = matchKey(score);
+      if (!comparison || comparison.key !== key) {
+        comparison = {
+          key,
+          value: compareMaterial(reference.song, stem, data, score.match ?? defaultMatch),
+        };
+        comparisons.set(data, comparison);
+      }
       const marks = noteMarks(stem, axis);
       if (marks.length < stem.notes.length)
         heading.append(
@@ -605,12 +787,28 @@ export function mountTimeline(root: HTMLElement) {
               : kind === 'mine'
                 ? data.mine
                 : { notes: stem.notes, message: '' };
+          const differences =
+            kind === 'notes'
+              ? comparison.value.notes
+              : kind === 'mine'
+                ? comparison.value.mine
+                : [];
+          const drawing =
+            kind === 'notes' || kind === 'mine'
+              ? differenceDrawing(source.notes, differences)
+              : {
+                  notes: source.notes,
+                  marks: [],
+                  drawn: marks.length,
+                  total: source.notes.length,
+                };
           const old = previousRows.find(
             (r) =>
               r.instrument.stem === stem &&
               r.kind === kind &&
               r.layered === layered &&
               r.sourceNotes === source.notes &&
+              ((kind !== 'mine' && kind !== 'notes') || r.matchKey === key) &&
               r.lo === lo &&
               r.hi === hi,
           );
@@ -618,26 +816,43 @@ export function mountTimeline(root: HTMLElement) {
             old?.allMarks ??
             (kind === 'midi' || kind === 'audio'
               ? marks
-              : noteMarks({ ...stem, notes: source.notes }, axis));
+              : noteMarks({ ...stem, notes: drawing.notes }, axis));
           const canvas = old?.canvas ?? document.createElement('canvas');
+          const openHeight = layered
+            ? 150
+            : kind === 'audio'
+              ? 44
+              : kind === 'notes'
+                ? 50
+                : kind === 'mine'
+                  ? 100
+                  : 58;
+          if (!instrument.drums && kind !== 'audio')
+            pianoGrid(
+              layered || kind === 'mine' ? openHeight - 18 : openHeight,
+              lo,
+              Math.max(lo + 12, hi),
+              gridColor,
+            );
           canvas.dataset.layer = kind;
+          canvas.dataset.drawingHeight = String(openHeight);
+          canvas.tabIndex = kind === 'mine' || (kind === 'notes' && !layered) ? 0 : -1;
           canvas.setAttribute('role', 'img');
           canvas.setAttribute(
             'aria-description',
             kind === 'audio'
               ? 'Local stem waveform'
-              : `${source.notes.length} notes${kind === 'mine' ? ` · ${gaps.length} unarranged ranges` : ''}`,
+              : `${source.notes.length} notes${kind === 'mine' ? ` · ${gaps.length} unarranged ranges` : ''}${differences.length ? ` · ${[...new Set(differences.map((m) => differenceNames[m.kind]))].join(', ')} · Up/down arrows explain marks` : ''}${kind === 'mine' ? comparison.value.bars.map((m) => ` · Bar ${m.bar.number}: ${Math.round(m.share * 100)}% match`).join('') : ''}`,
           );
           canvas.setAttribute(
             'aria-label',
             `${stem.id} ${kind === 'audio' ? 'waveform' : kind === 'midi' ? (instrument.drums ? 'drum lanes: Crash, Hi-hat, Snare, Tom, Kick' : 'pitch contour') : kind === 'notes' ? 'Notes literal conversion' : 'Mine queried arrangement'}`,
           );
-          if (layered && kind === 'midi') canvas.style.opacity = '0.38';
           track.append(canvas);
-          if (kind !== 'audio' && (source.message || allMarks.length < source.notes.length)) {
+          if (kind !== 'audio' && (source.message || drawing.drawn < drawing.total)) {
             const warning = element(
               'span',
-              `${kind}: ${source.message || `${allMarks.length} of ${source.notes.length} drawn · at most 200 per bar cell`}`,
+              `${kind}: ${source.message || `${drawing.drawn} of ${drawing.total} note/ghost events drawn · at most 200 per bar cell`}`,
               'tl-row-warning',
             );
             warning.dataset.rowStatus = kind;
@@ -650,15 +865,7 @@ export function mountTimeline(root: HTMLElement) {
             kind,
             layered,
             height: row.height,
-            openHeight: layered
-              ? 150
-              : kind === 'audio'
-                ? 44
-                : kind === 'notes'
-                  ? 50
-                  : kind === 'mine'
-                    ? 100
-                    : 58,
+            openHeight,
             message: source.message,
             places: data.places,
             gaps,
@@ -669,6 +876,16 @@ export function mountTimeline(root: HTMLElement) {
             waveform: old?.waveform ?? null,
             lo,
             hi,
+            differences: drawing.marks.map((mark) => ({
+              ...mark,
+              startUnit: axis!.xAtSeconds(mark.note.startSeconds, 1),
+              endUnit: axis!.xAtSeconds(mark.note.endSeconds, 1),
+            })),
+            matches: kind === 'mine' ? comparison.value.bars : [],
+            hits: [],
+            outsideHits: old?.outsideHits ?? [],
+            matchKey: key,
+            painted: false,
             marks:
               old?.marks ??
               (instrument.drums ? allMarks : contourMarks(allMarks, axis.span, stem.id === 'bass')),
@@ -677,6 +894,101 @@ export function mountTimeline(root: HTMLElement) {
       }
     }
     schedule();
+  }
+  function paintRowDifferences(
+    row: DrawingRow,
+    ctx: CanvasRenderingContext2D,
+    x: (seconds: number) => number,
+    clip: readonly [number, number],
+    color: (token: string) => string,
+    expandedPitch = 0,
+    part: 'marks' | 'strip' = 'marks',
+  ) {
+    const noteHeight = row.layered || row.kind === 'mine' ? row.openHeight - 18 : row.openHeight;
+    const lo = row.lo,
+      rollHi = Math.max(lo + 12, row.hi);
+    const geometry = {
+      x,
+      clip,
+      height: row.openHeight,
+      noteHeight,
+      scale:
+        Math.round(row.height + (row.openHeight - row.height) * expandedPitch) / row.openHeight,
+      boundaries,
+      y: (pitch: number) =>
+        row.instrument.drums
+          ? 3 + (drumLane(pitch) ?? 0) * ((noteHeight - 6) / 5)
+          : (noteHeight - 12) * (1 - expandedPitch) +
+            (4 + ((rollHi - pitch) / (rollHi - lo)) * (noteHeight - 10)) * expandedPitch,
+      recording: color('recording'),
+      difference: color('difference'),
+      mine: color('mine'),
+      warning: color('match-warning'),
+    };
+    if (part === 'strip') return paintMatchStrip(ctx, row.matches, geometry);
+    const from = project(projection, (clip[0] - 4) / width, true);
+    const to = project(projection, (clip[1] + 4) / width, true);
+    const marks = expandedPitch
+      ? row.differences.filter((m) => m.endUnit >= from && m.startUnit <= to)
+      : row.differences;
+    return paintDifferences(ctx, marks, geometry);
+  }
+  function paintPitch(
+    row: DrawingRow,
+    ctx: CanvasRenderingContext2D,
+    pixels: number,
+    x: (unit: number) => number,
+    roll: boolean,
+    color: (token: string) => string,
+  ) {
+    const h = row.layered || row.kind === 'mine' ? row.openHeight - 18 : row.openHeight;
+    const lo = row.lo,
+      hi = Math.max(lo + (roll ? 12 : 1), row.hi);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, pixels, h);
+    ctx.clip();
+    if (roll) {
+      if (!row.layered || row.kind === 'mine')
+        ctx.drawImage(pianoGrid(h, lo, hi, color('line')), 0, 0, pixels, h);
+      ctx.fillStyle = ctx.strokeStyle = color(row.kind === 'mine' ? 'mine' : 'recording');
+      const notes = new Path2D();
+      for (const mark of row.allMarks) {
+        if (expanded && (mark.end < lensEdges.a || mark.x > lensEdges.b)) continue;
+        const a = x(mark.x),
+          b = x(mark.end);
+        if (b < 0 || a > pixels) continue;
+        notes.rect(
+          Math.max(0, a),
+          4 + ((hi - mark.pitch) / (hi - lo)) * (h - 10),
+          Math.max(1, Math.min(pixels, b) - Math.max(0, a)),
+          Math.max(2, Math.min(6, (h - 10) / (hi - lo))),
+        );
+      }
+      if (row.layered && row.kind === 'notes') ctx.stroke(notes);
+      else ctx.fill(notes);
+    } else {
+      ctx.strokeStyle = color(row.kind === 'mine' ? 'mine' : 'recording');
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      let previous: NoteMark | undefined;
+      for (const mark of row.marks) {
+        if (expanded && (mark.end < lensEdges.a || mark.x > lensEdges.b)) continue;
+        const a = x(mark.x),
+          b = x(mark.end);
+        if (b < 0 || a > pixels) continue;
+        const y = 5 + ((hi - mark.pitch) / (hi - lo)) * (h - 10);
+        if (!previous || (mark.x - previous.end) * axis!.span > 1.5) ctx.moveTo(a, y);
+        else {
+          ctx.lineTo(a, 5 + ((hi - previous.pitch) / (hi - lo)) * (h - 10));
+          ctx.lineTo(a, y);
+        }
+        ctx.lineTo(b, y);
+        previous = mark;
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
   }
   function backdrop(row: DrawingRow, pixels: number, color: (token: string) => string) {
     if (!reference || !axis || row.outsideWidth === pixels) return;
@@ -688,7 +1000,7 @@ export function mountTimeline(root: HTMLElement) {
       ctx.fillRect(0, 0, pixels, h);
     }
     ctx.strokeStyle = color('line');
-    for (const bar of reference.song.bars) {
+    for (const bar of row.layered && row.kind !== 'mine' ? [] : reference.song.bars) {
       const x = axis.xAtSeconds(bar.startSeconds, pixels);
       ctx.beginPath();
       ctx.moveTo(x, 0);
@@ -729,6 +1041,9 @@ export function mountTimeline(root: HTMLElement) {
       }
       if (row.waveform) ctx.drawImage(row.waveform, 0, 0, pixels, h);
     } else if (row.instrument.drums) {
+      ctx.globalAlpha = 0.2;
+      for (let lane = 1; (!row.layered || row.kind === 'mine') && lane < 5; lane++)
+        ctx.fillRect(0, 3 + lane * ((noteH - 6) / 5), pixels, 1);
       for (const mark of row.marks) {
         const lane = drumLane(mark.pitch);
         if (lane !== null) {
@@ -756,6 +1071,13 @@ export function mountTimeline(root: HTMLElement) {
       }
       ctx.stroke();
     }
+    row.outsideHits = paintRowDifferences(
+      row,
+      ctx,
+      (s) => axis!.xAtSeconds(s, pixels),
+      [0, pixels],
+      color,
+    );
     const coverage = reference.song.beatMap.coverage;
     const gaps = [...coverage.gaps];
     if (coverage.first_beat_seconds === null) gaps.push([0, reference.song.durationSeconds]);
@@ -765,44 +1087,48 @@ export function mountTimeline(root: HTMLElement) {
       coverage.last_beat_seconds < reference.song.durationSeconds
     )
       gaps.push([coverage.last_beat_seconds, reference.song.durationSeconds]);
-    for (const [start, end] of row.layered && row.kind !== 'mine' ? [] : gaps) {
-      const a = axis.xAtSeconds(start, pixels),
-        b = axis.xAtSeconds(end, pixels);
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(a, 0, b - a, h);
-      ctx.clip();
-      ctx.globalAlpha = 0.25;
-      ctx.strokeStyle = color('muted');
-      for (let x = a - h; x < b; x += 7) {
-        ctx.beginPath();
-        ctx.moveTo(x, h);
-        ctx.lineTo(x + h, 0);
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
+    hatching.paint(
+      ctx,
+      (row.layered && row.kind !== 'mine' ? [] : gaps).map(([start, end]) => ({
+        a: axis!.xAtSeconds(start, pixels),
+        b: axis!.xAtSeconds(end, pixels),
+      })),
+      pixels,
+      h,
+      color('muted'),
+    );
     // Cache the blur once, before lens interaction. Scaling the squeezed context also
     // scales its softness. No full-height backdrop or per-frame Gaussian blur.
     const copy = row.outsidePlain;
     copy.width = row.outside.width;
     copy.height = row.outside.height;
     copy.getContext('2d')!.drawImage(row.outside, 0, 0);
-    ctx.filter = 'blur(4px) saturate(.7)';
-    ctx.drawImage(copy, 0, 0, pixels, h);
-    ctx.filter = 'none';
+    if (!row.layered) {
+      ctx.filter = 'blur(4px) saturate(.7)';
+      ctx.drawImage(copy, 0, 0, pixels, h);
+      ctx.filter = 'none';
+    }
     row.outsideWidth = pixels;
   }
   function draw() {
     frame = 0;
     if (!reference || !axis) return;
-    // Read all positions before any frame writes, avoiding interleaved forced layouts.
-    const visibleRows = new Set(
-      rows.filter((row) => {
-        const r = row.canvas.getBoundingClientRect();
-        return r.bottom >= -150 && r.top <= innerHeight + 150;
-      }),
+    // Snapshot CSS roles before frame writes; lazy reads after row resizing force layout.
+    const style = getComputedStyle(root);
+    const colors = new Map(
+      [
+        'background',
+        'panel',
+        'line',
+        'recording',
+        'mine',
+        'muted',
+        'text',
+        'difference',
+        'match-warning',
+      ].map((token) => [token, style.getPropertyValue(`--tl-${token}`).trim()]),
     );
+    const color = (token: string) => colors.get(token) ?? '';
     if (transition) {
       const t = reduced.matches
         ? 1
@@ -827,16 +1153,6 @@ export function mountTimeline(root: HTMLElement) {
     root.style.setProperty('--tl-viewport', `${scroll.clientWidth}px`);
     content.style.width = `${width + LABEL_WIDTH}px`;
     const left = Math.min(scroll.scrollLeft, Math.max(0, width - viewport));
-    const style = getComputedStyle(root);
-    const colors = new Map<string, string>();
-    const color = (token: string) => {
-      let value = colors.get(token);
-      if (value === undefined) {
-        value = style.getPropertyValue(`--tl-${token}`).trim();
-        colors.set(token, value);
-      }
-      return value;
-    };
     const x = (seconds: number) => project(projection, axis!.xAtSeconds(seconds, 1)) * width - left;
     const a = project(projection, lensEdges.a) * width - left,
       b = project(projection, lensEdges.b) * width - left;
@@ -902,209 +1218,198 @@ export function mountTimeline(root: HTMLElement) {
       if (coverage.last_beat_seconds !== null)
         regions.push({ a: coverage.last_beat_seconds, b: reference.song.durationSeconds });
     }
+    // Resize in one batch, then read actual bounds after scroll anchoring has run.
     for (const row of rows) {
-      const displayHeight = row.height + (row.openHeight - row.height) * expanded;
+      const height = Math.round(row.height + (row.openHeight - row.height) * expanded);
+      row.canvas.parentElement!.parentElement!.style.height = `${height}px`;
+      row.canvas.style.height = `${height}px`;
+      row.canvas.style.width = `${viewport}px`;
+    }
+    const rowBoxes = new Map(rows.map((row) => [row, row.canvas.getBoundingClientRect()]));
+    const layerSurfaces = new Map<HTMLElement, CanvasRenderingContext2D>();
+    for (const row of rows) {
+      const displayHeight = Math.round(row.height + (row.openHeight - row.height) * expanded);
       const height = row.openHeight;
       const noteHeight = row.layered || row.kind === 'mine' ? height - 18 : height;
-      row.canvas.parentElement!.parentElement!.style.height = `${displayHeight}px`;
-      row.canvas.style.height = `${displayHeight}px`;
-      if (!visibleRows.has(row)) continue;
+      const bounds = rowBoxes.get(row)!;
+      if (bounds.bottom <= 0 || bounds.top >= innerHeight) continue;
       if (!transition || !row.outsideWidth) backdrop(row, viewport, color);
+      const context =
+        row.layered && row.kind === 'mine' ? layerContext(row, viewport, color) : row.outside;
       // Grow the displayed row without reallocating twelve canvas buffers every frame.
-      const ctx = surface(row.canvas, viewport, height);
+      const band: readonly [number, number] = [
+        (Math.max(0, -bounds.top) * height) / displayHeight,
+        Math.min(height, ((innerHeight - bounds.top) * height) / displayHeight),
+      ];
+      if (band[1] <= band[0]) continue;
+      const track = row.canvas.parentElement!;
+      let ctx = row.layered ? layerSurfaces.get(track) : undefined;
+      if (!ctx) {
+        const target = row.layered
+          ? track.querySelector<HTMLCanvasElement>('[data-layer="mine"]')!
+          : row.canvas;
+        ctx = surface(target, viewport, height, band);
+        target.style.height = `${displayHeight}px`;
+        if (row.layered) layerSurfaces.set(track, ctx);
+      }
+      const sourceAlpha = row.layered && row.kind === 'midi' ? 0.38 : 1;
       row.canvas.style.height = `${displayHeight}px`;
-      const overlays = !row.layered || row.kind === 'mine';
-      if (expanded && overlays) {
-        ctx.fillStyle = color('panel');
-        ctx.globalAlpha = 0.4 * expanded;
-        ctx.fillRect(a, 0, b - a, height);
-        ctx.globalAlpha = 1;
-        ctx.strokeStyle = color('line');
-        ctx.beginPath();
-        for (const beat of reference.song.beatMap.beats) {
-          const px = x(beat);
-          if (px > a && px < b) {
-            ctx.moveTo(px, 0);
-            ctx.lineTo(px, height);
-          }
-        }
-        ctx.stroke();
-      }
-      if (expanded) {
-        const source = row.outsidePlain,
-          l = Math.max(0, Math.min(viewport, a)),
-          r = Math.max(0, Math.min(viewport, b));
-        if (l > 0 && lensEdges.a > 0)
-          ctx.drawImage(source, 0, 0, lensEdges.a * source.width, source.height, 0, 0, l, height);
-        if (r < viewport && lensEdges.b < 1)
-          ctx.drawImage(
-            source,
-            lensEdges.b * source.width,
-            0,
-            (1 - lensEdges.b) * source.width,
-            source.height,
-            r,
-            0,
-            viewport - r,
-            height,
-          );
-      }
-      ctx.strokeStyle = color('line');
-      ctx.setLineDash([]);
+      ctx.save();
+      ctx.globalAlpha = sourceAlpha;
       ctx.beginPath();
-      for (const bar of visibleBars) {
-        ctx.moveTo(x(bar.startSeconds), 0);
-        ctx.lineTo(x(bar.startSeconds), height);
-      }
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.fillStyle = color(row.kind === 'mine' ? 'mine' : 'recording');
-      ctx.strokeStyle = ctx.fillStyle;
-      if (row.kind === 'audio') {
-        const wave = row.waveform;
-        if (wave)
-          for (let i = 1; i < projection.length; i++) {
-            const from = projection[i - 1],
-              to = projection[i];
-            if (to.u <= from.u || to.x <= from.x) continue;
-            ctx.drawImage(
-              wave,
-              from.u * wave.width,
-              0,
-              (to.u - from.u) * wave.width,
-              44,
-              from.x * width - left,
-              (noteHeight - 44) / 2,
-              (to.x - from.x) * width,
-              44,
-            );
-          }
-      } else if (row.instrument.drums) {
-        ctx.globalAlpha = 0.2;
-        for (let lane = 1; lane < 5; lane++)
-          ctx.fillRect(0, 3 + lane * ((noteHeight - 6) / 5), viewport, 1);
-        ctx.globalAlpha = 1;
-        for (const mark of row.marks) {
-          if (expanded && (mark.x < lensEdges.a || mark.x >= lensEdges.b)) continue;
-          const px = project(projection, mark.x) * width - left,
-            lane = drumLane(mark.pitch);
-          if (lane !== null && px >= -2 && px <= viewport) {
-            ctx.globalAlpha = 0.3 + (mark.velocity / 127) * 0.7;
-            noteRect(
-              ctx,
-              row,
-              px,
-              3 + lane * ((noteHeight - 6) / 5),
-              Math.max(2, Math.min(5, (width / axis.span) * 0.09)),
-              6,
-            );
-          }
-        }
+      ctx.rect(0, band[0], viewport, band[1] - band[0]);
+      ctx.clip();
+      const overlays = !row.layered || row.kind === 'mine';
+      if (!expanded && zoom === 1) {
+        ctx.drawImage(row.outsidePlain, 0, 0, viewport, height);
+        row.hits = row.outsideHits;
       } else {
-        if (expanded) {
-          const lo = row.lo,
-            hi = Math.max(lo + 12, row.hi);
-          ctx.globalAlpha = expanded;
-          for (let pitch = lo; pitch <= hi; pitch++) {
-            ctx.fillStyle = color('line');
-            ctx.fillRect(a, 4 + ((hi - pitch) / (hi - lo)) * (noteHeight - 10), b - a, 1);
-          }
-          ctx.fillStyle = color(row.kind === 'mine' ? 'mine' : 'recording');
-          for (const mark of row.allMarks) {
-            const px = project(projection, mark.x) * width - left,
-              end = project(projection, mark.end) * width - left;
-            if (end < a || px > b) continue;
-            noteRect(
-              ctx,
-              row,
-              Math.max(a, px),
-              4 + ((hi - mark.pitch) / (hi - lo)) * (noteHeight - 10),
-              Math.max(1, Math.min(b, end) - Math.max(a, px)),
-              Math.max(2, Math.min(6, (noteHeight - 10) / (hi - lo))),
-            );
-          }
-          ctx.globalAlpha = 1;
-        }
-        const lo = row.lo,
-          hi = Math.max(lo + 1, row.hi);
-        let previousEnd: number | null = null;
-        let previousY = 0;
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(expanded ? a : 0, 0, expanded ? b - a : viewport, noteHeight);
-        ctx.clip();
-        ctx.beginPath();
-        ctx.globalAlpha = 1 - expanded;
-        for (const mark of expanded < 1 ? row.marks : []) {
-          if (expanded && (mark.end < lensEdges.a || mark.x > lensEdges.b)) continue;
-          const a = project(projection, mark.x) * width - left,
-            b = project(projection, mark.end) * width - left;
-          if (b < 0 || a > viewport) continue;
-          const y = 5 + ((hi - mark.pitch) / (hi - lo)) * (noteHeight - 10);
-          if (previousEnd === null || (mark.x - previousEnd) * axis.span > 1.5) ctx.moveTo(a, y);
-          else {
-            ctx.lineTo(a, previousY);
-            ctx.lineTo(a, y);
-          }
-          ctx.lineTo(b, y);
-          previousEnd = mark.end;
-          previousY = y;
-        }
-        ctx.stroke();
-        ctx.restore();
-      }
-      ctx.globalAlpha = 1;
-      for (const region of overlays ? regions : []) {
-        const a = Math.max(0, x(region.a)),
-          b = Math.min(viewport, x(region.b));
-        if (b <= a) continue;
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(a, 0, b - a, height);
-        ctx.clip();
-        ctx.fillStyle = color('muted');
-        ctx.globalAlpha = 0.07;
-        ctx.fillRect(a, 0, b - a, height);
-        ctx.globalAlpha = 0.25;
-        ctx.strokeStyle = color('muted');
-        for (let px = a - height; px < b; px += 7) {
+        if (expanded && overlays) {
+          ctx.fillStyle = color('panel');
+          ctx.globalAlpha = sourceAlpha * 0.4 * expanded;
+          ctx.fillRect(a, 0, b - a, height);
+          ctx.globalAlpha = sourceAlpha;
+          ctx.strokeStyle = color('line');
           ctx.beginPath();
-          ctx.moveTo(px, height);
-          ctx.lineTo(px + height, 0);
+          for (const beat of reference.song.beatMap.beats) {
+            const px = x(beat);
+            if (px > a && px < b) {
+              ctx.moveTo(px, 0);
+              ctx.lineTo(px, height);
+            }
+          }
           ctx.stroke();
         }
-        ctx.restore();
-      }
-      if (expanded) {
-        const source = row.outside;
-        const sourceHeight = source.height;
-        ctx.save();
-        ctx.globalAlpha = expanded;
-        const l = Math.max(0, Math.min(viewport, a)),
-          r = Math.max(0, Math.min(viewport, b));
-        if (l > 0 && lensEdges.a > 0)
-          ctx.drawImage(source, 0, 0, lensEdges.a * source.width, sourceHeight, 0, 0, l, height);
-        if (r < viewport && lensEdges.b < 1)
-          ctx.drawImage(
-            source,
-            lensEdges.b * source.width,
-            0,
-            (1 - lensEdges.b) * source.width,
-            sourceHeight,
-            r,
-            0,
-            viewport - r,
-            height,
-          );
-        if (overlays) {
-          ctx.fillStyle = color('background');
-          ctx.globalAlpha = 0.24 * expanded;
-          ctx.fillRect(0, 0, l, height);
-          ctx.fillRect(r, 0, viewport - r, height);
+        ctx.strokeStyle = color('line');
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        for (const bar of overlays ? visibleBars : []) {
+          ctx.moveTo(x(bar.startSeconds), 0);
+          ctx.lineTo(x(bar.startSeconds), height);
         }
-        ctx.restore();
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = color(row.kind === 'mine' ? 'mine' : 'recording');
+        ctx.strokeStyle = ctx.fillStyle;
+        if (row.kind === 'audio') {
+          const wave = row.waveform;
+          if (wave)
+            for (let i = 1; i < projection.length; i++) {
+              const from = expanded
+                  ? Math.max(lensEdges.a, projection[i - 1].u)
+                  : projection[i - 1].u,
+                to = expanded ? Math.min(lensEdges.b, projection[i].u) : projection[i].u;
+              if (to <= from) continue;
+              ctx.drawImage(
+                wave,
+                from * wave.width,
+                0,
+                (to - from) * wave.width,
+                44,
+                project(projection, from) * width - left,
+                (noteHeight - 44) / 2,
+                (project(projection, to) - project(projection, from)) * width,
+                44,
+              );
+            }
+        } else if (row.instrument.drums) {
+          ctx.globalAlpha = sourceAlpha * 0.2;
+          for (let lane = 1; overlays && lane < 5; lane++)
+            ctx.fillRect(0, 3 + lane * ((noteHeight - 6) / 5), viewport, 1);
+          ctx.globalAlpha = sourceAlpha;
+          for (const mark of row.marks) {
+            if (expanded && (mark.x < lensEdges.a || mark.x >= lensEdges.b)) continue;
+            const px = project(projection, mark.x) * width - left,
+              lane = drumLane(mark.pitch);
+            if (lane !== null && px >= -2 && px <= viewport) {
+              ctx.globalAlpha = sourceAlpha * (0.3 + (mark.velocity / 127) * 0.7);
+              noteRect(
+                ctx,
+                row,
+                px,
+                3 + lane * ((noteHeight - 6) / 5),
+                Math.max(2, Math.min(5, (width / axis.span) * 0.09)),
+                6,
+              );
+            }
+          }
+        } else {
+          ctx.save();
+          if (expanded) {
+            ctx.beginPath();
+            ctx.rect(a, 0, b - a, noteHeight);
+            ctx.clip();
+            ctx.globalAlpha = sourceAlpha * expanded;
+            paintPitch(
+              row,
+              ctx,
+              viewport,
+              (unit) => project(projection, unit) * width - left,
+              true,
+              color,
+            );
+          }
+          if (expanded < 1) ctx.globalAlpha = sourceAlpha * (1 - expanded);
+          if (expanded < 1)
+            paintPitch(
+              row,
+              ctx,
+              viewport,
+              (unit) => project(projection, unit) * width - left,
+              false,
+              color,
+            );
+          ctx.restore();
+        }
+        ctx.globalAlpha = sourceAlpha;
+        row.hits = paintRowDifferences(
+          row,
+          ctx,
+          x,
+          expanded ? [Math.max(0, a), Math.min(viewport, b)] : [0, viewport],
+          color,
+          expanded,
+        );
+        if (overlays)
+          hatching.paint(
+            ctx,
+            regions.map((r) => ({
+              a: Math.max(expanded ? a : 0, x(r.a)),
+              b: Math.min(expanded ? b : viewport, x(r.b)),
+            })),
+            viewport,
+            height,
+            color('muted'),
+          );
+        if (expanded && overlays) {
+          const source = context;
+          const sourceHeight = source.height;
+          ctx.save();
+          ctx.globalAlpha = sourceAlpha;
+          const l = Math.max(0, Math.min(viewport, a)),
+            r = Math.max(0, Math.min(viewport, b));
+          if (l > 0 && lensEdges.a > 0)
+            ctx.drawImage(source, 0, 0, lensEdges.a * source.width, sourceHeight, 0, 0, l, height);
+          if (r < viewport && lensEdges.b < 1)
+            ctx.drawImage(
+              source,
+              lensEdges.b * source.width,
+              0,
+              (1 - lensEdges.b) * source.width,
+              sourceHeight,
+              r,
+              0,
+              viewport - r,
+              height,
+            );
+          if (overlays) {
+            ctx.fillStyle = color('background');
+            ctx.globalAlpha = 0.24 * expanded;
+            ctx.fillRect(0, 0, l, height);
+            ctx.fillRect(r, 0, viewport - r, height);
+          }
+          ctx.restore();
+        }
       }
       if (row.kind === 'mine') {
         ctx.save();
@@ -1121,7 +1426,7 @@ export function mountTimeline(root: HTMLElement) {
           ctx.setLineDash([3, 3]);
           ctx.strokeRect(l + 1, 2, Math.max(0, r - l - 2), height - 4);
           ctx.setLineDash([]);
-          ctx.globalAlpha = 1;
+          ctx.globalAlpha = sourceAlpha;
           if (r - l > 80) ctx.fillText('Unarranged', l + 6, height - 10);
         }
         for (const p of row.places) {
@@ -1131,7 +1436,7 @@ export function mountTimeline(root: HTMLElement) {
           ctx.strokeStyle = color('mine');
           ctx.globalAlpha = 0.5;
           ctx.strokeRect(l + 1, 1, Math.max(0, r - l - 2), height - 2);
-          ctx.globalAlpha = 1;
+          ctx.globalAlpha = sourceAlpha;
           ctx.fillStyle = color('mine');
           if (r - l > 50)
             ctx.fillText(
@@ -1156,8 +1461,14 @@ export function mountTimeline(root: HTMLElement) {
           x(selection.end.seconds) - x(selection.start.seconds),
           height,
         );
-        ctx.globalAlpha = 1;
+        ctx.globalAlpha = sourceAlpha;
       }
+      if (row.matches.length)
+        row.hits = row.hits.concat(
+          paintRowDifferences(row, ctx, x, [0, viewport], color, expanded, 'strip'),
+        );
+      ctx.restore();
+      row.painted = true;
     }
     const ctx = surface(overview, viewport, 32);
     // The recording overview is static during lens/scroll frames; only its window moves.
@@ -1187,6 +1498,7 @@ export function mountTimeline(root: HTMLElement) {
       String(Math.round((left / Math.max(1, width - viewport)) * 100)),
     );
     root.dataset.bars = String(reference.song.bars.filter((b) => b.number > 0).length);
+    differenceTip.reposition();
     if (firstDraw) {
       firstDraw = false;
       const drawStarted = started;
@@ -1202,6 +1514,7 @@ export function mountTimeline(root: HTMLElement) {
     }
   }
   function setZoom(value: number) {
+    differenceTip.hide();
     const center = (scroll.scrollLeft + viewport / 2) / width;
     zoom = value;
     width = viewport * zoom;
@@ -1220,10 +1533,14 @@ export function mountTimeline(root: HTMLElement) {
     rebuild();
     settingsChanged();
   };
-  scroll.addEventListener('scroll', schedule);
-  window.addEventListener('scroll', schedule, { passive: true });
-  window.addEventListener('resize', schedule);
-  const observer = new ResizeObserver(schedule);
+  const movedView = () => {
+    differenceTip.hidePointer();
+    schedule();
+  };
+  scroll.addEventListener('scroll', movedView);
+  window.addEventListener('scroll', movedView, { passive: true });
+  window.addEventListener('resize', movedView);
+  const observer = new ResizeObserver(movedView);
   observer.observe(scroll);
   function navigate(clientX: number) {
     const box = overview.getBoundingClientRect();
@@ -1267,6 +1584,8 @@ export function mountTimeline(root: HTMLElement) {
     setReference(value: OpenReference | null) {
       const hadLens = !!lens;
       reference = value;
+      clearPianoGrids();
+      clearLayerContexts();
       score = { ...score, doc: null, instruments: [], places: [], events: {}, linked: false };
       selection = null;
       lens = null;
@@ -1300,6 +1619,7 @@ export function mountTimeline(root: HTMLElement) {
       started = performance.now();
       firstDraw = true;
       axis = timelineAxis(value.song.beatMap, value.song.bars);
+      boundaries = [...new Set(value.song.bars.flatMap((b) => [b.startSeconds, b.endSeconds]))];
       zoom = 1;
       slider.value = '1';
       scroll.scrollLeft = 0;
@@ -1319,6 +1639,7 @@ export function mountTimeline(root: HTMLElement) {
         score.doc === value.doc &&
         score.events === value.events &&
         score.grid === value.grid &&
+        matchKey(score) === matchKey(value) &&
         score.linked === value.linked &&
         score.places.length === value.places.length &&
         score.places.every((p, i) => p.id === value.places[i].id)
@@ -1351,9 +1672,13 @@ export function mountTimeline(root: HTMLElement) {
       return axis?.xAtPosition(position, width) ?? null;
     },
     destroy() {
+      differenceTip.destroy();
+      hatching.destroy();
+      clearPianoGrids();
+      clearLayerContexts();
       observer.disconnect();
-      window.removeEventListener('scroll', schedule);
-      window.removeEventListener('resize', schedule);
+      window.removeEventListener('scroll', movedView);
+      window.removeEventListener('resize', movedView);
       cancelAnimationFrame(frame);
       settingsHost.remove();
       root.replaceChildren();

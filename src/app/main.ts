@@ -266,6 +266,7 @@ function updateTimelineScore() {
     places: sectionUI.places,
     linked: sectionUI.linked,
     grid: settings.grid,
+    match: { ...settings.match },
   });
 }
 let previousNotes: unknown;

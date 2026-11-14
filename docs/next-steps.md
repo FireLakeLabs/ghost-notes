@@ -350,11 +350,16 @@ costs, earlier failed experiments and per-song results remain in the
 Part 3 rows now provide independently converted Notes and queried Mine, explicit
 unarranged ranges and per-instrument/global row/layer views (G114). A single
 six-song pass with first-eight-bar arrangements checked 513 lens intervals,
-all at most 16.8 ms, with a busy row visibly painted, after profiling and
-caching the overview as well as off-window drawing. Initial
+all at most 16.8 ms. Its pre-check showed a painted busy row; later work found
+that focusing the header could scroll that row away during the operation.
+The complete wave must prove it stays visible. Initial
 costs and limits are in [rows measurements](rows-measurements.md). Six
-difference marks, the match strip and editing inside the lens remain; the
-complete wave will repeat the timing proof. Their original requirements follow.
+difference marks and the match strip now follow [their contract](differences.md)
+and G116. The strengthened [difference proof](difference-measurements.md) checked
+visible bounds after each operation: 1,026 intervals across one six-song pass
+per view, all at most 16.8 ms, with no query or runtime error. Editing inside
+the lens and the complete wave's repeated timing proof remain. Their original
+requirements follow.
 
 The whole-song view, with the section sheet as a lens inside it (G9). This
 merges the old timeline step and the old "reference marks in the sheet" step.

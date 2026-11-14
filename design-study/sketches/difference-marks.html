@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" />
+  <title>Difference explanations</title>
+  <style>
+    body {
+      margin: 24px;
+      max-width: 720px;
+      background: #0f1115;
+      color: #eceae4;
+      font: 13px/1.5 system-ui;
+    }
+    h1 {
+      font-size: 18px;
+    }
+    p {
+      color: #a4aab5;
+    }
+    .example {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      margin: 14px 0;
+    }
+    svg {
+      flex: none;
+      background: repeating-linear-gradient(90deg, #2a2f3a 0 1px, transparent 1px 32px);
+    }
+    .orange {
+      fill: #ff8a5b;
+      stroke: #ff8a5b;
+    }
+    .hollow {
+      fill: none;
+      stroke-width: 1.5;
+    }
+    .tip {
+      width: 300px;
+      box-sizing: border-box;
+      padding: 8px 10px;
+      background: #161920;
+      border: 1px solid #2a2f3a;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .strip {
+      display: flex;
+      gap: 2px;
+      margin: 24px 0 8px;
+    }
+    .strip span {
+      width: 90px;
+      height: 4px;
+      border-radius: 2px;
+    }
+  </style>
+  <h1>Difference explanations</h1>
+  <p>
+    Synthetic mockup for G116. The six marks follow the Rows board. The hover card also opens with
+    the up and down arrow keys when a Notes or Mine row has focus.
+  </p>
+  <p>
+    Outside the lens, pitched music keeps its contour. Difference annotations share a bottom rail;
+    opening the lens moves them to their piano-roll pitches. Drum annotations stay in their lanes.
+    Lens controls keep the working row in view.
+  </p>
+  <div class="example">
+    <svg width="300" height="44" aria-label="Closed Notes row: contour and annotation rail">
+      <path d="M12 17H62L100 10H160L210 21H288" stroke="#6f9fd8" fill="none" stroke-width="1.5" />
+      <rect class="orange" x="100" y="33.4" width="20" height="5.3" />
+      <rect class="orange hollow" x="120" y="33.4" width="22" height="5.3" />
+      <path class="orange" d="M94 40.5H100M94 38V43" stroke-width="1.5" />
+    </svg>
+    <span>Closed Notes, 44 px: contour above; changes on the rail.</span>
+  </div>
+  <div class="example">
+    <svg
+      width="300"
+      height="50"
+      aria-label="Notes inside the lens: piano roll and pitched annotations"
+    >
+      <path d="M0 8H300M0 18H300M0 28H300M0 38H300" stroke="#2a2f3a" />
+      <path d="M12 28H70M158 18H208M236 38H288" stroke="#6f9fd8" stroke-width="3" />
+      <rect class="orange" x="100" y="8" width="20" height="6" />
+      <rect class="orange hollow" x="120" y="8" width="22" height="6" />
+      <path class="orange" d="M94 46H100M94 43V48" stroke-width="1.5" />
+    </svg>
+    <span>Lens Notes, 50 px: the same changes follow their pitches.</span>
+  </div>
+  <div class="example">
+    <svg width="64" height="28" aria-label="Moved">
+      <path class="orange" d="M11 22H27" stroke-width="2" />
+      <rect class="orange" x="24" y="8" width="12" height="6" /></svg
+    ><span>Moved: orange, with a line back to the recorded onset.</span>
+  </div>
+  <div class="example">
+    <svg width="64" height="28" aria-label="Moved across a bar line">
+      <path class="orange" d="M27 22H34M32 0V28" stroke-width="2" />
+      <rect class="orange" x="32" y="8" width="10" height="6" /></svg
+    ><span>Moved across a bar line: a vertical mark at the crossed boundary.</span>
+  </div>
+  <div class="example">
+    <svg width="64" height="28" aria-label="Shortened">
+      <rect class="orange" x="6" y="10" width="20" height="6" />
+      <rect class="orange hollow" x="26" y="10" width="18" height="6" /></svg
+    ><span>Shortened: a hollow tail shows the removed length.</span>
+  </div>
+  <div class="example">
+    <svg width="64" height="28" aria-label="Merged">
+      <rect class="orange" x="20" y="6" width="10" height="4" />
+      <rect class="orange" x="20" y="15" width="10" height="4" /></svg
+    ><span>Merged: stacked marks for notes written as one event.</span>
+  </div>
+  <div class="example">
+    <svg width="64" height="28" aria-label="Only in yours">
+      <rect class="orange" x="20" y="11" width="16" height="6" /></svg
+    ><span>Only in yours: orange in Mine.</span>
+  </div>
+  <div class="example">
+    <svg width="64" height="28" aria-label="Only in the recording">
+      <rect class="hollow" stroke="#6f9fd8" x="20" y="11" width="16" height="6" /></svg
+    ><span>Only in the recording: a hollow blue note beside yours.</span>
+  </div>
+  <div class="tip">
+    Shortened: 2.530–4.520 s; written 2.500–4.375 s. The hollow tail shows the removed length.
+  </div>
+  <div class="strip">
+    <span style="background: #f1e6cc; opacity: 0.55"></span><span style="background: #e8b04b"></span
+    ><span style="background: #ff8a5b"></span>
+  </div>
+  <p>
+    The 4 px match strip sits 2 px above the bottom of Mine, as in Main: cream at 90% or above,
+    amber at 70% or above, orange below. Hover or the arrow keys explain the count. Unarranged bars
+    have no strip.
+  </p>
+</html>

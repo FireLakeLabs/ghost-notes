@@ -2,6 +2,7 @@
   --tl-recording: var(--recording, #6f9fd8);
   --tl-mine: var(--mine, #f1e6cc);
   --tl-difference: var(--difference, #ff8a5b);
+  --tl-match-warning: #e8b04b;
   --tl-background: #0f1115;
   --tl-panel: #161920;
   --tl-text: #eceae4;
@@ -273,5 +274,19 @@
   background: var(--tl-background);
   color: var(--tl-muted);
   z-index: 1;
+  pointer-events: none;
+}
+.tl-difference-tip {
+  box-sizing: border-box;
+  position: fixed;
+  z-index: 20;
+  max-width: min(300px, calc(100vw - 24px));
+  padding: 8px 10px;
+  border: 1px solid var(--tl-line);
+  border-radius: 4px;
+  background: var(--tl-panel);
+  color: var(--tl-text);
+  font-size: 12px;
+  white-space: pre-line;
   pointer-events: none;
 }

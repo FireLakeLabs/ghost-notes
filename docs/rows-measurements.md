@@ -4,9 +4,9 @@ Step 7 part 3, row PR (2026-11-14). This is one six-song production-browser
 pass, not the final repeated qualification for the complete editing wave.
 Reference music and screenshots stay local. No listening claim is made.
 
-Claim checked: with audio/MIDI/Notes/Mine for six stems, plus a literal first
-eight-bar arrangement, opening/moving/closing a four-bar lens stays within the
-existing 16.9 ms callback limit. The browser was Chromium 158.0.8127.18,
+The protocol used audio/MIDI/Notes/Mine for six stems, plus a literal first
+eight-bar arrangement, and checked opening/moving/closing a four-bar lens
+against the existing 16.9 ms callback limit. The browser was Chromium 158.0.8127.18,
 1440×1100, on this 16-core Linux machine. Pre-run load was 0.10/0.44/0.69;
 the machine-wide suite lock excluded other Node/browser suites. Production
 builds retain the pinned dependencies. The optional measurement takes about
@@ -20,7 +20,7 @@ full data, drawing cap and animated height. Screenshots visit each instrument
 before taking a whole-timeline image. No events are skipped to pass timing.
 
 Earlier passes (`wave6-pr2-b/c`) passed but did not prove a busy row was in
-view. The strengthened protocol scrolls the busiest first-eight-bar stem into
+view. The protocol scrolls the busiest first-eight-bar stem into
 view and verifies painted pixels before tracing. Runs d/e/f caught occasional
 33.3–33.4 ms intervals. Reading row geometry before DOM writes reduced forced
 layout; experimental row containment did not help and was removed. Profiles
@@ -35,14 +35,21 @@ selected lens lies within the arranged first eight bars. All 36 Mine rows
 contained the expected queried events (1,343 total); remaining bars stayed
 marked unarranged. Conversion input remained 14,047 source notes.
 
-| Anonymous input            | Visible stem kind | Chosen bars | Source notes | Initial draw, ms | Open max, ms | Move max, ms | Close max, ms | Missed / intervals |
-| -------------------------- | ----------------- | ----------: | -----------: | ---------------: | -----------: | -----------: | ------------: | -----------------: |
-| first test session, song 1 | pitch             |          35 |        1,433 |             41.4 |         16.8 |         16.8 |          16.8 |             0 / 86 |
-| first test session, song 2 | drums             |          76 |        2,203 |            124.9 |         16.8 |         16.7 |          16.7 |             0 / 86 |
-| first test session, song 3 | drums             |          82 |        1,805 |            134.8 |         16.8 |         16.7 |          16.8 |             0 / 85 |
-| first test session, song 4 | pitch             |          62 |        3,282 |             47.4 |         16.7 |         16.8 |          16.8 |             0 / 85 |
-| diversity-1                | pitch             |         243 |        3,947 |             76.7 |         16.8 |         16.7 |          16.8 |             0 / 85 |
-| diversity-2                | drums             |          51 |        1,377 |             28.7 |         16.8 |         16.7 |          16.8 |             0 / 86 |
+Part 3's difference work found a visibility gap in that protocol: focusing the
+lens header could scroll the selected row out of view after the pre-check.
+The table records those callbacks, rather than proving the busy row stayed
+visible throughout. The later protocol checks its bounds after every operation
+and preserves scroll when focusing controls. That stronger check exposed
+missed frames; the complete wave must qualify it before step 7 is done.
+
+| Anonymous input            | Selected stem kind | Chosen bars | Source notes | Initial draw, ms | Open max, ms | Move max, ms | Close max, ms | Missed / intervals |
+| -------------------------- | ------------------ | ----------: | -----------: | ---------------: | -----------: | -----------: | ------------: | -----------------: |
+| first test session, song 1 | pitch              |          35 |        1,433 |             41.4 |         16.8 |         16.8 |          16.8 |             0 / 86 |
+| first test session, song 2 | drums              |          76 |        2,203 |            124.9 |         16.8 |         16.7 |          16.7 |             0 / 86 |
+| first test session, song 3 | drums              |          82 |        1,805 |            134.8 |         16.8 |         16.7 |          16.8 |             0 / 85 |
+| first test session, song 4 | pitch              |          62 |        3,282 |             47.4 |         16.7 |         16.8 |          16.8 |             0 / 85 |
+| diversity-1                | pitch              |         243 |        3,947 |             76.7 |         16.8 |         16.7 |          16.8 |             0 / 85 |
+| diversity-2                | drums              |          51 |        1,377 |             28.7 |         16.8 |         16.7 |          16.8 |             0 / 86 |
 
 Initial drawing includes conversion/visible cache construction after reference
 read/decode; it is separate from the animated frame check. No before/after
