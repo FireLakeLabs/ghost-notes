@@ -4,6 +4,7 @@ import { expect } from '@playwright/test';
 import { playbackSafety } from './playback-safety';
 import { instruments, sections } from '../../src/document';
 import type {} from '../../src/app/main';
+import { readFileSync } from 'node:fs';
 import { deployedCommit } from '../../scripts/licenses';
 
 const offline = async (page: import('@playwright/test').Page) =>
@@ -32,9 +33,23 @@ test('page: original arrangement → rows → measured synth PCM → pinned sect
     'href',
     `https://github.com/FireLakeLabs/ghost-notes/tree/${deployedCommit() ?? 'main'}`,
   );
+  const { dependencies } = JSON.parse(readFileSync('package.json', 'utf8'));
+  const pinned = Object.entries(dependencies)
+    .filter(([name]) => name.startsWith('@strudel/') || name === 'superdough')
+    .map(([name, version]) => `${name}@${version}`)
+    .sort();
+  const sourceLinks = about.locator('li a');
+  expect((await sourceLinks.allTextContents()).sort()).toEqual(pinned);
+  for (const tag of pinned)
+    await expect(about.getByRole('link', { name: tag, exact: true })).toHaveAttribute(
+      'href',
+      `https://codeberg.org/uzu/strudel/src/tag/${encodeURIComponent(tag)}`,
+    );
   const licences = await page.request.get('/licenses.txt');
   expect(licences.ok()).toBe(true);
-  expect(await licences.text()).toContain('GNU AFFERO GENERAL PUBLIC LICENSE');
+  const notices = await licences.text();
+  expect(notices).toContain('GNU AFFERO GENERAL PUBLIC LICENSE');
+  expect(notices).toContain('@strudel/soundfonts@1.3.0 — AGPL-3.0-or-later');
   await page.keyboard.press('Escape');
   await expect(about).toBeHidden();
   await expect(page.getByRole('button', { name: 'About', exact: true })).toBeFocused();

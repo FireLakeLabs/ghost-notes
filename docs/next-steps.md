@@ -530,14 +530,30 @@ The local proof skips when absent; CI uses invented fixtures. Decisions G77–G8
 are in [simplify decisions](decisions/simplify.md). Part 2 still owns applying
 proposals, session controls and drawing their marks in the timeline.
 
-## 12. Hosting on AWS
+## 12. Hosting on AWS: code ready, provisioning remains
 
-- Its own CloudFormation stack in the Fire Lake Labs account, modelled on
-  ODM's `infra/`: S3 + CloudFront, a `firelakelabs.com` subdomain such as
-  `ghostnotes.firelakelabs.com`, deploy from `main` gated by a repo variable.
-- Never modify other stacks.
-- Needs the owner's approval and a fresh AWS login at the time; ODM's approval
-  does not carry over.
+The owner approved step 12 on 2026-11-13 (issue #10). `infra/` and the Deploy
+and Infrastructure workflows adapt the upstream hosting at `b0d9fb3`: the
+`GhostNotes` stack owns private retained website/releases buckets, CloudFront
+with OAC, response headers, DNS for `ghostnotes.firelakelabs.com`, and two
+repository/environment-specific GitHub roles. Shared certificate, zone, OIDC
+provider and bootstrap roles are referenced only; no lookups or rebootstrap.
+G103–G105 record the workflow, licence-response and manifest adjustments.
+
+The About source list now includes soundfonts 1.3.0 (G8/G38), and a browser test
+compares every listed package/version/link with package.json. The licence
+build includes soundfonts' full AGPL text. PR checks run the full app/browser
+and model-free Python suites plus infra tests and strict synthesis without AWS.
+
+**Orchestrator next, after merge:** follow the [runbook](../infra/README.md) to
+refresh the read-only preflight/diff, create `production` and
+`infrastructure` environments restricted to main branches (no tags), deploy
+the stack, set their
+role/output variables, then set repository variable `GN_DEPLOY_ENABLED=true`
+and dispatch the first publish. Verify HTTPS, private buckets, artifact bytes,
+headers, workers/worklets, samples, licence/source links and an older tab.
+Nothing has been provisioned or published by the code PR. Issue #10 stays open
+until the orchestrator deploys and verifies it; never modify other stacks.
 
 ## Later
 

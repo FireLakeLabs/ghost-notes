@@ -1,17 +1,22 @@
 import { expect, test } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { deployedCommit, generateLicenses } from '../scripts/licenses';
 
 test('bundle notices include Strudel and the AGPL, without installed dev dependencies', () => {
   const text = generateLicenses([
     resolve('node_modules/@strudel/core/dist/index.mjs'),
+    resolve('node_modules/@strudel/soundfonts/dist/index.mjs'),
     resolve('node_modules/acorn/dist/acorn.mjs'),
     resolve('src/app/main.ts'),
   ]);
   expect(text).toContain('@strudel/core@1.2.6 — AGPL-3.0-or-later');
+  expect(text).toContain(
+    `@strudel/soundfonts@1.3.0 — AGPL-3.0-or-later\nLICENSE\n${readFileSync('node_modules/@strudel/soundfonts/LICENSE', 'utf8')}`,
+  );
   expect(text).toContain('acorn@8.19.0 — MIT');
   expect(text).toContain('AGPL-3.0 full text\n');
-  expect(text.match(/GNU AFFERO GENERAL PUBLIC LICENSE/g)).toHaveLength(2);
+  expect(text.match(/GNU AFFERO GENERAL PUBLIC LICENSE/g)).toHaveLength(3);
   expect(text).toContain('17. Interpretation of Sections 15 and 16.');
   expect(text).toContain('Primer Octicons');
   expect(text).toContain('Strudel logo');

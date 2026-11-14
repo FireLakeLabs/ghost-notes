@@ -34,6 +34,7 @@ export function mountAbout() {
     <ul>${[
       ['core', '1.2.6'],
       ['mini', '1.2.6'],
+      ['soundfonts', '1.3.0'],
       ['tonal', '1.2.6'],
       ['transpiler', '1.2.6'],
       ['web', '1.3.0'],
