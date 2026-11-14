@@ -163,3 +163,68 @@
 .tl-tail {
   transform: translateX(-100%);
 }
+.tl-toolbar select,
+.tl-toolbar input[type='number'] {
+  background: var(--tl-panel);
+  color: var(--tl-text);
+  border: 1px solid var(--tl-line);
+  border-radius: 4px;
+  padding: 5px;
+}
+.tl-toolbar input[type='number'] {
+  width: 60px;
+}
+.tl-toolbar output {
+  color: var(--tl-muted);
+  font-size: 11px;
+}
+.tl-lens-row {
+  display: flex;
+  height: 40px;
+  align-items: center;
+}
+.tl-lens-track {
+  position: relative;
+  flex: 1;
+  height: 36px;
+  min-width: 0;
+}
+[data-lens-header] {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 6px;
+  background: #1f242e;
+  border: 1px solid #3a4150;
+  border-radius: 8px;
+  cursor: grab;
+  touch-action: none;
+  box-sizing: border-box;
+}
+[data-lens-header][hidden] {
+  display: none;
+}
+[data-lens-title] {
+  flex: 1;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+}
+[data-lens-help] {
+  color: var(--tl-muted);
+  font-size: 12px;
+}
+.tl-track canvas {
+  touch-action: pan-y;
+  cursor: crosshair;
+}
+
+.tl-settings {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}

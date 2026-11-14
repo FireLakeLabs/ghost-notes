@@ -42,7 +42,7 @@ export function timelineAxis(map: BeatMap, bars: readonly ReferenceBar[]) {
     const cached = coordinates.get(seconds);
     if (cached !== undefined) return cached;
     const value = queryUnit(seconds);
-    coordinates.set(seconds, value);
+    if (coordinates.size < 50_000) coordinates.set(seconds, value);
     return value;
   }
   const span = bars.length ? extent : Math.max(1, map.durationSeconds / step);

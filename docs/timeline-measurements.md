@@ -73,3 +73,7 @@ Final local gates on the base containing #20 and #21: `npm run check` passed
 in 105.341 s of its unchanged 180 s budget. The synthetic timeline case took
 about one second. Opus approved three bounded rounds; its overflow finding
 was reproduced as 72 px of excess scroll, then fixed and guarded at Fit/End.
+
+Part 2's lens protocol, diagnostic failures and current measurements are in
+[lens measurements](lens-measurements.md). Its cache construction is included
+in first draw; animation timing starts at the user's lens action.
