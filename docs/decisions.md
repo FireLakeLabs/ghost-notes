@@ -115,6 +115,8 @@ check:docs`); when a topic file fills, start a new one.
 
 - G72: fixed-clock onset and sustain warping through the chosen grid; 1 ms additional scheduling tolerance.
 - G73: one shared audio clock, bar seeks restart at recorded offsets, live edits retain stem phase.
+- G122: row choices select full-context Mine; source changes stop before the next Play.
+- G123: instrument sounds write Mine definitions; reference voices share the choice.
 
 ## [Simplify](decisions/simplify.md)
 

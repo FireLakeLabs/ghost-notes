@@ -22,10 +22,19 @@ import {
   type AppState,
 } from './state';
 
+export interface PlaybackDriver {
+  ready(): boolean;
+  create(): Promise<{ engine: Engine; dispose(): void }>;
+}
+
 export function createApp() {
   let state = initialState(),
     engine: Engine | null = null;
   let editor: EditSession | null = null;
+  let driver: PlaybackDriver | null = null;
+  let draftEngine: Engine | null = null;
+  let releaseEngine: (() => void) | undefined;
+  let unsubscribeEngine: (() => void) | undefined;
   let pendingRows = new Set<string>();
   let visiblePending = pendingRows;
   let settledEvents = state.events;
@@ -72,8 +81,9 @@ export function createApp() {
     if (!doc) return;
     const last = state.sections.at(-1);
     const length = last ? last.start + last.cycles : 0;
-    const from = length && fromCycle < length ? 0 : fromCycle;
-    const to = length && fromCycle < length ? length : toCycle;
+    const whole = length && (driver || fromCycle < length);
+    const from = whole ? 0 : fromCycle;
+    const to = whole ? length : toCycle;
     if (cachedWindow?.from === from && cachedWindow.to === to) {
       pendingRows = new Set();
       update({ ...state, events: cachedWindow.events, sounds: sounds() });
@@ -133,13 +143,15 @@ export function createApp() {
   }
   // All engine replacements, including solo, share a serial queue.
   let swaps = Promise.resolve();
-  function replacePlayback(doc: Doc, options: Parameters<Engine['play']>[1] = {}) {
+  function replacePlayback(doc: Doc | null, options: Parameters<Engine['play']>[1] = {}) {
     const piece = epoch,
       transport = transportRevision;
     const work = swaps.then(() => {
       if (piece !== epoch || transport !== transportRevision) return -1;
       return engine!.play(
-        generate(doc, { ...playbackOptions(state), instrumentTags: true }),
+        doc
+          ? generate(doc, { ...(driver ? {} : playbackOptions(state)), instrumentTags: true })
+          : 'silence',
         options,
       );
     });
@@ -150,7 +162,7 @@ export function createApp() {
     return work;
   }
   async function play() {
-    if (!state.doc || !checked || starting) return;
+    if (!(driver ? driver.ready() : state.doc && checked) || starting) return;
     const piece = epoch,
       transport = ++transportRevision;
     starting = true;
@@ -158,17 +170,29 @@ export function createApp() {
     try {
       // Check the actual seek window too before the engine evaluates on the page.
       const fromCycle = startCycle(state);
-      const result = await preflight.query(
-        generate(state.doc!, playbackOptions(state)),
-        fromCycle,
-        fromCycle + 16,
-      );
-      if (piece !== epoch || transport !== transportRevision) return;
-      if (result.error) throw Error(result.error.message);
-      engine ??= await createEngine();
+      if (!driver) {
+        const result = await preflight.query(
+          generate(state.doc!, playbackOptions(state)),
+          fromCycle,
+          fromCycle + 16,
+        );
+        if (piece !== epoch || transport !== transportRevision) return;
+        if (result.error) throw Error(result.error.message);
+      }
+      if (!engine) {
+        const created = driver
+          ? await driver.create()
+          : { engine: (draftEngine ??= await createEngine()), dispose: undefined };
+        if (piece !== epoch || transport !== transportRevision) {
+          created.dispose?.();
+          return;
+        }
+        engine = created.engine;
+        releaseEngine = created.dispose;
+      }
       // Subscribe once, including when Stop was pressed during initialization.
       if (!subscribed) {
-        engine.subscribe(observe);
+        unsubscribeEngine = engine.subscribe(observe);
         subscribed = true;
       }
       if (piece !== epoch || transport !== transportRevision) return;
@@ -177,7 +201,7 @@ export function createApp() {
         update(next);
         void askWindow();
       }
-      await replacePlayback(state.doc!, {
+      await replacePlayback(state.doc, {
         fromCycle,
         discoverCycles: state.sections.map((s) => s.start),
       });
@@ -188,7 +212,7 @@ export function createApp() {
           sounds: sounds(),
         });
     } catch (error) {
-      message(error);
+      if (piece === epoch && transport === transportRevision) message(error);
     } finally {
       starting = false;
       update({ ...state });
@@ -216,7 +240,22 @@ export function createApp() {
     },
     history,
     get canPlay() {
-      return checked && !starting;
+      return (driver ? driver.ready() : checked) && !starting;
+    },
+    /** Replacing a song/grid releases its scheduler, retained sources and tap.
+     * Creation remains inside the Play gesture. Draft playback retains its engine.
+     */
+    configurePlayback(next: PlaybackDriver | null) {
+      ++transportRevision;
+      editor?.clear();
+      engine?.stop();
+      unsubscribeEngine?.();
+      releaseEngine?.();
+      unsubscribeEngine = releaseEngine = undefined;
+      engine = null;
+      subscribed = false;
+      driver = next;
+      update({ ...state, playing: false, message: '' });
     },
     subscribe(listener: (state: AppState) => void) {
       listeners.add(listener);

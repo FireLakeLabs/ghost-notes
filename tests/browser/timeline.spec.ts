@@ -108,6 +108,10 @@ test('folder opens the whole-song rows, pickup, gaps, waveform, contour and navi
       'bass pitch contour',
       'drums drum lanes: Crash, Hi-hat, Snare, Tom, Kick',
     ]) {
+      await page.getByRole('img', { name: label, exact: true }).scrollIntoViewIfNeeded();
+      await page.evaluate(
+        () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+      );
       const blue = await page
         .getByRole('img', { name: label, exact: true })
         .evaluate((canvas: HTMLCanvasElement) => {
