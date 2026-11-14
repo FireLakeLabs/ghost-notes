@@ -45,9 +45,10 @@ something that went wrong at least once. Written 2026-11-12.
 
 ## Measuring
 
-- **Check derived data on every real song before building on it.** One song's
-  "160 gaps" in the beat map were the tracker switching between counting at
-  half and full speed; four of six songs had bars of mixed lengths.
+- **Check derived data on every real song before building on it.** Most of one
+  song's 160 reported beat-map gaps were the tracker switching between
+  counting at half and full speed; 10 real gaps remained once those were
+  reported separately. Four of six songs had bars of mixed lengths.
 
 - **Measure the thing the person experiences.** "364 ms from edit to sound"
   timed the first note of the new code, which could belong to another

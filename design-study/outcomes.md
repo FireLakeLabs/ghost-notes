@@ -92,11 +92,11 @@ revisit. The ones that most change what the owner sees:
   120 ms. G28's one-tempo fallback was not needed.
 - **An even bar grid is the default** (G53–G56); the beat tracker's own bars
   stay available. A doubtful tempo or bar grouping is asked once, side by side
-  (G85–G90).
+  (G87, G88).
 - **Literal notes snap to four steps per beat by default** (G67–G69); exact
   timing stays a setting.
 - **The copy panel, settings, installable shell and dark palette** (G107–G112).
-- **Row speakers and simplify controls** (G121–G125).
+- **Row speakers and simplify controls** (G122–G125).
 
 Mockups for designs the prototype did not cover are in
 [sketches](sketches/README.md): the tempo and bars question, linked sections,
