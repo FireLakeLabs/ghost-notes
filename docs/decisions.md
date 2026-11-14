@@ -134,3 +134,6 @@ check:docs`); when a topic file fills, start a new one.
 - G107: fixed-clock per-place export timing, explicitly reversible on reopening.
 - G108: as-made/silence defaults, shortest valid simplify proposal, explicit copy failure.
 - G109: one session settings dialog and a successful-copy fingerprint.
+- G110: retain G85's lens/draft layout; move live timeline settings into the session dialog.
+- G111: standalone manifest and original icons; Chromium needs no service worker.
+- G112: shared prototype palette and AA text contrast across shell surfaces.

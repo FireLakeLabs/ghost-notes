@@ -1,12 +1,10 @@
 import { conversionGrids, defaultConversionGrid } from '../convert';
 import { defaultMatch, defaultSettings } from '../simplify';
 
-/** One in-memory settings object. Nothing is written to storage or copied metadata. */
+/** Copy preferences live in memory; the timeline owns its moved live controls. */
 export function sessionSettings() {
   return {
     grid: defaultConversionGrid,
-    selection: 'band' as 'band' | 'instrument',
-    snap: 'bars' as 'bars' | 'beats',
     starting: 'literal' as 'literal' | 'simplified' | 'silence',
     match: { ...defaultMatch },
     simplify: { ...defaultSettings },
@@ -21,7 +19,7 @@ export function mountSettings(
   const dialog = document.createElement('dialog');
   dialog.className = 'about-dialog settings-dialog';
   dialog.setAttribute('aria-label', 'Settings');
-  dialog.innerHTML = `<h2>Settings</h2><p>For this session only. Reloading resets these choices.</p><div data-controls></div><div data-timeline-settings></div><form method="dialog"><button>Done</button></form>`;
+  dialog.innerHTML = `<h2>Settings</h2><p>For this session only. Reloading resets these choices.</p><div data-timeline-settings></div><div data-controls></div><form method="dialog"><button>Done</button></form>`;
   const controls = dialog.querySelector<HTMLElement>('[data-controls]')!;
   function select(
     label: string,
@@ -44,12 +42,6 @@ export function mountSettings(
   select('Notes grid (steps per beat)', conversionGrids, settings.grid, (v) => {
     const grid = conversionGrids.find((g) => String(g) === v);
     if (grid !== undefined) settings.grid = grid;
-  });
-  select('Selection', ['band', 'instrument'], settings.selection, (v) => {
-    if (v === 'band' || v === 'instrument') settings.selection = v;
-  });
-  select('Snap', ['bars', 'beats'], settings.snap, (v) => {
-    if (v === 'bars' || v === 'beats') settings.snap = v;
   });
   select('Starting content', ['literal', 'simplified', 'silence'], settings.starting, (v) => {
     if (v === 'literal' || v === 'simplified' || v === 'silence') settings.starting = v;
