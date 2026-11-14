@@ -124,6 +124,8 @@ check:docs`); when a topic file fills, start a new one.
 - G78: independent deterministic proposals, including those that expand.
 - G79: conservative session limits; record their measured effects.
 - G80: retain source lineage and converter-shaped changes through suggestions.
+- G124: recording-derived proposals, shared timeline/lens report and undoable Apply.
+- G125: retain effects; check proposed notes in context and invalidate stale reports.
 
 ## [Sections and links](decisions/sections.md)
 

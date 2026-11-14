@@ -17,6 +17,7 @@ import { setDrumCell } from '../document/edits/drum-cell';
 import type { DrumCell } from '../timeline/drum-grid';
 import { lensScore } from '../timeline/lens-score';
 import { mountRowPlayback } from './row-playback';
+import { mountSimplify } from './simplify';
 
 const app = createApp();
 document.body.innerHTML = `
@@ -186,6 +187,7 @@ function closeEditor() {
 }
 const renderPanel = createPanel(get('editor'), closeEditor);
 function renderEditor() {
+  simplify.refresh();
   const { doc, playing } = app.state;
   const { fromCycle, toCycle } = scoreWindow();
   const target = doc && targetId ? describeTarget(doc, targetId) : null;
@@ -479,6 +481,16 @@ const rowPlayback = mountRowPlayback({
   current: () => reference.current,
   linked: () => sectionUI.linked,
   editing: () => !!targetId,
+});
+const simplify = mountSimplify({
+  app,
+  root: get('timeline'),
+  lensControls: get('lens-edit-controls'),
+  sections: sectionUI,
+  current: () => reference.current,
+  settings,
+  editing: () => !!targetId,
+  limits: () => settingsDialog.showModal(),
 });
 app.subscribe((state) => {
   copyPanel.refresh();

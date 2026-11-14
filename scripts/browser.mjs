@@ -17,6 +17,7 @@ if (
     'edit-demo',
     'timeline-measure',
     'playback-measure',
+    'simplify-measure',
   ].includes(mode)
 )
   throw Error('Unknown browser mode');

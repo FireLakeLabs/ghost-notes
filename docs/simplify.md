@@ -1,7 +1,8 @@
 # Simplify logic
 
-Part 1 of #9 is pure TypeScript in `src/simplify/`. Timeline controls remain
-part 2, after step 7 part 3. Suggestions are proposals, never applied edits.
+Part 1 of #9 is pure TypeScript in `src/simplify/`.
+[Timeline and lens controls](simplify-controls.md) review its proposals and apply
+one undoable edit only after an explicit Apply.
 
 `simplifyDrums({song, conversion, settings?, match?})` consumes the public
 `ConvertedInstrument` from `src/convert/`. Pass the conversion of the chosen
