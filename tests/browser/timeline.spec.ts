@@ -68,7 +68,38 @@ test('folder opens the whole-song rows, pickup, gaps, waveform, contour and navi
       });
       document.getElementById('reference-panel')!.dispatchEvent(new Event('referencechange'));
     });
-    await expect(timeline.locator('[data-inferred]')).toContainText('≈');
+    await expect(timeline.locator('[data-inferred]')).toHaveText('1');
+    await expect(timeline.locator('[data-inferred]')).toHaveAttribute('title', /split long bar/);
+    const neutral = await timeline.locator('[data-inferred]').evaluate((n) => {
+      const rgb = getComputedStyle(n).color.match(/\d+/g)!.map(Number);
+      return Math.max(...rgb) - Math.min(...rgb);
+    });
+    expect(neutral).toBeLessThan(32);
+    const rulerClear = () =>
+      timeline.locator('[data-ruler]').evaluate((ruler) => {
+        const viewport = ruler.closest('.tl-scroll')!.getBoundingClientRect();
+        const contained = [...ruler.querySelectorAll('.tl-mark')]
+          .filter((n) => getComputedStyle(n).visibility === 'visible')
+          .every((n) => {
+            const r = n.getBoundingClientRect();
+            return r.left >= viewport.left + 150 && r.right <= viewport.right;
+          });
+        const rects = [...ruler.querySelectorAll('.tl-bar, .tl-mark')]
+          .filter((n) => getComputedStyle(n).visibility === 'visible')
+          .map((n) => n.getBoundingClientRect());
+        return (
+          contained &&
+          rects.every((a, i) =>
+            rects
+              .slice(i + 1)
+              .every(
+                (b) =>
+                  a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top,
+              ),
+          )
+        );
+      });
+    expect(await rulerClear()).toBe(true);
     await expect(timeline).toHaveAttribute('data-drawn', 'true');
     // Real canvas pixels: a blue waveform and contour must both have been painted.
     for (const label of [
@@ -130,6 +161,9 @@ test('folder opens the whole-song rows, pickup, gaps, waveform, contour and navi
       .locator('.tl-scroll')
       .evaluate((node) => ({ left: node.scrollLeft, expected: node.clientWidth - 150 }));
     expect(end.left).toBeCloseTo(end.expected * 3, 0);
+    expect(await rulerClear()).toBe(true);
+    await expect(timeline.locator('[data-uncovered]')).toHaveCSS('visibility', 'visible');
+    await expect(timeline.locator('[data-gap]')).toHaveCSS('visibility', 'hidden');
     await timeline.screenshot({
       path: (process.env.GHOST_TIMELINE_SHOT ?? testInfo.outputPath('timeline.png')).replace(
         '.png',
@@ -313,6 +347,87 @@ test('folder opens the whole-song rows, pickup, gaps, waveform, contour and navi
     await page.getByRole('button', { name: 'Open song folder', exact: true }).click();
     await (await again).setFiles(folder);
     await expect(timeline).toBeHidden();
+    // A split detected meter asks even without a tempo-range flag.
+    await writeFile(join(folder, 'song.json'), files.get('song.json')!);
+    const beats = JSON.parse(new TextDecoder().decode(files.get('beats.json')));
+    beats.tempo_review.flagged = false;
+    beats.tempo_review.reasons = [];
+    beats.downbeats = [];
+    for (let i = 1, group = 0; i < beats.beats.length; group++) {
+      beats.downbeats.push(beats.beats[i]);
+      i += group % 2 ? 4 : 2;
+    }
+    await writeFile(join(folder, 'beats.json'), JSON.stringify(beats));
+    const meterOpen = page.waitForEvent('filechooser');
+    await page.getByRole('button', { name: 'Open song folder', exact: true }).click();
+    await (await meterOpen).setFiles(folder);
+    const question = page.getByRole('region', { name: 'Check tempo and bars', exact: true });
+    await expect(question).toBeVisible();
+    await expect(question).toContainText('with 2 beats');
+    await expect(question).toContainText('with 4 beats');
+    expect(
+      await page.evaluate(() => window.ghostReference.current!.song.beatMap.tempoReview.flagged),
+    ).toBe(false);
+    const original = await page.evaluate(() => {
+      const s = window.ghostReference.current!.song;
+      const i = s.beatMap.beats.indexOf(s.beatMap.downbeats[0]);
+      return {
+        folder: window.ghostReference.current!.folder,
+        one: s.beatMap.beats[i + 1],
+        downbeats: s.detectedBeatMap.downbeats,
+        notes: s.stems.flatMap((stem) =>
+          stem.notes.map((n) => [n.startSeconds, n.endSeconds, n.pitch, n.velocity]),
+        ),
+      };
+    });
+    expect(
+      await page.evaluate(
+        () =>
+          window.ghostReference.current!.song.stems.find((s) => s.id === 'bass')!.notes[1].start
+            .bar,
+      ),
+    ).toBe(1);
+    const buffer = await page.evaluateHandle(
+      () => window.ghostReference.current!.audio.get('drums')!.buffer,
+    );
+    await page.getByLabel('Beats per bar', { exact: true }).selectOption('4');
+    await page.getByLabel('Beat one', { exact: true }).selectOption('1');
+    const previews = await question.locator('svg').evaluateAll((svgs) =>
+      svgs.map((svg) => ({
+        notes: [...svg.querySelectorAll('.grid-note')].map((n) => n.outerHTML),
+        bars: [...svg.querySelectorAll('.grid-bar')].map((n) => n.getAttribute('x')),
+      })),
+    );
+    expect(previews).toHaveLength(3);
+    expect(previews[0].notes).toEqual(previews[1].notes);
+    expect(previews[1].notes).toEqual(previews[2].notes);
+    expect(previews[0].bars).not.toEqual(previews[1].bars);
+    await question.screenshot({
+      path: process.env.GHOST_GRID_SHOT ?? testInfo.outputPath('tempo-meter.png'),
+    });
+    await question.getByRole('button', { name: 'Use 1×', exact: true }).click();
+    await expect(question).toBeHidden();
+    const changed = await page.evaluate((buffer) => {
+      const r = window.ghostReference.current!,
+        s = r.song;
+      return {
+        folder: r.folder,
+        noteBar: s.stems.find((s) => s.id === 'bass')!.notes[1].start.bar,
+        meter: s.beatMap.beatsPerBar,
+        one: s.beatMap.downbeats[0],
+        downbeats: s.detectedBeatMap.downbeats,
+        notes: s.stems.flatMap((stem) =>
+          stem.notes.map((n) => [n.startSeconds, n.endSeconds, n.pitch, n.velocity]),
+        ),
+        sameAudio: r.audio.get('drums')!.buffer === buffer,
+      };
+    }, buffer);
+    expect(changed).toEqual({ meter: 4, ...original, sameAudio: true, noteBar: 0 });
+    await buffer.dispose();
+    await page.getByRole('button', { name: 'Tempo and bars…', exact: true }).click();
+    await expect(question).toBeVisible();
+    await question.getByRole('button', { name: 'Keep current grid', exact: true }).click();
+    await expect(question).toBeHidden();
   } finally {
     await rm(folder, { recursive: true, force: true });
   }

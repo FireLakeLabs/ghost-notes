@@ -75,6 +75,14 @@ export function mountTimeline(root: HTMLElement) {
     viewport = 1;
   let rulerWidth = 0;
   let rulerBars: { label: HTMLElement; bar: ReferenceBar }[] = [];
+  let rulerMarks: {
+    node: HTMLElement;
+    start: number;
+    end: number;
+    description: string;
+    edge: boolean;
+    width: number;
+  }[] = [];
   let selection: TimelineSelection | null = null;
   let lens: BarRange | null = null;
   let projection: Projection = plain;
@@ -354,6 +362,7 @@ export function mountTimeline(root: HTMLElement) {
     content.replaceChildren();
     rulerWidth = 0;
     rulerBars = [];
+    rulerMarks = [];
     rows = [];
     if (!reference || !axis) return;
     const ruler = element('div', '', 'tl-row tl-ruler');
@@ -362,11 +371,7 @@ export function mountTimeline(root: HTMLElement) {
     track.dataset.ruler = '';
     for (const bar of reference.song.bars) {
       const inference = barInference(bar);
-      const label = element(
-        'span',
-        `${bar.number}${inference ? ' ≈' : ''}`,
-        `tl-bar${inference ? ' tl-inferred' : ''}`,
-      );
+      const label = element('span', `${bar.number}`, `tl-bar${inference ? ' tl-inferred' : ''}`);
       if (inference) label.dataset.inferred = '';
       label.dataset.bar = String(bar.number);
       rulerBars.push({ label, bar });
@@ -374,32 +379,56 @@ export function mountTimeline(root: HTMLElement) {
       track.append(label);
     }
     const coverage = reference.song.beatMap.coverage;
-    for (const [a, b] of coverage.gaps) {
-      const mark = element('span', 'gap', 'tl-mark');
-      mark.dataset.seconds = String(a);
-      mark.dataset.gap = '';
-      mark.title = `Beat-map gap: ${a}–${b} s`;
+    const regionMark = (
+      text: string,
+      start: number,
+      end: number,
+      edge: boolean,
+      description: string,
+    ) => {
+      const mark = element('span', text, 'tl-mark');
+      mark.dataset.seconds = String(start);
+      mark.dataset[edge ? 'uncovered' : 'gap'] = '';
+      mark.title = description;
       track.append(mark);
-    }
+      rulerMarks.push({
+        node: mark,
+        start,
+        end,
+        edge,
+        description,
+        width: Math.ceil(text.length * 6) + 5,
+      });
+    };
+    for (const [a, b] of coverage.gaps) regionMark('gap', a, b, false, `Beat-map gap: ${a}–${b} s`);
     if (
       coverage.last_beat_seconds !== null &&
       coverage.last_beat_seconds < reference.song.durationSeconds
-    ) {
-      const mark = element('span', 'no beat map →', 'tl-mark tl-tail');
-      mark.dataset.seconds = String(coverage.last_beat_seconds);
-      mark.dataset.uncovered = '';
-      track.append(mark);
-    }
+    )
+      regionMark(
+        'no beat map →',
+        coverage.last_beat_seconds,
+        reference.song.durationSeconds,
+        true,
+        `No beat map after ${coverage.last_beat_seconds} s`,
+      );
     if (
       coverage.first_beat_seconds === null ||
       coverage.first_beat_seconds > 0 ||
       !reference.song.bars.length
-    ) {
-      const mark = element('span', 'no beat map', 'tl-mark');
-      mark.dataset.seconds = '0';
-      mark.dataset.uncovered = '';
-      track.append(mark);
-    }
+    )
+      regionMark(
+        'no beat map',
+        0,
+        !reference.song.bars.length
+          ? reference.song.durationSeconds
+          : (coverage.first_beat_seconds ?? reference.song.durationSeconds),
+        true,
+        !reference.song.bars.length
+          ? 'No numbered beat map'
+          : `No beat map before ${coverage.first_beat_seconds} s`,
+      );
+    rulerMarks.sort((a, b) => a.start - b.start);
     ruler.append(track);
     content.append(ruler);
     for (const instrument of timelineRows(reference.song, audio.checked)) {
@@ -565,7 +594,7 @@ export function mountTimeline(root: HTMLElement) {
       ctx.rect(a, 0, b - a, h);
       ctx.clip();
       ctx.globalAlpha = 0.25;
-      ctx.strokeStyle = color('difference');
+      ctx.strokeStyle = color('muted');
       for (let x = a - h; x < b; x += 7) {
         ctx.beginPath();
         ctx.moveTo(x, h);
@@ -628,19 +657,48 @@ export function mountTimeline(root: HTMLElement) {
     header.style.left = `${a}px`;
     header.style.width = `${b - a}px`;
     if (rulerWidth !== width) {
-      const stride = Math.max(1, Math.ceil(28 / (width / Math.max(1, reference.song.bars.length))));
+      let previousEnd = -Infinity;
+      let previousLabel: HTMLElement | null = null;
       for (const { label, bar } of rulerBars) {
-        label.style.left = `${x(bar.startSeconds) + left}px`;
-        label.style.visibility =
-          (lens && bar.number >= lens.firstBar && bar.number <= lens.lastBar) ||
-          bar.number <= 1 ||
-          (bar.number - 1) % stride === 0
-            ? 'visible'
-            : 'hidden';
+        const px = x(bar.startSeconds) + left;
+        label.style.left = `${px}px`;
+        const fits = px >= previousEnd + 4;
+        if (!fits && bar.number === 1 && previousLabel?.dataset.bar === '0')
+          previousLabel.style.visibility = 'hidden';
+        const visible = fits || bar.number === 1;
+        label.style.visibility = visible ? 'visible' : 'hidden';
+        if (visible) {
+          previousEnd = px + String(bar.number).length * 7 + 5;
+          previousLabel = label;
+        }
       }
-      for (const mark of content.querySelectorAll<HTMLElement>('[data-seconds]'))
-        mark.style.left = `${x(Number(mark.dataset.seconds)) + left}px`;
       rulerWidth = width;
+    }
+    // Region labels have a separate line and follow only visible uncertainty regions.
+    const placed: { node: HTMLElement; left: number; right: number }[] = [];
+    for (const mark of rulerMarks) {
+      mark.node.title = mark.description;
+      const start = x(mark.start),
+        end = x(mark.end);
+      if (end <= 0 || start >= viewport) {
+        mark.node.style.visibility = 'hidden';
+        continue;
+      }
+      const px = Math.max(0, Math.min(viewport - mark.width, start));
+      const overlaps = placed.filter((p) => px < p.right + 4 && px + mark.width > p.left - 4);
+      if (overlaps.length && !mark.edge) {
+        mark.node.style.visibility = 'hidden';
+        overlaps[0].node.title += ` · ${mark.description}`;
+        continue;
+      }
+      for (const old of overlaps) {
+        old.node.style.visibility = 'hidden';
+        mark.node.title += ` · ${old.node.title}`;
+        placed.splice(placed.indexOf(old), 1);
+      }
+      mark.node.style.left = `${px + left}px`;
+      mark.node.style.visibility = 'visible';
+      placed.push({ node: mark.node, left: px, right: px + mark.width });
     }
     // Outside grid lines are already in the cached context; redraw only the lens's lines.
     const visibleBars = expanded
@@ -702,17 +760,13 @@ export function mountTimeline(root: HTMLElement) {
           );
       }
       ctx.strokeStyle = color('line');
-      for (const inferred of [false, true]) {
-        ctx.strokeStyle = color(inferred ? 'difference' : 'line');
-        ctx.setLineDash(inferred ? [2, 3] : []);
-        ctx.beginPath();
-        for (const bar of visibleBars)
-          if (Boolean(bar.inferences?.length) === inferred) {
-            ctx.moveTo(x(bar.startSeconds), 0);
-            ctx.lineTo(x(bar.startSeconds), height);
-          }
-        ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      for (const bar of visibleBars) {
+        ctx.moveTo(x(bar.startSeconds), 0);
+        ctx.lineTo(x(bar.startSeconds), height);
       }
+      ctx.stroke();
       ctx.setLineDash([]);
       ctx.fillStyle = color('recording');
       ctx.strokeStyle = color('recording');
@@ -816,11 +870,11 @@ export function mountTimeline(root: HTMLElement) {
         ctx.beginPath();
         ctx.rect(a, 0, b - a, height);
         ctx.clip();
-        ctx.fillStyle = color('difference');
+        ctx.fillStyle = color('muted');
         ctx.globalAlpha = 0.07;
         ctx.fillRect(a, 0, b - a, height);
         ctx.globalAlpha = 0.25;
-        ctx.strokeStyle = color('difference');
+        ctx.strokeStyle = color('muted');
         for (let px = a - height; px < b; px += 7) {
           ctx.beginPath();
           ctx.moveTo(px, height);
@@ -996,6 +1050,7 @@ export function mountTimeline(root: HTMLElement) {
         axis = null;
         rows = [];
         rulerBars = [];
+        rulerMarks = [];
         content.replaceChildren();
         return;
       }
@@ -1006,7 +1061,7 @@ export function mountTimeline(root: HTMLElement) {
       slider.value = '1';
       scroll.scrollLeft = 0;
       root.querySelector<HTMLElement>('[data-info]')!.textContent =
-        `${value.song.name} · ${value.song.bars.filter((b) => b.number > 0).length} bars${value.song.bars.some((b) => b.number === 0) ? ' + pickup bar 0' : ''} · Blue: recording · Hatching: gap or no beat map`;
+        `${value.song.name} · ${value.song.bars.filter((b) => b.number > 0).length} bars${value.song.bars.some((b) => b.number === 0) ? ' + pickup bar 0' : ''} · Blue: recording · Dotted underline: grid inference · Hatching: gap or no beat map`;
       rebuild();
     },
     get selection() {
@@ -1039,6 +1094,7 @@ export function mountTimeline(root: HTMLElement) {
       root.replaceChildren();
       rows = [];
       rulerBars = [];
+      rulerMarks = [];
       reference = null;
       axis = null;
       root.hidden = true;

@@ -81,6 +81,7 @@ check:docs`); when a topic file fills, start a new one.
 - G54: explain each inference and preserve gaps, edges and tempo uncertainty.
 - G55: add level-switch reporting to version 1; read old folders unchanged.
 - G56: show grid counts and ask once when tempo is flagged.
+- G87: compare tempo and bar grouping over the same excerpt; retain a session control.
 
 ## [Literal conversion](decisions/convert.md)
 
@@ -101,6 +102,7 @@ check:docs`); when a topic file fills, start a new one.
 - G65: affected bars show the chosen grid's inference reasons.
 - G85: reference lens hosts the future linked sheet; current program/score are one unlinked draft.
 - G86: session selection shares a half-open note interval and containing bars with sections.
+- G88: neutral inference underlines and separate ruler lines supersede G65.
 
 ## [Playback](decisions/playback.md)
 

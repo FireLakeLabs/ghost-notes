@@ -26,5 +26,7 @@ song data or pixels are included.
 
 Part 2's recording lens: [synthetic fit](timeline-lens-fit.png) and
 [open lens](timeline-lens.png). All marks and waves are invented. The lens uses
-Main's 450 ms growth, 160 ms drag movement, and 68% width; the grid review and
-quiet inference marks follow in the second PR.
+Main's 450 ms growth, 160 ms drag movement, and 68% width; the [tempo/meter and neutral inference mockup](tempo-meter.html) records G87–G88.
+
+The [synthetic tempo/meter screenshot](tempo-meter.png) shows the implemented
+question on invented fixture notes; all three grids share the same source marks.

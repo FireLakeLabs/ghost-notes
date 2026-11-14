@@ -10,7 +10,10 @@ seconds/velocity and secondary MIDI notes. `detectedBeatMap` and `detectedBars`
 preserve the imported evidence. `beatMap`, `bars` and note positions describe
 the chosen derived grid (1× by default, G53–G56). `readReference(files, factor)`
 accepts 0.5, 1 or 2; `gridCandidates(map)` derives all three through `deriveGrid`.
-The app's tempo choice re-reads coordinates without decoding audio again.
+The app's tempo/meter review derives candidates in memory without decoding audio again.
+`src/timeline/grid-choice.ts` preserves detection and source note times while
+reprojecting both note sources onto the selected map; explicit grouping changes
+bar lines and the first downbeat over the candidate's beats (G87).
 `grid.multiplier` is authoritative for the chosen grid. `medianBpm` and
 `tempoReview` (including `selected_multiplier: 1`) describe detection on both
 maps; use grid bars/queries for derived tempo and coordinates.

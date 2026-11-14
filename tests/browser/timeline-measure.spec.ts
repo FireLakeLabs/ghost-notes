@@ -32,6 +32,37 @@ test('six local songs: first draw, scroll and zoom frame times', async ({ page, 
         await (await chooser).setFiles(folder);
         await page.locator('#timeline[data-drawn=true]').waitFor();
         const openMs = performance.now() - open;
+        let gridReview: unknown = null;
+        if (process.env.GHOST_GRID_REVIEW_MEASURE) {
+          const question = page.getByRole('region', { name: 'Check tempo and bars', exact: true });
+          const detected = await page.evaluate(() => {
+            const s = window.ghostReference.current!.song;
+            return {
+              flagged: s.beatMap.tempoReview.flagged,
+              counts: s.detectedBars.filter((b) => !b.partial).map((b) => b.endBeat - b.startBeat),
+              bars: s.bars.filter((b) => b.number > 0).length,
+            };
+          });
+          if (detected.flagged || input === 'diversity-1') await expect(question).toBeVisible();
+          if (input === 'diversity-1') {
+            expect(detected.counts.filter((n) => n === 2)).toHaveLength(87);
+            expect(detected.counts.filter((n) => n === 4)).toHaveLength(70);
+            await page.getByLabel('Beats per bar', { exact: true }).selectOption('4');
+            await page.getByLabel('Beat one', { exact: true }).selectOption('1');
+            await question.getByRole('button', { name: 'Use 1×', exact: true }).click();
+            await expect(question).toBeHidden();
+            await expect(page.locator('#timeline')).toHaveAttribute('data-drawn', 'true');
+            const changed = await page.evaluate(() => ({
+              meter: window.ghostReference.current!.song.beatMap.beatsPerBar,
+              bars: window.ghostReference.current!.song.bars.filter((b) => b.number > 0).length,
+            }));
+            expect(changed.meter).toBe(4);
+            expect(changed.bars).toBeLessThan(detected.bars);
+            gridReview = { ...detected, ...changed };
+          } else if (await question.isVisible()) {
+            await question.getByRole('button', { name: 'Keep current grid', exact: true }).click();
+          }
+        }
         const shape = await page.evaluate(() => {
           const r = window.ghostReference.current!;
           return {
@@ -197,6 +228,7 @@ test('six local songs: first draw, scroll and zoom frame times', async ({ page, 
           openMs,
           ...frames,
           lensFrames,
+          gridReview,
           taskMs:
             (metric(after.metrics, 'TaskDuration') - metric(before.metrics, 'TaskDuration')) * 1000,
           scriptMs:

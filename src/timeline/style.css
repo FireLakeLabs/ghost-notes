@@ -103,14 +103,15 @@
 }
 .tl-bar {
   position: absolute;
-  top: 6px;
+  top: 0;
+  line-height: 12px;
   font-size: 10.5px;
   padding-left: 3px;
   color: var(--tl-muted);
   white-space: nowrap;
 }
 .tl-mark {
-  color: var(--tl-difference);
+  color: var(--tl-muted);
   font-size: 10px;
   position: absolute;
   top: 15px;
@@ -135,7 +136,7 @@
   color: var(--tl-muted);
 }
 .tl-heading .tl-warning {
-  color: var(--tl-difference);
+  color: var(--tl-muted);
 }
 .tl-drums {
   display: flex;
@@ -147,7 +148,8 @@
 }
 
 .tl-inferred {
-  color: var(--tl-difference);
+  color: var(--tl-muted);
+  border-bottom: 1px dotted var(--tl-muted);
 }
 
 /* Keep frozen labels in their own paint layers as the wide track scrolls beneath them. */
@@ -160,9 +162,6 @@
   overflow: clip;
 }
 
-.tl-tail {
-  transform: translateX(-100%);
-}
 .tl-toolbar select,
 .tl-toolbar input[type='number'] {
   background: var(--tl-panel);

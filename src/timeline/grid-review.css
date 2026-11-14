@@ -1,0 +1,58 @@
+.grid-review {
+  margin: 12px 0;
+  color: #eceae4;
+}
+.grid-review section {
+  padding: 16px;
+  background: #161920;
+  border: 1px solid #3a4150;
+  border-radius: 10px;
+}
+.grid-review h3 {
+  margin-top: 0;
+}
+.grid-review select,
+.grid-review button {
+  background: #1f242e;
+  color: #eceae4;
+  border: 1px solid #3a4150;
+  border-radius: 5px;
+  padding: 6px;
+}
+.grid-cards {
+  display: flex;
+  gap: 12px;
+  margin: 14px 0;
+  flex-wrap: wrap;
+}
+.grid-card {
+  flex: 1;
+  min-width: 180px;
+  padding: 12px;
+  border: 1px solid #3a4150;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.grid-card svg {
+  width: 100%;
+  height: 96px;
+  overflow: hidden;
+}
+.grid-card text {
+  fill: #a4aab5;
+  font: 10px system-ui;
+}
+.grid-beat {
+  fill: #2a2f3a;
+}
+.grid-bar {
+  fill: #8991a0;
+}
+.grid-note {
+  fill: #6f9fd8;
+}
+.grid-card small {
+  color: #a4aab5;
+}

@@ -1,0 +1,126 @@
+<!doctype html><meta charset="utf-8" /><title>Tempo and bar grouping — invented marks</title>
+<style>
+  body {
+    background: #0f1115;
+    color: #eceae4;
+    font: 14px system-ui;
+    padding: 32px;
+    max-width: 1100px;
+    margin: auto;
+  }
+  section {
+    background: #161920;
+    border: 1px solid #3a4150;
+    border-radius: 10px;
+    padding: 18px;
+  }
+  label {
+    margin-right: 20px;
+  }
+  select,
+  button {
+    color: #eceae4;
+    background: #1f242e;
+    padding: 7px;
+    border: 1px solid #3a4150;
+    border-radius: 5px;
+  }
+  .cards {
+    display: flex;
+    gap: 12px;
+    margin: 18px 0;
+  }
+  .card {
+    flex: 1;
+    padding: 12px;
+    border: 1px solid #3a4150;
+    border-radius: 8px;
+  }
+  .grid {
+    height: 70px;
+    background: repeating-linear-gradient(
+      90deg,
+      transparent 0 calc(var(--step, 48px) - 1px),
+      #6a7383 var(--step, 48px),
+      transparent calc(var(--step, 48px) + 1px)
+    );
+    position: relative;
+    margin: 14px 0;
+  }
+  .grid:before {
+    content: '▬    ▬  ▬      ▬ ▬       ▬';
+    color: #6f9fd8;
+    position: absolute;
+    top: 26px;
+  }
+  .inferred {
+    color: #a4aab5;
+    border-bottom: 1px dotted #6a7383;
+  }
+  small {
+    color: #a4aab5;
+  }
+</style>
+<h1>Check the tempo and bars</h1>
+<p>
+  The beat tracker is unsure. Compare the same 8 seconds of invented notes under each grid. Choose
+  once; “Tempo and bars…” remains available.
+</p>
+<section>
+  <label
+    >Beats per bar
+    <select>
+      <option>Detected grouping</option>
+      <option>2</option>
+      <option>3</option>
+      <option selected>4</option>
+      <option>6</option>
+      <option>8</option>
+    </select></label
+  ><label
+    >Beat one
+    <select>
+      <option>First downbeat</option>
+      <option>Next beat</option>
+    </select></label
+  >
+  <p>
+    <small
+      >Detected bars include 2-beat and 4-beat groups. This choice moves bar lines, preserving note
+      times.</small
+    >
+  </p>
+  <div class="cards">
+    <div class="card">
+      <b>½× · 60 BPM</b>
+      <div class="grid" style="--step: 96px"></div>
+      <button>Use ½×</button>
+    </div>
+    <div class="card">
+      <b>1× · 120 BPM</b>
+      <div class="grid" style="--step: 48px"></div>
+      <button>Use 1×</button>
+    </div>
+    <div class="card">
+      <b>2× · 240 BPM</b>
+      <div class="grid" style="--step: 24px"></div>
+      <button>Use 2×</button>
+    </div>
+  </div>
+  <button>Keep current grid</button>
+</section>
+<h2>Quiet inference marks</h2>
+<p>
+  <span class="inferred" title="Inferred grid: split long bar">12</span>　13　14
+  <small
+    >Hover the neutral dotted underline for the grid's explanation. No orange lines run through the
+    notes.</small
+  >
+</p>
+<p>
+  <small
+    >Ruler numbers occupy the top 12 px. Gap and uncovered-region labels use the lower 11 px line at
+    y=15, clamped to the viewport; adjacent labels share a tooltip when they overlap. Orange remains
+    for differences.</small
+  >
+</p>
