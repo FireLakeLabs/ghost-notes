@@ -320,20 +320,24 @@ alignment, musical correctness and perceived output remain unmeasured.
 
 ## 7. Timeline and the lens
 
+**Done: parts 1–3 (2026-11-14).** The user's linked arrangement now lives on
+the timeline. The final [editing and timing report](lens-editing-measurements.md)
+records the fixture/real-song walk, repeated measurements and shared-machine
+limits.
+
 **Part 1: done.** The recording timeline has optional audio above MIDI per stem,
 whole-song ruler, pickup/gap/uncovered/inference marks, zoom and overview
 navigation. Proof on six local songs (including diversity-1: 181 detected / 243 derived bars, 3,947
 notes, 627.3 MiB PCM) is recorded in [timeline measurements](timeline-measurements.md).
 The [structure and viewport API](timeline.md) are the handoff to parts 2/3;
 [synthetic screenshots](../design-study/sketches/timeline-part1.png) match Main's
-row sizes. G61–G65 record choices made for the owner. #5 stays open.
+row sizes. G61–G65 record choices made for the owner.
 
 Step 6 (#21) and the consistent grid (#20, closing #19) have landed.
 **Part 2: done.** The recording lens follows Main's 68% width, 450 ms growth
 and 160 ms drag, with piano-roll pitches, drum lanes and stem audio. Band or
 instrument selection with bar or beat snapping shares positions and containing
-bars with step 8. The program/score remain one unlinked draft until section
-links reach the UI; `settingsHost` lets the shell move session controls (G85–G86).
+bars with step 8. At that stage the program/score were an unlinked draft; `settingsHost` lets the shell move session controls (G85–G86).
 Tempo and meter are compared once over the same excerpt, with a persistent
 control. Diversity-1's unflagged 87/70 split between two/four-beat detected bars
 now asks about grouping; four beats and a one-beat offset changed 243 bars to
@@ -346,20 +350,33 @@ markers, all at most 16.8 ms with no missed 60 Hz callback or runtime error.
 This is a headless observation, not physical display measurement. Initial cache
 costs, earlier failed experiments and per-song results remain in the
 [lens report](lens-measurements.md). `npm run check` passed 608 Node tests;
-`npm run test:browser` passed 75 in 128.218 s / 180 s. #5 stays open for part 3.
-Part 3 rows now provide independently converted Notes and queried Mine, explicit
-unarranged ranges and per-instrument/global row/layer views (G114). A single
-six-song pass with first-eight-bar arrangements checked 513 lens intervals,
-all at most 16.8 ms. Its pre-check showed a painted busy row; later work found
-that focusing the header could scroll that row away during the operation.
-The complete wave must prove it stays visible. Initial
-costs and limits are in [rows measurements](rows-measurements.md). Six
-difference marks and the match strip now follow [their contract](differences.md)
-and G116. The strengthened [difference proof](difference-measurements.md) checked
-visible bounds after each operation: 1,026 intervals across one six-song pass
-per view, all at most 16.8 ms, with no query or runtime error. Editing inside
-the lens and the complete wave's repeated timing proof remain. Their original
-requirements follow.
+`npm run test:browser` passed 75 in 128.218 s / 180 s. Those were part-2 results.
+**Part 3: done.** Notes is the literal conversion on the chosen grid; Mine
+comes from actual whole-program Strudel questions, including a one-instrument
+score. Rows/Layers, unarranged ownership, pitched contours/piano rolls, five
+drum lanes, six explanations and the match strip follow G114–G120.
+Shared drum cells and the existing native editors address the selected
+section definition; independent split copies stay independent. Applied edits
+mark every shared place edited. New controls and source-buffer behaviour are
+recorded in [lens editing](lens-editing.md).
+
+Five final alternating six-song passes per view verified **5,157** lens
+intervals. Two additional all-song drum-grid passes verified **1,034** more.
+All 6,191 stayed at most 16.8 ms against the unchanged 16.9 ms limit, with
+pointer movement, a visible working row, interior-bar native editor closure,
+14,047 source notes and 1,343 queried arrangement onsets retained. Query/runtime
+errors were zero. An earlier unchanged-code series had 19 misses, worst 50 ms,
+alongside another browser job; the report retains them and makes no guarantee
+under competing browser/CPU work. Physical presentation and perceived output
+were not measured.
+
+The fixture checks shared edits, a split copy, native bass editing and two
+copy/paste/reopens. On the first test session, song 1, a native repeated drum
+bar linked 22 places: one cell changed every place by one onset, and two
+clipboard/paste/reopens retained all links, edited flags and tempos. Copy's
+12 silent unarranged bars had zero queried onsets. Full checks passed 630 Node
+tests and 81 browser tests (nine/one skips), within the existing budgets.
+The requirements implemented by these three parts follow.
 
 The whole-song view, with the section sheet as a lens inside it (G9). This
 merges the old timeline step and the old "reference marks in the sheet" step.
@@ -394,6 +411,10 @@ stays under its time budget.
 
 ## 8. Sections, reuse and links
 
+**Done: document operations and timeline controls (2026-11-14).** Make section,
+pre-ticked reuse offers, split/takeover, pickup and source/tempo reopening are
+connected to the user's arrangement and lens editors.
+
 - One new document edit, "make section from range". Sections are whole bars;
   a beat selection only limits which notes come in (G12).
 - A new section starts as a literal copy by default (G13).
@@ -410,15 +431,18 @@ stays under its time budget.
 reference restores every link and tempo.
 
 Timeline creation/reuse/split controls landed in #38, with fixture and private
-copy/paste/reopen proof in [sections](sections.md). The final combined walk
-with editing in the lens remains part of this wave before #6 closes.
+copy/paste/reopen proof in [sections](sections.md). The final
+[combined walk](lens-editing-measurements.md) includes shared drum edits, an
+independent split copy, native bass editing, clipboard copy and two fresh
+paste/reference reopens. Every link and tempo is compared separately from
+the actual queried notes.
 
 ### Step 8 part 1 results (2026-11-13)
 
-The document operations and copied-text links are implemented. Timeline controls
-remain part 2 of #6, after step 7's lens/selection: Make section, matching-place
-checklist, split confirmation and takeover warnings. The document proposal
-returns every takeover before the caller applies it. #6 stays open.
+The document operations and copied-text links were implemented in part 1.
+Part 2 subsequently connected Make section, matching-place checklists, split
+confirmation and takeover warnings to the timeline. The document proposal
+returns every takeover before the caller applies it.
 
 [Sections](sections.md) defines the operations and canonical cycle/export-tempo
 contract (G91–G96). Node fixtures cover literal creation, the default grid,

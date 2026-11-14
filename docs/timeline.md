@@ -157,3 +157,8 @@ but use one visible canvas per instrument. The
 [intermediate timing report](difference-measurements.md) qualifies one pass per
 view with the working row still in view after every operation. Set
 `GHOST_DIFFERENCES_SHOT` to capture the invented six-mark walk.
+
+The [lens editing contract](lens-editing.md) puts queried drum cells in Mine
+and the existing native editors in the selected place's workspace. G117–G120
+cover shared edits, independent copies, scope changes and safe cell coordinates.
+Set `GHOST_LENS_EDIT_SHOT` for the invented editing walk's PNG.

@@ -4,6 +4,11 @@ import { prepareSource } from '../../document/edits/source-node';
 import { sourceFragment } from '../../document/edits/source-shared';
 import { fieldLabel } from '../presentation';
 import './source.css';
+const drafts = new Map<string, { baseline: string; text: string }>();
+/** A loaded piece is the lifetime of these in-memory, unapplied source buffers. */
+export function clearSourceDrafts() {
+  drafts.clear();
+}
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K, text = '') => {
   const n = document.createElement(tag);
   n.textContent = text;
@@ -15,6 +20,7 @@ export default {
   matches: (t) => t.kind === 'source',
   mount(body, initial) {
     let context = initial,
+      appliedText: string | undefined,
       disposed = false,
       busy = false;
     const form = el('form'),
@@ -27,11 +33,15 @@ export default {
     field.spellcheck = false;
     field.className = 'source-text';
     field.setAttribute('aria-label', 'Source text');
-    field.value = sourceFragment(initial.doc, initial.target.nodeId) ?? '';
+    const baseline = sourceFragment(initial.doc, initial.target.nodeId) ?? '';
+    const draft = drafts.get(initial.target.nodeId);
+    field.value = draft?.baseline === baseline ? draft.text : baseline;
     error.className = 'editor-error';
     error.setAttribute('role', 'alert');
     status.className = 'editor-helper';
     status.setAttribute('role', 'status');
+    if (draft?.baseline === baseline)
+      status.textContent = 'Unapplied text restored. Apply it to include it in your arrangement.';
     revert.type = 'button';
     revert.onclick = () => {
       field.value = sourceFragment(context.doc, context.target.nodeId) ?? '';
@@ -69,6 +79,7 @@ export default {
         return;
       }
       const { doc: chosen, broken, promoted } = result;
+      appliedText = text;
       context.apply(chosen);
       error.textContent = broken ? `Broken: ${broken}. Use Undo to restore the previous edit.` : '';
       const native = describeTarget(chosen, id.replace(/:source$/, ''));
@@ -80,11 +91,17 @@ export default {
     return {
       update(next: EditorContext) {
         context = next;
-        if (next.pending === 'failed')
+        if (next.pending === 'failed') {
+          appliedText = undefined;
           error.textContent =
             'This change failed. Your text is kept; use Revert to see the current piece.';
+        }
       },
       destroy() {
+        const baseline = sourceFragment(context.doc, context.target.nodeId) ?? '';
+        if (field.value !== baseline && field.value !== appliedText)
+          drafts.set(context.target.nodeId, { baseline, text: field.value });
+        else drafts.delete(context.target.nodeId);
         disposed = true;
         form.remove();
       },

@@ -104,3 +104,30 @@ Decided for the owner during step 7 part 2, 2026-11-13:
   source/bar and never to query or conversion input. Only rows near the window
   are rasterized, with scroll-triggered redraw; every row retains its source
   data and animated height. Decided for the absent owner.
+
+- **G117 (2026-11-14) Edit shared drum cells from the queried arrangement.**
+  Decided for the absent owner. Main's five-lane cells appear in Mine inside
+  the lens, in Rows or Layers. Cell occupancy comes from full queried Mine
+  and literal Notes, with the quiet-recording setting. Onsets use their nearest
+  step within their owning bar; first/last cells retain that bar's edges.
+  The match strip still compares original MIDI using its stated tolerance.
+  An off cell filters that lane and local interval after the existing pattern's
+  rewrites. An on cell adds one hit at velocity 90, lasting one grid step.
+  Both preserve the original program and edit the shared definition through
+  document history. Exact mode offers source editing and a musical-grid hint
+  rather than inventing editable exact cells. One focusable grid and active
+  cell serve keyboard navigation without per-event DOM. At most 200 filled
+  cells per bar are painted; counts and edits use complete data. The
+  [mockup](../../design-study/sketches/lens-editing.html) records the controls.
+
+- **G120 (2026-11-14) Keep ownership separate from mute; guard cell coordinates.**
+  Decided for the absent owner. A muted instrument still owns its arranged
+  bars, even though its queried output is empty. Keep the place borders and
+  comparison; do not label it unarranged. Direct drum cells require one unmuted
+  definition use with unchanged outer lane/time coordinates. Whole-program
+  callbacks, outer time rewrites, lane overrides and nested arrangements use
+  the source editor instead; muting offers an explicit unmute hint. Definition
+  sound settings also use source editing, so a new hit cannot bypass its bank
+  or effects. Queued playback edits block further cells until fresh answers. The edit
+  itself enforces the same rule. This prevents a visible cell change from
+  silently modifying another position before an outer transform runs.

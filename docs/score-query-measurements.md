@@ -10,7 +10,8 @@ A full refresh formerly generated and evaluated the program separately for
 each row, with two fresh workers at a time. The new path asks one tagged
 program, then partitions queried events by the playback identity in Hap context.
 Edits refresh all rows in context too: a group rewrite can couple neighbours.
-Single-row documents stay isolated. Broken, opaque or unattributed answers fall
+At this measurement, single-row documents stayed isolated (G119 below
+supersedes that exception). Broken, opaque or unattributed answers fall
 back. Cancellation is checked before that fallback can launch work.
 
 ## Production browser comparison
@@ -88,3 +89,18 @@ Run GHOST_SCORE_SURVEY=fixtures npm test -- tests/score-query-local.test.ts
 GHOST_SCORE_SONG=N npm test -- tests/score-query-local.test.ts --silent=false.
 Source fields, names, conversions and real pixels are never printed or committed.
 These measurements precede CI qualification and are not reliability evidence.
+
+## Lens wave: shared one-instrument evaluation
+
+G119 extends whole-program questions to one row. A synthetic shared initializer
+ran repeatedly when its isolated score expanded references, returning 62/63
+instead of playback's 61/61. The controller canary first failed, then passed
+on load and edit. Redundant tracking of partially refreshed rows was removed.
+
+On the first test session, song 1, accepting 21 native one-bar drum offers
+previously hit the existing five-second timeout. One complete question
+returned 242 onsets; an actual grid edit added one at all 22 places. Two
+copies and explicit folder reopening retained 264 queried/Mine onsets, every
+link and tempo, and zero onsets in unarranged bars. This is one correctness
+walk, not a paired speedup claim. Full-question timeout followed by isolated
+fallback can still add five seconds, including for one row.

@@ -68,3 +68,20 @@
   range's mean beat duration, since G94 compares musical positions. Missing
   folder/grid links remain an explained draft. The controls mockup is
   `design-study/sketches/linked-sections.html`. Decided for the absent owner.
+
+- **G118 (2026-11-14) Put the existing editors in the linked lens workspace.**
+  Decided for the absent owner. Reuse G85's host and one score/editor instance.
+  Choose an instrument and bar in the open place, then a part for concurrent
+  voices. Keep one native instrument row; the timeline retains every instrument.
+  Native rhythm and value cells address that section's actual pattern, retaining
+  the full stem's query identity. Independent copies therefore edit separately.
+  Inherited settings remain named use-site controls; opaque or across-time
+  structures offer their whole-pattern source instead of guessed bar ownership.
+  Hide ODM's separate arrangement builder in this workspace. A closed linked
+  workspace keeps its last view hidden, without building a whole-program table. Changing bar,
+  part or lens range closes the active editor; Follow retains its chosen place. Keep unapplied source buffers only in
+  memory, by address and unchanged source baseline, until another piece loads;
+  Copy still writes applied document edits. Applied text is not a restored draft. The model cache includes the scope,
+  since a one-bar place and a whole-program window can have identical times.
+  The [mockup](../../design-study/sketches/lens-editing.html) shows the bar and
+  part selectors alongside the inherited editor.

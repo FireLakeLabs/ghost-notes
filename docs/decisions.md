@@ -62,6 +62,7 @@ check:docs`); when a topic file fills, start a new one.
 - G37: a fractional pickup is a once-only prefix; restart before replay.
 - G38: pin soundfonts 1.3.0; bridge General MIDI through the Strudel seam.
 - G115: split a whole-score question by queried row tags, with isolated-question fallback.
+- G119: whole-program score questions also preserve shared one-instrument evaluation.
 
 ## [Transcription](decisions/transcription.md)
 
@@ -105,6 +106,8 @@ check:docs`); when a topic file fills, start a new one.
 - G86: session selection shares a half-open note interval and containing bars with sections.
 - G114: queried Mine rows, independent Notes, explicit unarranged/query states and session views.
 - G116: original-time, same-bar matches; converter evidence, shared drawing allowance and accessible explanations.
+- G117: queried shared drum cells, source-preserving edits and keyboard navigation.
+- G120: muted places retain ownership; direct drum cells require unchanged outer coordinates.
 - G88: neutral inference underlines and separate ruler lines supersede G65.
 
 ## [Playback](decisions/playback.md)
@@ -127,6 +130,7 @@ check:docs`); when a topic file fills, start a new one.
 - G94: reference onset/pitch Jaccard offers with the prototype's match knobs.
 - G95: mark changed section content edited at the shared document mutation boundary.
 - G113: review section offers and whole-place takeover before applying; session starting content.
+- G118: instrument/bar/part-scoped native editors in the lens, with source buffers kept in memory.
 - G96: group independent section patterns into stem rows without note propagation.
 
 ## [Hosting](decisions/hosting.md)

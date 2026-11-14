@@ -1,7 +1,7 @@
 import { paintTimeline } from './timeline-paint';
 import { existsSync } from 'node:fs';
 import { readdir, writeFile } from 'node:fs/promises';
-import { homedir } from 'node:os';
+import { homedir, cpus, loadavg } from 'node:os';
 import { join } from 'node:path';
 import { test, expect } from '@playwright/test';
 const root = join(homedir(), 'projects/ghost-notes/reference');
@@ -28,6 +28,7 @@ test('six local songs: first draw, scroll and zoom frame times', async ({ page, 
       ordinal++;
       if (selected && ordinal !== Number(selected)) continue;
       const input = source === 'first-test-session' ? `first test session, song ${number}` : source;
+      const system = { cores: cpus().length, loadAverage: loadavg() };
       try {
         // Reload releases the previous PCM and makes each first draw a fresh mount.
         await page.goto('/?inspect');
@@ -130,7 +131,7 @@ test('six local songs: first draw, scroll and zoom frame times', async ({ page, 
           await page.getByRole('button', { name: 'Close the lens', exact: true }).click();
           await expect(page.locator('#timeline')).toHaveAttribute('data-animating', 'false');
         }
-        const visibleStem = await page.evaluate(() => {
+        const busiestStem = await page.evaluate(() => {
           const s = window.ghostReference.current!.song;
           const end = s.bars.find((b) => b.number === 8)?.endSeconds ?? s.durationSeconds;
           return [...s.stems].sort(
@@ -139,6 +140,7 @@ test('six local songs: first draw, scroll and zoom frame times', async ({ page, 
               a.notes.filter((n) => n.startSeconds < end).length,
           )[0].id;
         });
+        const visibleStem = process.env.GHOST_LENS_DRUMS ? 'drums' : busiestStem;
         if (process.env.GHOST_TIMELINE_LAYERS) {
           await page.locator('#settings').click();
           await page.getByLabel('All instrument views', { exact: true }).selectOption('layers');
@@ -157,6 +159,8 @@ test('six local songs: first draw, scroll and zoom frame times', async ({ page, 
         const visibleKind = visibleStem === 'drums' ? 'drums' : 'pitch';
         let lensFrames: Record<string, number[]> = {};
         let lensPointerMoves = 0;
+        let lensGridMoves = 0;
+        let lensEditorCloses = 0;
         if (process.env.GHOST_LENS_MEASURE) {
           const chunks: unknown[] = [];
           const collect = (event: { value: unknown[] }) => chunks.push(...event.value);
@@ -177,7 +181,8 @@ test('six local songs: first draw, scroll and zoom frame times', async ({ page, 
             await cdp.send('Profiler.start');
           }
           const measured = await page.evaluate(
-            async ({ arranged, stemId, pointer }) => {
+            async ({ arranged, stemId, pointer, editor }) => {
+              const measuredDoc = window.odmApp.state.doc;
               const first = document.querySelector<HTMLInputElement>('[data-first]')!,
                 last = document.querySelector<HTMLInputElement>('[data-last]')!;
               const song = window.ghostReference.current!.song;
@@ -205,6 +210,54 @@ test('six local songs: first draw, scroll and zoom frame times', async ({ page, 
               last.value = String(bars[best + 3].number);
               document.querySelector<HTMLButtonElement>('[data-select]')!.click();
               const next = () => new Promise<number>((resolve) => requestAnimationFrame(resolve));
+              async function openSource() {
+                if (!editor) return;
+                document.getElementById('score-workspace')!.scrollIntoView({ block: 'center' });
+                const instrument =
+                  document.querySelector<HTMLSelectElement>('#lens-edit-instrument')!;
+                instrument.value = stemId;
+                instrument.dispatchEvent(new Event('change'));
+                const bar = document.querySelector<HTMLSelectElement>('#lens-edit-bar')!;
+                const interior = String(window.ghostTimeline.lens!.firstBar + 1);
+                bar.value = [...bar.options].some((o) => o.value === interior)
+                  ? interior
+                  : String(window.ghostTimeline.lens!.firstBar);
+                bar.dispatchEvent(new Event('change'));
+                const picker = document.querySelector<HTMLSelectElement>(
+                  `[aria-label="${stemId} part to edit"]`,
+                );
+                if (picker && stemId === 'drums') {
+                  picker.selectedIndex = picker.options.length - 1;
+                  picker.dispatchEvent(new Event('change'));
+                }
+                const row = window.odmApp.state.rows.find((r) =>
+                  r.patterns.some((p) => p.stem === stemId),
+                )!;
+                document
+                  .querySelector<HTMLElement>(
+                    `#score tr[data-node-id="${CSS.escape(row.id)}"] [data-control="rhythm"]`,
+                  )!
+                  .click();
+                const panel = document.getElementById('editor')!;
+                if (panel.dataset.editorKind !== 'source') {
+                  const source = [...panel.querySelectorAll('button')].find(
+                    (b) => b.textContent === 'Edit as source',
+                  );
+                  if (!source) throw Error('Native source control unavailable');
+                  source.click();
+                }
+                const field = panel.querySelector<HTMLTextAreaElement>('textarea');
+                if (panel.hidden || panel.dataset.editorKind !== 'source' || !field)
+                  throw Error('Native source editor did not open');
+                field.value += '\n/* Unapplied frame-check draft */';
+                document
+                  .querySelector<HTMLElement>(
+                    `[data-stem="${CSS.escape(stemId)}"] [data-layer="mine"]`,
+                  )!
+                  .scrollIntoView({ block: 'center' });
+                await next();
+                await next();
+              }
               const stillVisible = () => {
                 const canvas = document.querySelector<HTMLCanvasElement>(
                   `[data-stem="${CSS.escape(stemId)}"] [data-layer="mine"]`,
@@ -213,7 +266,8 @@ test('six local songs: first draw, scroll and zoom frame times', async ({ page, 
                 if (box.bottom <= 0 || box.top >= innerHeight)
                   throw Error('Measured Mine row left the viewport');
               };
-              let pointerFrame = 0;
+              let pointerFrame = 0,
+                gridMoves = 0;
               const record = async (name: string, action: () => void) => {
                 const result: number[] = [];
                 let before = await next();
@@ -229,12 +283,18 @@ test('six local songs: first draw, scroll and zoom frame times', async ({ page, 
                       `[data-stem="${CSS.escape(stemId)}"] [data-layer="mine"]`,
                     )!;
                     const box = canvas.getBoundingClientRect();
-                    canvas.dispatchEvent(
+                    const grid =
+                      stemId === 'drums'
+                        ? document.querySelector<HTMLElement>('.tl-drum-grid:not([hidden])')
+                        : null;
+                    const hitBox = grid?.getBoundingClientRect() ?? box;
+                    if (grid) gridMoves++;
+                    (grid ?? canvas).dispatchEvent(
                       new PointerEvent('pointermove', {
                         bubbles: true,
                         pointerType: 'mouse',
-                        clientX: box.left + box.width * (0.15 + (pointerFrame++ % 30) / 40),
-                        clientY: box.bottom - 3,
+                        clientX: hitBox.left + hitBox.width * (0.15 + (pointerFrame++ % 30) / 40),
+                        clientY: grid ? hitBox.top + hitBox.height / 2 : box.bottom - 3,
                       }),
                     );
                   }
@@ -251,27 +311,50 @@ test('six local songs: first draw, scroll and zoom frame times', async ({ page, 
               if (window.ghostTimeline.lens?.firstBar !== firstBar)
                 throw Error('Lens did not open');
               stillVisible();
+              await openSource();
               const move = await record('move', () =>
                 document.querySelector<HTMLButtonElement>('[data-later]')!.click(),
               );
               if (Number(window.ghostTimeline.lens?.firstBar) !== firstBar + 1)
                 throw Error('Lens did not move');
               stillVisible();
+              let editorCloses = 0;
+              if (editor) {
+                if (!document.getElementById('editor')!.hidden)
+                  throw Error('Moving the lens kept an old editor');
+                editorCloses++;
+              }
+              await openSource();
               const close = await record('close', () =>
                 document.querySelector<HTMLButtonElement>('[data-close]')!.click(),
               );
               if (window.ghostTimeline.lens !== null) throw Error('Lens did not close');
               stillVisible();
-              return { frames: { open, move, close }, pointerMoves: pointerFrame };
+              if (editor) {
+                if (!document.getElementById('editor')!.hidden)
+                  throw Error('Closing the lens kept an old editor');
+                editorCloses++;
+                if (window.odmApp.state.doc !== measuredDoc)
+                  throw Error('A frame-check draft changed the arrangement');
+              }
+              return {
+                frames: { open, move, close },
+                pointerMoves: pointerFrame,
+                gridMoves,
+                editorCloses,
+              };
             },
             {
               arranged: !!process.env.GHOST_ARRANGEMENT_MEASURE,
               stemId: visibleStem,
               pointer: !!process.env.GHOST_LENS_POINTER,
+              editor: !!process.env.GHOST_LENS_EDITOR,
             },
           );
           lensFrames = measured.frames;
           lensPointerMoves = measured.pointerMoves;
+          lensGridMoves = measured.gridMoves;
+          lensEditorCloses = measured.editorCloses;
           if (process.env.GHOST_LENS_PROFILE && process.env.GHOST_LENS_PROFILE !== 'pipeline') {
             const cpu = await cdp.send('Profiler.stop');
             await writeFile(
@@ -359,9 +442,12 @@ test('six local songs: first draw, scroll and zoom frame times', async ({ page, 
           await expect(page.locator('#timeline')).toHaveAttribute('data-animating', 'false');
         }
         report.push({
+          system,
           arrangement,
           viewMode: process.env.GHOST_TIMELINE_LAYERS ? 'layers' : 'rows',
           pointerMoves: lensPointerMoves,
+          gridPointerMoves: lensGridMoves,
+          editorCloses: lensEditorCloses,
           visibleKind,
           input,
           ...shape,

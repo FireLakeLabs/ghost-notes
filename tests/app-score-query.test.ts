@@ -35,6 +35,36 @@ beforeEach(() => {
 });
 const source =
   'stack(note("c3 e3").s("sine").gain(.5), note("g3 b3").s("sine").gain(.6)).arp("0 1 0 1")';
+
+test('one reused instrument keeps the same shared value that whole-program playback uses, on load and edit', async () => {
+  const app = createApp();
+  try {
+    await app.load(`const calls = {n: 0};
+      /*@odm-shared {"purpose":"instrument"}*/ const line = (() => {
+        calls.n++; return note(60 + calls.n).s('sine');
+      })().gain(.5);
+      $: arrange([1, line], [1, line]);`);
+    expect(app.state.loadError).toBe('');
+    expect(app.state.rows).toHaveLength(1);
+    await answer(0);
+    await vi.waitFor(() => expect(app.pendingRows.size).toBe(0));
+    const notes = () =>
+      Object.values(app.state.events)
+        .flatMap((r) => r.events)
+        .filter((e) => e.hasOnset)
+        .map((e) => (e.value as { note: number }).note);
+    expect(notes()).toEqual([61, 61]);
+    let gain: string | undefined;
+    walk(app.state.doc!, (node) => {
+      if ('name' in node && node.name === 'gain') gain = node.id;
+    });
+    app.editor!.edit(gain!, 0.7);
+    await answer(1);
+    await vi.waitFor(() => expect(notes()).toEqual([61, 61]));
+  } finally {
+    app.editor?.dispose();
+  }
+});
 const broken: EventResult = {
   events: [],
   cps: 0.5,

@@ -38,6 +38,7 @@ export function mountSheet(
     onSelect?(id: string): void;
     onMute?(id: string, muted: boolean): void;
     definitionMuted?(id: string): boolean;
+    sectionControls?: boolean;
     onEdit?(id: string, summary: string, origin: HTMLElement): void;
   } = {},
 ): void {
@@ -98,7 +99,7 @@ export function mountSheet(
     setup.append(list);
     sheet.append(setup);
   }
-  if (model.sections.length) {
+  if (model.sections.length && options.sectionControls !== false) {
     const strip = element('section', '', 'sheet-song');
     strip.setAttribute('aria-label', 'Song sections');
     strip.append(element('h2', 'Song strip'));
@@ -171,7 +172,7 @@ export function mountSheet(
     }
     sheet.append(strip);
   }
-  if (!model.sections.length && options.onEdit) {
+  if (!model.sections.length && options.onEdit && options.sectionControls !== false) {
     const make = element('button', 'Make sections', 'sheet-section-add');
     make.type = 'button';
     selectable(make, 'piece:make-sections', 'Make sections');

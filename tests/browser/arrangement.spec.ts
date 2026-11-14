@@ -287,6 +287,57 @@ test('make a linked section, reuse, split, warn, copy and reopen', async ({ page
     }
     const before = await page.evaluate(() => window.odmApp.state.sections.filter((p) => p.source));
     expect(before.map((p) => p.source?.fromBar)).toEqual([2, 6, 10]);
+    const grid = page.getByRole('grid', { name: 'Edit drums in the lens', exact: true });
+    await expect(grid).toBeVisible();
+    await expect(page.locator('[data-lens-host] #score-workspace')).toBeVisible();
+    await expect(
+      page.locator('#score').getByRole('button', { name: 'Make sections', exact: true }),
+    ).toHaveCount(0);
+    await page.getByLabel('Instrument to edit', { exact: true }).selectOption('drums');
+    await page.getByRole('button', { name: 'Mute drums', exact: true }).click();
+    await scoreReady(page);
+    expect(
+      await page.evaluate(() => window.ghostTimeline.materialFor('drums')?.places.length),
+    ).toBe(3);
+    await expect(drumsMine).toHaveAttribute('aria-description', /^0 notes/);
+    await expect(
+      page.locator('[data-row-status="mine"]').filter({ hasText: 'unmuting' }),
+    ).toBeVisible();
+    await page.locator('#undo').click();
+    await scoreReady(page);
+    await page.getByLabel('Instrument to edit', { exact: true }).selectOption('bass');
+    await drumsMine.scrollIntoViewIfNeeded();
+    await page.evaluate(
+      () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
+    );
+    await grid.focus();
+    await expect(grid.getByRole('gridcell')).toContainText('Kick, bar 2, step 1: in both');
+    await grid.press('Enter');
+    await scoreReady(page);
+    await expect(drumsMine).toHaveAttribute('aria-description', /^3 notes/);
+    const drumCounts = () =>
+      page.evaluate(() => {
+        const app = window.odmApp;
+        const row = app.state.rows.find((r) => r.pattern.stem === 'drums')!;
+        return app.state.sections
+          .filter((p) => p.name === 'Chorus')
+          .map(
+            (p) =>
+              app.state.events[row.id].events.filter(
+                (e) =>
+                  e.hasOnset &&
+                  e.whole &&
+                  e.whole[0] >= p.start &&
+                  e.whole[0] < p.start + p.cycles &&
+                  (e.value as { s?: string }).s === 'bd',
+              ).length,
+          );
+      });
+    expect(await drumCounts()).toEqual([0, 0, 0]);
+    await expect(grid).toBeFocused();
+    await page.locator('#undo').click();
+    await scoreReady(page);
+    expect(await drumCounts()).toEqual([1, 1, 1]);
     await page.getByLabel('Split off bars 6–6').click();
     await scoreReady(page);
     await expect(page.locator('[data-place]')).toHaveCount(3);
@@ -302,6 +353,77 @@ test('make a linked section, reuse, split, warn, copy and reopen', async ({ page
     await expect(dialog.locator('[data-takeover]')).toHaveCount(0);
     await expect(dialog.getByRole('button', { name: 'Make section', exact: true })).toBeDisabled();
     await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+    // A real pointer edit changes the two remaining shared places, keeping the split copy.
+    await grid.scrollIntoViewIfNeeded();
+    const gridBox = await grid.boundingBox();
+    await grid.click({ position: { x: gridBox!.width / 32, y: gridBox!.height * 0.9 } });
+    await scoreReady(page);
+    expect(await drumCounts()).toEqual([0, 1, 0]);
+    await expect(page.locator('[data-place]').first()).toContainText('edited');
+    const bassId = await page.evaluate(
+      () => window.odmApp.state.rows.find((r) => r.pattern.stem === 'bass')!.id,
+    );
+    await page.locator(`#score tr[data-node-id="${bassId}"] td[data-control="rhythm"]`).click();
+    await expect(page.locator('[data-lens-host] #editor')).toHaveAttribute(
+      'data-editor-kind',
+      'rhythm',
+    );
+    await page.getByLabel('Note value', { exact: true }).fill('60');
+    await page.getByLabel('Note value', { exact: true }).press('Enter');
+    await scoreReady(page);
+    await page.locator('#editor .editor-done').click();
+    const editedScore = () =>
+      page.evaluate(() =>
+        Object.fromEntries(
+          window.odmApp.state.rows.map((row) => [
+            row.pattern.stem,
+            window.odmApp.state.events[row.id].events
+              .filter((e) => e.hasOnset)
+              .map((e) => [e.whole, e.value])
+              .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))),
+          ]),
+        ),
+      );
+    const edited = await editedScore();
+    const pitches = await page.evaluate(() => {
+      const app = window.odmApp,
+        row = app.state.rows.find((r) => r.pattern.stem === 'bass')!;
+      return app.state.sections
+        .filter((p) => p.name === 'Chorus')
+        .map((p) =>
+          app.state.events[row.id].events
+            .filter((e) => e.hasOnset && e.whole?.[0] === p.start)
+            .map((e) => (e.value as { note: number }).note),
+        );
+    });
+    expect(pitches).toEqual([[60], [48], [60]]);
+    const bassRhythm = page.locator(
+      `#score tr[data-node-id="${bassId}"] td[data-control="rhythm"]`,
+    );
+    await bassRhythm.click();
+    await page
+      .locator('#editor')
+      .getByRole('button', { name: 'Edit as source', exact: true })
+      .click();
+    const sourceDraft = 'note("62").gain(0.7)';
+    await page.getByLabel('Source text', { exact: true }).fill(sourceDraft);
+    await page.locator('[data-close]').click();
+    await expect(page.locator('#source')).toBeEnabled();
+    await page.locator('[data-place]').first().click();
+    await expect(page.locator('#timeline')).toHaveAttribute('data-animating', 'false');
+    await bassRhythm.click();
+    await page
+      .locator('#editor')
+      .getByRole('button', { name: 'Edit as source', exact: true })
+      .click();
+    await expect(page.getByLabel('Source text', { exact: true })).toHaveValue(sourceDraft);
+    await page.locator('#editor').getByRole('button', { name: 'Revert', exact: true }).click();
+    await page.locator('#editor .editor-done').click();
+    expect(await editedScore()).toEqual(edited);
+    if (process.env.GHOST_LENS_EDIT_SHOT) {
+      await paintTimeline(page);
+      await page.locator('#timeline').screenshot({ path: process.env.GHOST_LENS_EDIT_SHOT });
+    }
     await page.locator('#copy').click();
     const copy = page.getByRole('dialog', { name: 'Copy arrangement', exact: true });
     const text = await copy.locator('textarea').inputValue();
@@ -312,6 +434,7 @@ test('make a linked section, reuse, split, warn, copy and reopen', async ({ page
     }, text);
     await scoreReady(page);
     await open();
+    expect(await editedScore()).toEqual(edited);
     await expect(
       page.getByRole('img', { name: 'bass Mine queried arrangement', exact: true }),
     ).toHaveAttribute('aria-description', /^6 notes/);
@@ -342,6 +465,40 @@ test('make a linked section, reuse, split, warn, copy and reopen', async ({ page
     await expect(dialog.locator('[data-takeover]')).toHaveCount(0);
     await expect(dialog.getByRole('button', { name: 'Make section', exact: true })).toBeEnabled();
     await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+    // Copied literal fills remain unarranged, but their actual Mine notes stay visible
+    // when a lens also contains editable section cells.
+    await page.locator('#copy').click();
+    await copy.locator('[data-unarranged]').selectOption('literal');
+    const withFills = await copy.locator('textarea').inputValue();
+    await page.keyboard.press('Escape');
+    await page.evaluate(async (text) => window.odmApp.load(text), withFills);
+    await scoreReady(page);
+    await page.evaluate(() => window.ghostTimeline.openLens({ firstBar: 0, lastBar: 2 }));
+    await expect(page.locator('#timeline')).toHaveAttribute('data-animating', 'false');
+    await drumsMine.scrollIntoViewIfNeeded();
+    await page.evaluate(
+      () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
+    );
+    const unarrangedPaint = await drumsMine.evaluate((canvas: HTMLCanvasElement) => {
+      const first = document.querySelector<HTMLElement>('[data-bar="1"]')!;
+      const last = document.querySelector<HTMLElement>('[data-bar="2"]')!;
+      const a = Math.ceil(parseFloat(first.style.left)) + 2;
+      const b = Math.floor(parseFloat(last.style.left)) - 2;
+      const data = canvas.getContext('2d')!.getImageData(a, 6, b - a, 74).data;
+      let notes = 0;
+      for (let i = 0; i < data.length; i += 4)
+        if (
+          data[i] > 140 &&
+          data[i + 1] > 130 &&
+          data[i + 2] > 100 &&
+          data[i] >= data[i + 1] &&
+          data[i] - data[i + 1] < 40 &&
+          data[i + 1] > data[i + 2]
+        )
+          notes++;
+      return notes;
+    });
+    expect(unarrangedPaint).toBeGreaterThan(0);
     otherFolder = await mkdtemp(join(tmpdir(), 'ghost-short-reference-'));
     const shortened = JSON.parse(new TextDecoder().decode(files.get('beats.json')));
     shortened.beats = shortened.beats.slice(0, 10);

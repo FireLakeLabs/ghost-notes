@@ -142,7 +142,7 @@ export function describeTarget(doc: Doc, nodeId: string): Target {
       : nodeId;
   const node = findById(doc, id);
   const rows = instruments(doc);
-  const definition = rows.find((r) => r.id === id || contains(r.pattern, id));
+  const definition = rows.find((r) => r.id === id || r.patterns.some((p) => contains(p, id)));
   const inUse = (use: InstrumentUse) =>
     use.path.some((p) => p.id === id) ||
     use.layers.some((layer) =>
@@ -186,7 +186,7 @@ export function describeTarget(doc: Doc, nodeId: string): Target {
     pattern?.core.kind === 'opaque';
   let kind: TargetKind = 'unknown';
   if (sourceAddress) kind = 'source';
-  else if (rewrites && pattern && rows.some((r) => r.pattern.id === id)) kind = 'rewrite';
+  else if (rewrites && pattern && row) kind = 'rewrite';
   else if (selectedSection && !rhythm && !sourceAddress) kind = 'section';
   else if (setting) kind = editable ? 'setting-constant' : valueKind(setting.value);
   else if (row?.id === id && !rhythm && !sourceAddress) kind = 'instrument';

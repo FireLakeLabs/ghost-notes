@@ -1,8 +1,8 @@
 import type { EditorContext, EditorKind } from '../kind';
-import type { Arg, Doc, Layer } from '../../document';
-import { instruments, sections } from '../../document';
+import type { Arg, Doc, Layer, Pattern } from '../../document';
+import { instruments, sections, findById } from '../../document';
 import { generatePattern } from '../../generate';
-import { addRewrite, rewriteChoices } from '../../document/edits/rewrite-add';
+import { addRewrite, rewriteChoices, scorePart } from '../../document/edits/rewrite-add';
 import { setRewriteArgument } from '../../document/edits/rewrite-argument';
 import { moveRewrite } from '../../document/edits/rewrite-move';
 import { removeRewrite } from '../../document/edits/rewrite-remove';
@@ -46,6 +46,13 @@ function editable(arg: Arg): number | string | undefined {
     : core.kind === 'constant' && typeof core.value !== 'boolean'
       ? core.value
       : undefined;
+}
+function targetPattern(context: EditorContext) {
+  const row = instruments(context.doc).find((r) => r.id === context.target.instrumentId);
+  const id = context.target.nodeId.endsWith(':rewrites')
+    ? context.target.nodeId.slice(0, -9)
+    : (rewriteOwner(context.doc, context.target.nodeId)?.pattern.id ?? row?.pattern.id);
+  return (row && id ? scorePart(context.doc, row, id) : undefined) ?? row?.pattern;
 }
 /** Actual scored spans, clipped to the current query window. Never an assumed grid. */
 function strip(label: string, result: EventResult | undefined, context: EditorContext) {
@@ -130,7 +137,8 @@ export default {
       const owner = rewriteOwner(context.doc, context.target.nodeId),
         layer = owner?.layer;
       const row = instruments(context.doc).find((r) => r.id === context.target.instrumentId);
-      if (!row) {
+      const pattern = targetPattern(context);
+      if (!row || !pattern) {
         form.append(el('p', 'This instrument no longer exists.'));
         return;
       }
@@ -229,7 +237,7 @@ export default {
         }
         actions.append(
           button('Remove rewrite', 'remove', () =>
-            apply(removeRewrite(context.doc, layer.id), `${row.pattern.id}:rewrites`),
+            apply(removeRewrite(context.doc, layer.id), `${pattern.id}:rewrites`),
           ),
         );
         form.append(actions);
@@ -248,7 +256,7 @@ export default {
         });
         if (list.children.length) form.append(el('h4', title), list);
       }
-      ordered('Rewrites · in order', row.pattern.layers);
+      ordered('Rewrites · in order', pattern.layers);
       const seen = new Set<string>();
       for (const use of row.uses) {
         const extra = use.layers.filter((l) => l.kind === 'rewrite' && !seen.has(l.id));
@@ -256,19 +264,16 @@ export default {
         const section = sections(context.doc).find((s) => use.path.some((p) => p.id === s.id));
         ordered(`After instrument rewrites · ${section?.name ?? 'piece'}`, extra);
       }
-      if (owner && owner.pattern !== row.pattern && !seen.has(owner.layer.id))
+      if (owner && owner.pattern !== pattern && !seen.has(owner.layer.id))
         ordered('Inside this argument, in order', owner.pattern.layers);
       if (!layer) {
         form.append(el('h3', 'Add rewrite'));
         for (const choice of rewriteChoices) {
           const b = button(`Add ${choice.name}`, `add-${choice.name}`, () => {
-            const next = addRewrite(context.doc, row.pattern.id, choice.name);
+            const next = addRewrite(context.doc, pattern.id, choice.name);
+            const updated = 'ok' in next ? undefined : findById(next, pattern.id);
             const id =
-              'ok' in next
-                ? undefined
-                : instruments(next)
-                    .find((r) => r.id === row.id)!
-                    .pattern.layers.at(-1)!.id;
+              updated && 'core' in updated ? (updated as Pattern).layers.at(-1)?.id : undefined;
             apply(next, id);
           });
           const label = el('div');
@@ -286,8 +291,12 @@ export default {
       context = next;
       const layer = rewriteOwner(next.doc, next.target.nodeId)?.layer;
       const row = instruments(next.doc).find((r) => r.id === next.target.instrumentId);
+      const pattern = targetPattern(next);
       const keyForForm = JSON.stringify([
-        row?.pattern.layers.map((l) => l.id),
+        pattern?.id,
+        pattern?.layers.map((l) => l.id),
+        rewriteOwner(next.doc, next.target.nodeId)?.pattern.layers.map((l) => l.id),
+        layer?.id,
         row?.uses.map((u) => u.layers.map((l) => l.id)),
         layer?.args.map((a) => [a.kind, typeof editable(a)]),
       ]);

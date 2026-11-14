@@ -242,7 +242,7 @@ export function checkDoc(
   return { errors: problems, warnings };
 }
 export { instruments };
-export { sections } from './instruments';
+export { sections, sectionInstruments } from './instruments';
 export type { Instrument, InstrumentUse, SongSection } from './instruments';
 export { setConstant, describeTarget } from './edit';
 

@@ -290,3 +290,13 @@
   white-space: pre-line;
   pointer-events: none;
 }
+.tl-drum-grid {
+  position: absolute;
+  z-index: 1;
+  cursor: pointer;
+  touch-action: pan-y;
+}
+.tl-drum-grid:focus-visible {
+  outline: 2px solid var(--tl-mine);
+  outline-offset: 1px;
+}

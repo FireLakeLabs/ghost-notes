@@ -10,6 +10,7 @@ import {
   type Arg,
   type Layer,
   type Pattern,
+  type Instrument,
 } from '../document';
 
 export const DRAW_CAP = 200;
@@ -298,7 +299,7 @@ function layerNote(layer: Layer): string {
     .join('; ');
 }
 
-export function sheetModel(input: SheetInput): SheetModel {
+export function sheetModel(input: SheetInput, scopedRows?: readonly Instrument[]): SheetModel {
   if (!(
     Number.isFinite(input.fromCycle) &&
     Number.isFinite(input.toCycle) &&
@@ -307,7 +308,7 @@ export function sheetModel(input: SheetInput): SheetModel {
     throw Error('Sheet window must be finite and increasing');
   const columns = new Set<string>();
   const songSections = sections(input.doc);
-  const sources = instruments(input.doc).map((voice) => {
+  const sources = (scopedRows ?? instruments(input.doc)).map((voice) => {
     const contextual = new Set(
       voice.uses.flatMap((use) =>
         use.layers.flatMap((layer) =>

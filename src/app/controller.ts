@@ -26,7 +26,6 @@ export function createApp() {
   let state = initialState(),
     engine: Engine | null = null;
   let editor: EditSession | null = null;
-  const dirtyRows = new Set<string>();
   let pendingRows = new Set<string>();
   let visiblePending = pendingRows;
   let settledEvents = state.events;
@@ -65,31 +64,26 @@ export function createApp() {
     );
     return mergeSounds(state.sounds, names, engine?.sounds() ?? []);
   }
-  async function askWindow(affected?: string[]) {
+  async function askWindow() {
     queries.cancel();
     const revision = ++windowRevision,
       piece = epoch;
     const { doc, fromCycle, toCycle, rows } = state;
     if (!doc) return;
-    // A group rewrite can make an edit to one row change its neighbours too.
-    if (rows.length > 1 || (affected && rows.some((row) => !state.events[row.id])))
-      affected = undefined;
     const last = state.sections.at(-1);
     const length = last ? last.start + last.cycles : 0;
     const from = length && fromCycle < length ? 0 : fromCycle;
     const to = length && fromCycle < length ? length : toCycle;
-    if (!affected && cachedWindow?.from === from && cachedWindow.to === to) {
+    if (cachedWindow?.from === from && cachedWindow.to === to) {
       pendingRows = new Set();
       update({ ...state, events: cachedWindow.events, sounds: sounds() });
       return;
     }
     // The sheet and editor keep their last answers; the timeline hides pending rows.
-    pendingRows = new Set(
-      rows.filter((row) => !affected || affected.includes(row.id)).map((row) => row.id),
-    );
+    pendingRows = new Set(rows.map((row) => row.id));
     update({ ...state });
     let answers: Record<string, EventResult> | null = null;
-    if (!affected && rows.length > 1) {
+    if (rows.length) {
       const answer = await queries.query(generate(doc, { instrumentTags: true }), from, to);
       if (piece !== epoch || revision !== windowRevision) return;
       answers = scoreRows(
@@ -99,22 +93,19 @@ export function createApp() {
     }
     if (!answers) {
       const results = await Promise.all(
-        rows
-          .filter((row) => !affected || affected.includes(row.id))
-          .map(
-            async (row) =>
-              [row.id, await queries.query(generate(doc, { only: row.id }), from, to)] as const,
-          ),
+        rows.map(
+          async (row) =>
+            [row.id, await queries.query(generate(doc, { only: row.id }), from, to)] as const,
+        ),
       );
       answers = Object.fromEntries(results);
     }
     if (piece !== epoch || revision !== windowRevision) return;
-    dirtyRows.clear();
     pendingRows = new Set();
     cachedWindow = {
       from,
       to,
-      events: { ...(affected ? state.events : {}), ...answers },
+      events: answers,
     };
     update({ ...state, events: cachedWindow.events });
     update({ ...state, sounds: sounds() });
@@ -237,7 +228,6 @@ export function createApp() {
         return;
       }
       editor?.dispose();
-      dirtyRows.clear();
       pendingRows = new Set();
       editor = createEditSession(imported.doc, {
         playing: () => !!engine?.playing,
@@ -246,8 +236,7 @@ export function createApp() {
         refresh: (_doc: Doc, ids: string[]) => {
           if (!ids.length) return;
           cachedWindow = null;
-          ids.forEach((id) => dirtyRows.add(id));
-          void askWindow([...dirtyRows]);
+          void askWindow();
         },
       });
       const piece = ++epoch;
