@@ -1,3 +1,4 @@
+import { paintTimeline } from './timeline-paint';
 import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -136,6 +137,7 @@ test('folder opens the whole-song rows, pickup, gaps, waveform, contour and navi
         expect(blue.edgeBlue).toBe(0);
       }
     }
+    await paintTimeline(page);
     await timeline.screenshot({
       path: process.env.GHOST_TIMELINE_SHOT ?? testInfo.outputPath('timeline.png'),
     });
@@ -164,6 +166,7 @@ test('folder opens the whole-song rows, pickup, gaps, waveform, contour and navi
     expect(await rulerClear()).toBe(true);
     await expect(timeline.locator('[data-uncovered]')).toHaveCSS('visibility', 'visible');
     await expect(timeline.locator('[data-gap]')).toHaveCSS('visibility', 'hidden');
+    await paintTimeline(page);
     await timeline.screenshot({
       path: (process.env.GHOST_TIMELINE_SHOT ?? testInfo.outputPath('timeline.png')).replace(
         '.png',
@@ -268,6 +271,7 @@ test('folder opens the whole-song rows, pickup, gaps, waveform, contour and navi
     await page.mouse.up();
     await expect(timeline).toHaveAttribute('data-lens', '6:8');
     await expect(timeline).toHaveAttribute('data-animating', 'false');
+    await paintTimeline(page);
     await timeline.screenshot({
       path: process.env.GHOST_LENS_SHOT ?? testInfo.outputPath('lens.png'),
     });
@@ -278,9 +282,14 @@ test('folder opens the whole-song rows, pickup, gaps, waveform, contour and navi
     await page.evaluate(
       () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
     );
+    await keys.scrollIntoViewIfNeeded();
+    await page.evaluate(
+      () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+    );
     const beforeSelection = await keys.evaluate(
       (c: HTMLCanvasElement) => c.getContext('2d')!.getImageData(50, 1, 1, 1).data[0],
     );
+    await keys.scrollIntoViewIfNeeded();
     const kb = await keys.boundingBox();
     if (!kb) throw Error('Missing keys row');
     await page.mouse.move(kb.x + 45, kb.y + 15);
@@ -335,7 +344,12 @@ test('folder opens the whole-song rows, pickup, gaps, waveform, contour and navi
       return { settings: timeline.settings, notified };
     });
     expect(movedSettings).toEqual({
-      settings: { selectionScope: 'band', selectionSnap: 'bars', showAudio: false },
+      settings: {
+        selectionScope: 'band',
+        selectionSnap: 'bars',
+        showAudio: false,
+        viewMode: 'rows',
+      },
       notified: true,
     });
     await expect(timeline.locator('[data-row="audio"]')).toHaveCount(0);

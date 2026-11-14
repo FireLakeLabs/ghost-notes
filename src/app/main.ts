@@ -38,6 +38,8 @@ document.body.innerHTML = `
 const timeline = mountTimeline(document.getElementById('timeline')!);
 const referenceRoot = document.getElementById('reference-panel')!;
 const reference = mountReference(referenceRoot);
+timeline.observeLayout(referenceRoot);
+timeline.observeLayout(document.querySelector('.topbar')!);
 function draftContext() {
   const note = document.getElementById('draft-context')!;
   note.hidden = !reference.current;
@@ -48,10 +50,6 @@ function draftContext() {
     ? 'Your arrangement is linked to reference bars. The score below shows the selected place.'
     : `${timeline.lens ? `Reference lens: bars ${timeline.lens.firstBar}–${timeline.lens.lastBar}. ` : ''}Your Strudel program and score below are one whole-program draft. They are not yet linked to reference bars; section links will bring the draft into the lens.`;
 }
-referenceRoot.addEventListener('referencechange', () => {
-  timeline.setReference(reference.current);
-  draftContext();
-});
 document.getElementById('timeline')!.addEventListener('lenschange', draftContext);
 const aboutDialog = mountAbout();
 const get = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id)! as T;
@@ -70,7 +68,19 @@ const sectionUI = mountSections(
   () => reference.current,
   settings,
 );
-referenceRoot.addEventListener('referencechange', () => sectionUI?.refresh());
+referenceRoot.addEventListener('referencechange', () => {
+  timeline.setReference(reference.current);
+  sectionUI.refresh();
+  updateTimelineScore();
+  draftContext();
+});
+document.getElementById('timeline')!.addEventListener('placeopen', (event) => {
+  const id: unknown = (event as CustomEvent).detail;
+  const place = sectionUI.places.find((p) => p.id === id);
+  if (!place?.source || !sectionUI.linked) return;
+  app.select(place.id);
+  timeline.openLens({ firstBar: place.source.fromBar, lastBar: place.source.toBar - 1 });
+});
 const copyPanel = mountCopy(get<HTMLButtonElement>('copy'), () => ({
   doc: app.state.doc,
   song: reference.current?.song,
@@ -86,6 +96,7 @@ const copyPanel = mountCopy(get<HTMLButtonElement>('copy'), () => ({
 const settingsDialog = mountSettings(get<HTMLButtonElement>('settings'), settings, () => {
   copyPanel.refresh();
   sectionUI.settingsChanged();
+  updateTimelineScore();
   draftContext();
 });
 settingsDialog.querySelector('[data-timeline-settings]')!.append(timeline.settingsHost);
@@ -247,10 +258,21 @@ document.addEventListener('keydown', (event) => {
     else app.editor?.undo();
   }
 });
+function updateTimelineScore() {
+  timeline.setScore({
+    doc: app.state.doc,
+    instruments: app.state.rows,
+    events: app.settledEvents,
+    places: sectionUI.places,
+    linked: sectionUI.linked,
+    grid: settings.grid,
+  });
+}
 let previousNotes: unknown;
 let previousSheet: unknown[] = [];
 app.subscribe((state) => {
   copyPanel.refresh();
+  updateTimelineScore();
   draftContext();
   if (app.editor !== selectedSession) {
     targetId = null;

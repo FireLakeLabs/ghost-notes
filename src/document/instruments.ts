@@ -88,14 +88,26 @@ export function instruments(doc: Doc, { origins = true } = {}): Instrument[] {
       path = [...path, canonical];
       muted ||= !!canonical.muted;
     }
-    if (!canonical && !cyclic && definition?.purpose !== 'instrument' && p.core.kind === 'ref') {
+    if (
+      !canonical &&
+      !cyclic &&
+      definition?.purpose !== 'instrument' &&
+      !p.stem &&
+      p.core.kind === 'ref'
+    ) {
       const target = shared(doc, p.core.name);
       if (target) {
         descend(target, voice, path, muted, groupName);
         return;
       }
     }
-    if (!canonical && !cyclic && definition?.purpose !== 'instrument' && p.core.kind === 'group') {
+    if (
+      !canonical &&
+      !cyclic &&
+      definition?.purpose !== 'instrument' &&
+      !p.stem &&
+      p.core.kind === 'group'
+    ) {
       for (const part of p.core.parts)
         descend(
           part.pattern,
@@ -109,6 +121,7 @@ export function instruments(doc: Doc, { origins = true } = {}): Instrument[] {
     // A bare spacer retains its arrangement duration without becoming a row.
     if (
       definition?.purpose !== 'instrument' &&
+      !p.stem &&
       p.core.kind === 'generator' &&
       p.core.name === 'silence' &&
       !p.core.args.length &&

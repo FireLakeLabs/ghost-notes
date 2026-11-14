@@ -1,0 +1,77 @@
+<!doctype html><meta charset="utf-8" /><title>Timeline row states</title>
+<style>
+  body {
+    font: 14px system-ui;
+    background: #0f1115;
+    color: #eceae4;
+    max-width: 820px;
+    margin: 24px auto;
+  }
+  .row {
+    display: flex;
+    gap: 16px;
+    margin: 16px 0;
+  }
+  .label {
+    width: 130px;
+  }
+  .track {
+    flex: 1;
+    display: flex;
+    gap: 4px;
+    min-height: 58px;
+    background: #161920;
+  }
+  .place {
+    flex: 1;
+    border: 1px solid #f1e6cc;
+    padding: 8px;
+    color: #f1e6cc;
+  }
+  .gap {
+    flex: 2;
+    border: 1px dashed #a4aab5;
+    padding: 8px;
+    color: #a4aab5;
+  }
+  .notice {
+    padding: 8px;
+    color: #a4aab5;
+  }
+  .note {
+    display: block;
+    width: 28%;
+    height: 5px;
+    background: #f1e6cc;
+    margin: 10px 0;
+  }
+  small {
+    color: #a4aab5;
+  }
+</style>
+<h1>Mine: arranged, unarranged, waiting and failed</h1>
+<small
+  >Invented control-state mockup. Geometry, rows and layers follow Main; literal notes stay blue and
+  Mine stays cream.</small
+>
+<div class="row">
+  <span class="label">Mine</span>
+  <div class="track">
+    <span class="place"><i class="note"></i>Verse</span><span class="gap">Unarranged</span
+    ><span class="place">Bridge · silent</span>
+  </div>
+</div>
+<div class="row">
+  <span class="label">Mine</span>
+  <div class="track"><span class="notice">Asking your Strudel…</span></div>
+</div>
+<div class="row">
+  <span class="label">Mine</span>
+  <div class="track">
+    <span class="notice">Could not ask your Strudel: check this pattern.</span>
+  </div>
+</div>
+<p>
+  Each instrument has Rows / Layers. All instruments is in Settings. A place can be opened from its
+  Mine row or its place button.
+</p>

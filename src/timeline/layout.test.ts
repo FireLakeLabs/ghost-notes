@@ -67,10 +67,12 @@ test('prototype order and sizes, one instrument per stem, optional audio and qui
   expect(rows[0].rows).toEqual([
     { kind: 'audio', height: 32 },
     { kind: 'midi', height: 44 },
+    { kind: 'notes', height: 44 },
+    { kind: 'mine', height: 58 },
   ]);
   expect(rows[2].quiet).toBe(true);
   expect(
-    timelineRows(input, false).every((r) => r.rows.length === 1 && r.rows[0].kind === 'midi'),
+    timelineRows(input, false).every((r) => r.rows.length === 3 && r.rows[0].kind === 'midi'),
   ).toBe(true);
 });
 test('five GM drum groups retain prototype lane order; unknown notes are not kick hits', () => {

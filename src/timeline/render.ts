@@ -1,3 +1,4 @@
+import { createMaterial, type TimelineScore, type MaterialPlace } from './material';
 import type { OpenReference } from '../app/reference';
 import {
   selectRange,
@@ -11,7 +12,7 @@ import {
   type TimelineSelection,
   type TimelineSettings,
 } from './range';
-import type { Position, ReferenceBar } from '../reference/types';
+import type { Position, ReferenceBar, ReferenceNote } from '../reference/types';
 import {
   DRUM_LANES,
   LABEL_WIDTH,
@@ -50,7 +51,13 @@ function surface(canvas: HTMLCanvasElement, width: number, height: number) {
 type DrawingRow = {
   canvas: HTMLCanvasElement;
   instrument: TimelineInstrument;
-  kind: 'audio' | 'midi';
+  kind: 'audio' | 'midi' | 'notes' | 'mine';
+  layered: boolean;
+  openHeight: number;
+  sourceNotes: readonly ReferenceNote[];
+  message: string;
+  places: MaterialPlace[];
+  gaps: { startSeconds: number; endSeconds: number }[];
   height: number;
   marks: NoteMark[];
   allMarks: NoteMark[];
@@ -61,10 +68,31 @@ type DrawingRow = {
   lo: number;
   hi: number;
 };
+function noteRect(
+  ctx: CanvasRenderingContext2D,
+  row: DrawingRow,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+) {
+  if (row.layered && row.kind === 'notes') ctx.strokeRect(x, y, w, h);
+  else ctx.fillRect(x, y, w, h);
+}
 /** Public viewport port for the lens, selection, and difference marks. X is song-track pixels. */
 export function mountTimeline(root: HTMLElement) {
   root.classList.add('timeline');
   let reference: OpenReference | null = null;
+  let score: TimelineScore = {
+    doc: null,
+    instruments: [],
+    places: [],
+    events: {},
+    linked: false,
+    grid: 4,
+  };
+  const material = createMaterial();
+  const modes = new Map<string, 'rows' | 'layers'>();
   let axis: TimelineAxis | null = null;
   let rows: DrawingRow[] = [];
   let zoom = 1,
@@ -102,6 +130,8 @@ export function mountTimeline(root: HTMLElement) {
   const scroll = root.querySelector<HTMLElement>('.tl-scroll')!;
   const content = root.querySelector<HTMLElement>('.tl-content')!;
   const overview = root.querySelector<HTMLCanvasElement>('.tl-overview canvas')!;
+  const overviewNotes = document.createElement('canvas');
+  let overviewWidth = 0;
   const audio = root.querySelector<HTMLInputElement>('[data-audio]')!;
   const slider = root.querySelector<HTMLInputElement>('[data-zoom]')!;
   const scope = root.querySelector<HTMLSelectElement>('[data-scope]')!;
@@ -120,12 +150,25 @@ export function mountTimeline(root: HTMLElement) {
     const label = control.closest('label');
     if (label) settingsHost.append(label);
   }
+  const viewLabel = element('label', 'All instruments');
+  const viewMode = document.createElement('select');
+  viewMode.setAttribute('aria-label', 'All instrument views');
+  viewMode.add(new Option('Rows', 'rows'));
+  viewMode.add(new Option('Layers', 'layers'));
+  viewLabel.append(viewMode);
+  settingsHost.append(viewLabel);
+  viewMode.onchange = () => {
+    modes.clear();
+    rebuild();
+    settingsChanged();
+  };
   instrumentChoice.closest('.tl-toolbar')!.prepend(settingsHost);
   function getSettings(): TimelineSettings {
     return {
       selectionScope: scope.value === 'instrument' ? 'instrument' : 'band',
       selectionSnap: snap.value === 'beats' ? 'beats' : 'bars',
       showAudio: audio.checked,
+      viewMode: viewMode.value === 'layers' ? 'layers' : 'rows',
     };
   }
   function settingsChanged() {
@@ -138,7 +181,12 @@ export function mountTimeline(root: HTMLElement) {
       value.selectionScope !== before.selectionScope ||
       value.selectionSnap !== before.selectionSnap;
     const audioChanged = value.showAudio !== before.showAudio;
-    if (!rangeChanged && !audioChanged) return;
+    const viewChanged = value.viewMode !== before.viewMode;
+    if (!rangeChanged && !audioChanged && !viewChanged) return;
+    if (viewChanged) {
+      viewMode.value = value.viewMode;
+      modes.clear();
+    }
     scope.value = value.selectionScope;
     snap.value = value.selectionSnap;
     audio.checked = value.showAudio;
@@ -146,7 +194,7 @@ export function mountTimeline(root: HTMLElement) {
       selection = null;
       changed();
     }
-    if (audioChanged) rebuild();
+    if (audioChanged || viewChanged) rebuild();
     settingsChanged();
   }
 
@@ -319,7 +367,7 @@ export function mountTimeline(root: HTMLElement) {
   header.onpointerup = header.onpointercancel = () => {
     drag = null;
   };
-  let selecting: { seconds: number; stem: string } | null = null;
+  let selecting: { seconds: number; stem: string; x: number; kind: string } | null = null;
   const pointerSeconds = (e: PointerEvent) =>
     axis!.secondsAtX(
       project(
@@ -339,7 +387,12 @@ export function mountTimeline(root: HTMLElement) {
       e.clientX < scroll.getBoundingClientRect().left + LABEL_WIDTH
     )
       return;
-    selecting = { seconds: pointerSeconds(e), stem: row.dataset.stem! };
+    selecting = {
+      seconds: pointerSeconds(e),
+      stem: row.dataset.stem!,
+      x: e.clientX,
+      kind: row.dataset.row ?? '',
+    };
     instrumentChoice.value = selecting.stem;
     scroll.setPointerCapture(e.pointerId);
     e.preventDefault();
@@ -348,17 +401,33 @@ export function mountTimeline(root: HTMLElement) {
   scroll.onpointermove = (e) => {
     if (selecting) choose(selecting.seconds, pointerSeconds(e), selecting.stem);
   };
-  scroll.onpointerup = scroll.onpointercancel = () => {
+  scroll.onpointerup = (e) => {
+    if (
+      selecting &&
+      Math.abs(e.clientX - selecting.x) < 3 &&
+      (selecting.kind === 'mine' || selecting.kind === 'layers')
+    ) {
+      const seconds = pointerSeconds(e);
+      const place = rows
+        .find((r) => r.kind === 'mine' && r.instrument.stem.id === selecting?.stem)
+        ?.places.find((p) => seconds >= p.startSeconds && seconds < p.endSeconds);
+      if (place) root.dispatchEvent(new CustomEvent('placeopen', { detail: place.id }));
+    }
     if (selecting && selection) {
       first.value = String(selection.firstBar);
       last.value = String(selection.lastBar);
     }
     selecting = null;
   };
+  scroll.onpointercancel = () => {
+    selecting = null;
+  };
   function schedule() {
     if (!frame) frame = requestAnimationFrame(draw);
   }
   function rebuild() {
+    overviewWidth = 0;
+    const previousRows = rows;
     content.replaceChildren();
     rulerWidth = 0;
     rulerBars = [];
@@ -431,7 +500,11 @@ export function mountTimeline(root: HTMLElement) {
     rulerMarks.sort((a, b) => a.start - b.start);
     ruler.append(track);
     content.append(ruler);
-    for (const instrument of timelineRows(reference.song, audio.checked)) {
+    for (const instrument of timelineRows(
+      reference.song,
+      audio.checked,
+      (id) => modes.get(id) ?? (viewMode.value === 'layers' ? 'layers' : 'rows'),
+    )) {
       const { stem } = instrument;
       const heading = element('div', '', 'tl-heading');
       heading.dataset.stem = stem.id;
@@ -452,6 +525,20 @@ export function mountTimeline(root: HTMLElement) {
             'tl-warning',
           ),
         );
+      const view = document.createElement('select');
+      view.setAttribute('aria-label', `${stem.id} view`);
+      view.add(new Option('Rows', 'rows'));
+      view.add(new Option('Layers', 'layers'));
+      view.value = modes.get(stem.id) ?? viewMode.value;
+      view.onchange = () => {
+        modes.set(stem.id, view.value === 'layers' ? 'layers' : 'rows');
+        rebuild();
+        root
+          .querySelector<HTMLSelectElement>(`select[aria-label="${CSS.escape(stem.id)} view"]`)
+          ?.focus({ preventScroll: true });
+      };
+      heading.append(view);
+      const data = material(reference.song, stem, score);
       const marks = noteMarks(stem, axis);
       if (marks.length < stem.notes.length)
         heading.append(
@@ -462,52 +549,144 @@ export function mountTimeline(root: HTMLElement) {
           ),
         );
       content.append(heading);
+      const pitches = [...stem.notes, ...data.literal.notes, ...data.mine.notes].map(
+        (n) => n.pitch,
+      );
+      const lo = pitches.length ? Math.min(...pitches) : 48;
+      const hi = pitches.length ? Math.max(...pitches) : 60;
+      const gaps: DrawingRow['gaps'] = [];
+      for (const bar of reference.song.bars) {
+        if (
+          bar.endSeconds <= bar.startSeconds ||
+          data.places.some((p) => bar.number >= p.fromBar && bar.number < p.toBar)
+        )
+          continue;
+        const last = gaps.at(-1);
+        if (last && Math.abs(last.endSeconds - bar.startSeconds) < 1e-8)
+          last.endSeconds = bar.endSeconds;
+        else gaps.push({ startSeconds: bar.startSeconds, endSeconds: bar.endSeconds });
+      }
       for (const row of instrument.rows) {
+        const layered = row.kind === 'layers';
         const line = element('div', '', 'tl-row');
         line.style.height = `${row.height}px`;
         line.dataset.row = row.kind;
         line.dataset.stem = stem.id;
-        const label = element('div', row.kind === 'audio' ? 'audio' : 'MIDI', 'tl-label');
-        if (instrument.drums && row.kind === 'midi') {
+        const label = element(
+          'div',
+          row.kind === 'audio'
+            ? 'audio'
+            : row.kind === 'midi'
+              ? 'MIDI'
+              : layered
+                ? 'MIDI · Notes · Mine'
+                : row.kind === 'notes'
+                  ? 'Notes'
+                  : 'Mine',
+          'tl-label',
+        );
+        if (instrument.drums && row.kind !== 'audio') {
           const lanes = element('div', '', 'tl-drums');
           for (const lane of DRUM_LANES) lanes.append(element('span', lane));
           label.append(lanes);
         }
-        const track = element('div', '', 'tl-track');
-        const canvas = document.createElement('canvas');
-        canvas.setAttribute('role', 'img');
-        canvas.setAttribute(
-          'aria-label',
-          `${stem.id} ${row.kind === 'audio' ? 'waveform' : instrument.drums ? 'drum lanes: Crash, Hi-hat, Snare, Tom, Kick' : 'pitch contour'}`,
-        );
-        track.append(canvas);
+        const track = element('div', '', `tl-track${layered ? ' tl-layered' : ''}`);
         line.append(label, track);
         content.append(line);
-        const pitches = marks.map((m) => m.pitch);
-        rows.push({
-          allMarks: marks,
-          outside: document.createElement('canvas'),
-          outsideWidth: 0,
-          outsidePlain: document.createElement('canvas'),
-          waveform: null,
-          lo: pitches.length ? Math.min(...pitches) : 48,
-          hi: pitches.length ? Math.max(...pitches) : 60,
-          canvas,
-          instrument,
-          kind: row.kind,
-          height: row.height,
-          marks: instrument.drums ? marks : contourMarks(marks, axis.span, stem.id === 'bass'),
-        });
+        const kinds = layered
+          ? (['midi', 'notes', 'mine'] as const)
+          : row.kind === 'layers'
+            ? []
+            : [row.kind];
+        for (const kind of kinds) {
+          const source =
+            kind === 'notes'
+              ? data.literal
+              : kind === 'mine'
+                ? data.mine
+                : { notes: stem.notes, message: '' };
+          const old = previousRows.find(
+            (r) =>
+              r.instrument.stem === stem &&
+              r.kind === kind &&
+              r.layered === layered &&
+              r.sourceNotes === source.notes &&
+              r.lo === lo &&
+              r.hi === hi,
+          );
+          const allMarks =
+            old?.allMarks ??
+            (kind === 'midi' || kind === 'audio'
+              ? marks
+              : noteMarks({ ...stem, notes: source.notes }, axis));
+          const canvas = old?.canvas ?? document.createElement('canvas');
+          canvas.dataset.layer = kind;
+          canvas.setAttribute('role', 'img');
+          canvas.setAttribute(
+            'aria-description',
+            kind === 'audio'
+              ? 'Local stem waveform'
+              : `${source.notes.length} notes${kind === 'mine' ? ` · ${gaps.length} unarranged ranges` : ''}`,
+          );
+          canvas.setAttribute(
+            'aria-label',
+            `${stem.id} ${kind === 'audio' ? 'waveform' : kind === 'midi' ? (instrument.drums ? 'drum lanes: Crash, Hi-hat, Snare, Tom, Kick' : 'pitch contour') : kind === 'notes' ? 'Notes literal conversion' : 'Mine queried arrangement'}`,
+          );
+          if (layered && kind === 'midi') canvas.style.opacity = '0.38';
+          track.append(canvas);
+          if (kind !== 'audio' && (source.message || allMarks.length < source.notes.length)) {
+            const warning = element(
+              'span',
+              `${kind}: ${source.message || `${allMarks.length} of ${source.notes.length} drawn · at most 200 per bar cell`}`,
+              'tl-row-warning',
+            );
+            warning.dataset.rowStatus = kind;
+            track.append(warning);
+          }
+          rows.push({
+            sourceNotes: source.notes,
+            canvas,
+            instrument,
+            kind,
+            layered,
+            height: row.height,
+            openHeight: layered
+              ? 150
+              : kind === 'audio'
+                ? 44
+                : kind === 'notes'
+                  ? 50
+                  : kind === 'mine'
+                    ? 100
+                    : 58,
+            message: source.message,
+            places: data.places,
+            gaps,
+            allMarks,
+            outside: old?.outside ?? document.createElement('canvas'),
+            outsideWidth: old?.outsideWidth ?? 0,
+            outsidePlain: old?.outsidePlain ?? document.createElement('canvas'),
+            waveform: old?.waveform ?? null,
+            lo,
+            hi,
+            marks:
+              old?.marks ??
+              (instrument.drums ? allMarks : contourMarks(allMarks, axis.span, stem.id === 'bass')),
+          });
+        }
       }
     }
     schedule();
   }
   function backdrop(row: DrawingRow, pixels: number, color: (token: string) => string) {
     if (!reference || !axis || row.outsideWidth === pixels) return;
-    const h = row.kind === 'audio' ? 44 : 58;
+    const h = row.openHeight;
+    const noteH = row.layered || row.kind === 'mine' ? h - 18 : h;
     const ctx = surface(row.outside, pixels, h);
-    ctx.fillStyle = color('background');
-    ctx.fillRect(0, 0, pixels, h);
+    if (!row.layered) {
+      ctx.fillStyle = color('background');
+      ctx.fillRect(0, 0, pixels, h);
+    }
     ctx.strokeStyle = color('line');
     for (const bar of reference.song.bars) {
       const x = axis.xAtSeconds(bar.startSeconds, pixels);
@@ -516,7 +695,7 @@ export function mountTimeline(root: HTMLElement) {
       ctx.lineTo(x, h);
       ctx.stroke();
     }
-    ctx.fillStyle = ctx.strokeStyle = color('recording');
+    ctx.fillStyle = ctx.strokeStyle = color(row.kind === 'mine' ? 'mine' : 'recording');
     if (row.kind === 'audio') {
       const data = reference.audio.get(row.instrument.stem.id);
       if (data && !row.waveform) {
@@ -554,7 +733,7 @@ export function mountTimeline(root: HTMLElement) {
         const lane = drumLane(mark.pitch);
         if (lane !== null) {
           ctx.globalAlpha = 0.3 + (mark.velocity / 127) * 0.7;
-          ctx.fillRect(mark.x * pixels, 3 + (lane * (h - 6)) / 5, 2, 6);
+          noteRect(ctx, row, mark.x * pixels, 3 + (lane * (noteH - 6)) / 5, 2, 6);
         }
       }
       ctx.globalAlpha = 1;
@@ -566,10 +745,10 @@ export function mountTimeline(root: HTMLElement) {
       let previous: NoteMark | null = null;
       for (const mark of row.marks) {
         const x = mark.x * pixels,
-          y = 5 + ((hi - mark.pitch) / (hi - lo)) * (h - 10);
+          y = 5 + ((hi - mark.pitch) / (hi - lo)) * (noteH - 10);
         if (!previous || (mark.x - previous.end) * axis.span > 1.5) ctx.moveTo(x, y);
         else {
-          ctx.lineTo(x, 5 + ((hi - previous.pitch) / (hi - lo)) * (h - 10));
+          ctx.lineTo(x, 5 + ((hi - previous.pitch) / (hi - lo)) * (noteH - 10));
           ctx.lineTo(x, y);
         }
         ctx.lineTo(mark.end * pixels, y);
@@ -586,7 +765,7 @@ export function mountTimeline(root: HTMLElement) {
       coverage.last_beat_seconds < reference.song.durationSeconds
     )
       gaps.push([coverage.last_beat_seconds, reference.song.durationSeconds]);
-    for (const [start, end] of gaps) {
+    for (const [start, end] of row.layered && row.kind !== 'mine' ? [] : gaps) {
       const a = axis.xAtSeconds(start, pixels),
         b = axis.xAtSeconds(end, pixels);
       ctx.save();
@@ -617,6 +796,13 @@ export function mountTimeline(root: HTMLElement) {
   function draw() {
     frame = 0;
     if (!reference || !axis) return;
+    // Read all positions before any frame writes, avoiding interleaved forced layouts.
+    const visibleRows = new Set(
+      rows.filter((row) => {
+        const r = row.canvas.getBoundingClientRect();
+        return r.bottom >= -150 && r.top <= innerHeight + 150;
+      }),
+    );
     if (transition) {
       const t = reduced.matches
         ? 1
@@ -717,14 +903,18 @@ export function mountTimeline(root: HTMLElement) {
         regions.push({ a: coverage.last_beat_seconds, b: reference.song.durationSeconds });
     }
     for (const row of rows) {
-      if (!transition || !row.outsideWidth) backdrop(row, viewport, color);
-      const displayHeight = row.kind === 'audio' ? 32 + 12 * expanded : 44 + 14 * expanded;
-      const height = row.kind === 'audio' ? 44 : 58;
+      const displayHeight = row.height + (row.openHeight - row.height) * expanded;
+      const height = row.openHeight;
+      const noteHeight = row.layered || row.kind === 'mine' ? height - 18 : height;
       row.canvas.parentElement!.parentElement!.style.height = `${displayHeight}px`;
+      row.canvas.style.height = `${displayHeight}px`;
+      if (!visibleRows.has(row)) continue;
+      if (!transition || !row.outsideWidth) backdrop(row, viewport, color);
       // Grow the displayed row without reallocating twelve canvas buffers every frame.
       const ctx = surface(row.canvas, viewport, height);
       row.canvas.style.height = `${displayHeight}px`;
-      if (expanded) {
+      const overlays = !row.layered || row.kind === 'mine';
+      if (expanded && overlays) {
         ctx.fillStyle = color('panel');
         ctx.globalAlpha = 0.4 * expanded;
         ctx.fillRect(a, 0, b - a, height);
@@ -768,8 +958,8 @@ export function mountTimeline(root: HTMLElement) {
       }
       ctx.stroke();
       ctx.setLineDash([]);
-      ctx.fillStyle = color('recording');
-      ctx.strokeStyle = color('recording');
+      ctx.fillStyle = color(row.kind === 'mine' ? 'mine' : 'recording');
+      ctx.strokeStyle = ctx.fillStyle;
       if (row.kind === 'audio') {
         const wave = row.waveform;
         if (wave)
@@ -784,7 +974,7 @@ export function mountTimeline(root: HTMLElement) {
               (to.u - from.u) * wave.width,
               44,
               from.x * width - left,
-              (height - 44) / 2,
+              (noteHeight - 44) / 2,
               (to.x - from.x) * width,
               44,
             );
@@ -792,7 +982,7 @@ export function mountTimeline(root: HTMLElement) {
       } else if (row.instrument.drums) {
         ctx.globalAlpha = 0.2;
         for (let lane = 1; lane < 5; lane++)
-          ctx.fillRect(0, 3 + lane * ((height - 6) / 5), viewport, 1);
+          ctx.fillRect(0, 3 + lane * ((noteHeight - 6) / 5), viewport, 1);
         ctx.globalAlpha = 1;
         for (const mark of row.marks) {
           if (expanded && (mark.x < lensEdges.a || mark.x >= lensEdges.b)) continue;
@@ -800,9 +990,11 @@ export function mountTimeline(root: HTMLElement) {
             lane = drumLane(mark.pitch);
           if (lane !== null && px >= -2 && px <= viewport) {
             ctx.globalAlpha = 0.3 + (mark.velocity / 127) * 0.7;
-            ctx.fillRect(
+            noteRect(
+              ctx,
+              row,
               px,
-              3 + lane * ((height - 6) / 5),
+              3 + lane * ((noteHeight - 6) / 5),
               Math.max(2, Math.min(5, (width / axis.span) * 0.09)),
               6,
             );
@@ -815,18 +1007,20 @@ export function mountTimeline(root: HTMLElement) {
           ctx.globalAlpha = expanded;
           for (let pitch = lo; pitch <= hi; pitch++) {
             ctx.fillStyle = color('line');
-            ctx.fillRect(a, 4 + ((hi - pitch) / (hi - lo)) * (height - 10), b - a, 1);
+            ctx.fillRect(a, 4 + ((hi - pitch) / (hi - lo)) * (noteHeight - 10), b - a, 1);
           }
-          ctx.fillStyle = color('recording');
+          ctx.fillStyle = color(row.kind === 'mine' ? 'mine' : 'recording');
           for (const mark of row.allMarks) {
             const px = project(projection, mark.x) * width - left,
               end = project(projection, mark.end) * width - left;
             if (end < a || px > b) continue;
-            ctx.fillRect(
+            noteRect(
+              ctx,
+              row,
               Math.max(a, px),
-              4 + ((hi - mark.pitch) / (hi - lo)) * (height - 10),
+              4 + ((hi - mark.pitch) / (hi - lo)) * (noteHeight - 10),
               Math.max(1, Math.min(b, end) - Math.max(a, px)),
-              Math.max(2, Math.min(6, (height - 10) / (hi - lo))),
+              Math.max(2, Math.min(6, (noteHeight - 10) / (hi - lo))),
             );
           }
           ctx.globalAlpha = 1;
@@ -839,7 +1033,7 @@ export function mountTimeline(root: HTMLElement) {
         ctx.beginPath();
         ctx.save();
         ctx.beginPath();
-        ctx.rect(expanded ? a : 0, 0, expanded ? b - a : viewport, height);
+        ctx.rect(expanded ? a : 0, 0, expanded ? b - a : viewport, noteHeight);
         ctx.clip();
         ctx.beginPath();
         ctx.globalAlpha = 1 - expanded;
@@ -848,7 +1042,7 @@ export function mountTimeline(root: HTMLElement) {
           const a = project(projection, mark.x) * width - left,
             b = project(projection, mark.end) * width - left;
           if (b < 0 || a > viewport) continue;
-          const y = 5 + ((hi - mark.pitch) / (hi - lo)) * (height - 10);
+          const y = 5 + ((hi - mark.pitch) / (hi - lo)) * (noteHeight - 10);
           if (previousEnd === null || (mark.x - previousEnd) * axis.span > 1.5) ctx.moveTo(a, y);
           else {
             ctx.lineTo(a, previousY);
@@ -862,7 +1056,7 @@ export function mountTimeline(root: HTMLElement) {
         ctx.restore();
       }
       ctx.globalAlpha = 1;
-      for (const region of regions) {
+      for (const region of overlays ? regions : []) {
         const a = Math.max(0, x(region.a)),
           b = Math.min(viewport, x(region.b));
         if (b <= a) continue;
@@ -904,13 +1098,53 @@ export function mountTimeline(root: HTMLElement) {
             viewport - r,
             height,
           );
-        ctx.fillStyle = color('background');
-        ctx.globalAlpha = 0.24 * expanded;
-        ctx.fillRect(0, 0, l, height);
-        ctx.fillRect(r, 0, viewport - r, height);
+        if (overlays) {
+          ctx.fillStyle = color('background');
+          ctx.globalAlpha = 0.24 * expanded;
+          ctx.fillRect(0, 0, l, height);
+          ctx.fillRect(r, 0, viewport - r, height);
+        }
+        ctx.restore();
+      }
+      if (row.kind === 'mine') {
+        ctx.save();
+        ctx.font = '11px system-ui';
+        for (const gap of row.gaps) {
+          const l = Math.max(0, x(gap.startSeconds)),
+            r = Math.min(viewport, x(gap.endSeconds));
+          if (r <= l) continue;
+          ctx.fillStyle = color('muted');
+          ctx.globalAlpha = 0.08;
+          ctx.fillRect(l, 0, r - l, height);
+          ctx.globalAlpha = 0.5;
+          ctx.strokeStyle = color('muted');
+          ctx.setLineDash([3, 3]);
+          ctx.strokeRect(l + 1, 2, Math.max(0, r - l - 2), height - 4);
+          ctx.setLineDash([]);
+          ctx.globalAlpha = 1;
+          if (r - l > 80) ctx.fillText('Unarranged', l + 6, height - 10);
+        }
+        for (const p of row.places) {
+          const l = Math.max(0, x(p.startSeconds)),
+            r = Math.min(viewport, x(p.endSeconds));
+          if (r <= l) continue;
+          ctx.strokeStyle = color('mine');
+          ctx.globalAlpha = 0.5;
+          ctx.strokeRect(l + 1, 1, Math.max(0, r - l - 2), height - 2);
+          ctx.globalAlpha = 1;
+          ctx.fillStyle = color('mine');
+          if (r - l > 50)
+            ctx.fillText(
+              p.name + (p.edited ? ' · edited' : ''),
+              l + 5,
+              height - 9,
+              Math.max(1, r - l - 10),
+            );
+        }
         ctx.restore();
       }
       if (
+        overlays &&
         selection &&
         (selection.scope.kind === 'band' || selection.scope.stemId === row.instrument.stem.id)
       ) {
@@ -926,12 +1160,18 @@ export function mountTimeline(root: HTMLElement) {
       }
     }
     const ctx = surface(overview, viewport, 32);
-    ctx.strokeStyle = color('recording');
-    ctx.globalAlpha = 0.45;
-    const marks = rows.filter((r) => r.kind === 'midi').flatMap((r) => r.marks);
-    for (const m of marks)
-      ctx.strokeRect(m.x * viewport, 9, Math.max(1, (m.end - m.x) * viewport), 14);
-    ctx.globalAlpha = 1;
+    // The recording overview is static during lens/scroll frames; only its window moves.
+    if (overviewWidth !== viewport) {
+      const notes = surface(overviewNotes, viewport, 32);
+      notes.strokeStyle = color('recording');
+      notes.globalAlpha = 0.45;
+      for (const row of rows)
+        if (row.kind === 'midi')
+          for (const m of row.marks)
+            notes.strokeRect(m.x * viewport, 9, Math.max(1, (m.end - m.x) * viewport), 14);
+      overviewWidth = viewport;
+    }
+    ctx.drawImage(overviewNotes, 0, 0, viewport, 32);
     ctx.strokeStyle = color('text');
     ctx.lineWidth = 2;
     ctx.strokeRect(
@@ -981,6 +1221,8 @@ export function mountTimeline(root: HTMLElement) {
     settingsChanged();
   };
   scroll.addEventListener('scroll', schedule);
+  window.addEventListener('scroll', schedule, { passive: true });
+  window.addEventListener('resize', schedule);
   const observer = new ResizeObserver(schedule);
   observer.observe(scroll);
   function navigate(clientX: number) {
@@ -1025,6 +1267,7 @@ export function mountTimeline(root: HTMLElement) {
     setReference(value: OpenReference | null) {
       const hadLens = !!lens;
       reference = value;
+      score = { ...score, doc: null, instruments: [], places: [], events: {}, linked: false };
       selection = null;
       lens = null;
       projection = plain;
@@ -1064,6 +1307,26 @@ export function mountTimeline(root: HTMLElement) {
         `${value.song.name} · ${value.song.bars.filter((b) => b.number > 0).length} bars${value.song.bars.some((b) => b.number === 0) ? ' + pickup bar 0' : ''} · Blue: recording · Dotted underline: grid inference · Hatching: gap or no beat map`;
       rebuild();
     },
+    observeLayout(element: Element) {
+      observer.observe(element);
+    },
+    materialFor(stemId: string) {
+      const stem = reference?.song.stems.find((s) => s.id === stemId);
+      return reference && stem ? material(reference.song, stem, score) : null;
+    },
+    setScore(value: TimelineScore) {
+      if (
+        score.doc === value.doc &&
+        score.events === value.events &&
+        score.grid === value.grid &&
+        score.linked === value.linked &&
+        score.places.length === value.places.length &&
+        score.places.every((p, i) => p.id === value.places[i].id)
+      )
+        return;
+      score = value;
+      rebuild();
+    },
     get selection() {
       return selection;
     },
@@ -1089,6 +1352,8 @@ export function mountTimeline(root: HTMLElement) {
     },
     destroy() {
       observer.disconnect();
+      window.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
       cancelAnimationFrame(frame);
       settingsHost.remove();
       root.replaceChildren();
