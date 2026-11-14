@@ -120,3 +120,9 @@ check:docs`); when a topic file fills, start a new one.
 - G94: reference onset/pitch Jaccard offers with the prototype's match knobs.
 - G95: mark changed section content edited at the shared document mutation boundary.
 - G96: group independent section patterns into stem rows without note propagation.
+
+## [Hosting](decisions/hosting.md)
+
+- G103: offline PR hosting checks and a repository gate on both AWS workflows.
+- G104: serve licence notices as plain text; guard the complete pinned source list.
+- G105: publish the install manifest and icons as static files with correct headers.
