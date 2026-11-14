@@ -143,3 +143,9 @@ runtime errors. The authored place/tempo remained and fills remained unarranged.
 An explicit stem on an imported pattern group now preserves that instrument
 boundary, as G96 requires. Fixture regressions first failed and then passed
 for notes shifted beyond linked bars and for copied literal fills.
+
+Captures are opt-in artifacts. Set `GHOST_ROWS_SHOT=/tmp/rows.png` for the
+arrangement walk (also writes `-rows` and `-places` views), or set
+`GHOST_TIMELINE_SHOT`, `GHOST_LENS_SHOT`, `GHOST_SECTION_SHOT`, `GHOST_GRID_SHOT`
+to local PNG paths. Default browser checks retain their real canvas-pixel and
+interaction assertions without taking whole-page images.

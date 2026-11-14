@@ -6,7 +6,7 @@ import { expect } from '@playwright/test';
 import { test, scoreReady } from './helpers';
 import { timelineFixture } from '../fixtures/timeline';
 
-test('make a linked section, reuse, split, warn, copy and reopen', async ({ page }, info) => {
+test('make a linked section, reuse, split, warn, copy and reopen', async ({ page }) => {
   const folder = await mkdtemp(join(tmpdir(), 'ghost-arrangement-'));
   let otherFolder: string | undefined;
   const errors: string[] = [];
@@ -57,9 +57,8 @@ test('make a linked section, reuse, split, warn, copy and reopen', async ({ page
       await expect(checkbox).toBeChecked();
     await expect(dialog.locator('[data-error]')).toBeEmpty();
     await expect(dialog.getByRole('button', { name: 'Make section', exact: true })).toBeEnabled();
-    await dialog.screenshot({
-      path: process.env.GHOST_SECTION_SHOT ?? info.outputPath('make-section.png'),
-    });
+    if (process.env.GHOST_SECTION_SHOT)
+      await dialog.screenshot({ path: process.env.GHOST_SECTION_SHOT });
     await dialog.getByRole('button', { name: 'Make section', exact: true }).click();
     await scoreReady(page);
     await expect(page.locator('[data-place]')).toHaveCount(3);
@@ -102,19 +101,20 @@ test('make a linked section, reuse, split, warn, copy and reopen', async ({ page
     await expect(
       page.getByRole('img', { name: 'bass Mine queried arrangement', exact: true }),
     ).toHaveAttribute('aria-description', /^6 notes/);
-    await paintTimeline(page);
-    await page
-      .locator('#timeline')
-      .screenshot({ path: process.env.GHOST_ROWS_SHOT ?? info.outputPath('layers.png') });
+    if (process.env.GHOST_ROWS_SHOT) {
+      await paintTimeline(page);
+      await page.locator('#timeline').screenshot({ path: process.env.GHOST_ROWS_SHOT });
+    }
     await page.locator('#settings').click();
     await page.getByLabel('All instrument views', { exact: true }).selectOption('rows');
     await page.getByRole('button', { name: 'Done', exact: true }).click();
     await expect(page.locator('[data-row="mine"]')).toHaveCount(6);
-    await paintTimeline(page);
-    await page.locator('#timeline').screenshot({
-      path:
-        process.env.GHOST_ROWS_SHOT?.replace('.png', '-rows.png') ?? info.outputPath('rows.png'),
-    });
+    if (process.env.GHOST_ROWS_SHOT) {
+      await paintTimeline(page);
+      await page.locator('#timeline').screenshot({
+        path: process.env.GHOST_ROWS_SHOT.replace('.png', '-rows.png'),
+      });
+    }
     const before = await page.evaluate(() => window.odmApp.state.sections.filter((p) => p.source));
     expect(before.map((p) => p.source?.fromBar)).toEqual([2, 6, 10]);
     await page.getByLabel('Split off bars 6–6').click();
@@ -156,8 +156,12 @@ test('make a linked section, reuse, split, warn, copy and reopen', async ({ page
     await page.locator('[data-place]').last().click();
     await expect(page.locator('#timeline')).toHaveAttribute('data-lens', '10:10');
     await expect(page.locator('#timeline')).toHaveAttribute('data-animating', 'false');
-    await paintTimeline(page);
-    await page.locator('#timeline').screenshot({ path: info.outputPath('linked-places.png') });
+    if (process.env.GHOST_ROWS_SHOT) {
+      await paintTimeline(page);
+      await page.locator('#timeline').screenshot({
+        path: process.env.GHOST_ROWS_SHOT.replace('.png', '-places.png'),
+      });
+    }
     await page.getByLabel('First bar', { exact: true }).fill('3');
     await page.getByLabel('Last bar', { exact: true }).fill('4');
     await page.locator('#timeline').getByRole('button', { name: 'Select', exact: true }).click();

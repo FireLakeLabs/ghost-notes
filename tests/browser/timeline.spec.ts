@@ -7,7 +7,7 @@ import { timelineFixture } from '../fixtures/timeline';
 
 test('folder opens the whole-song rows, pickup, gaps, waveform, contour and navigation', async ({
   page,
-}, testInfo) => {
+}) => {
   const folder = await mkdtemp(join(tmpdir(), 'ghost-timeline-'));
   try {
     const files = timelineFixture();
@@ -137,10 +137,10 @@ test('folder opens the whole-song rows, pickup, gaps, waveform, contour and navi
         expect(blue.edgeBlue).toBe(0);
       }
     }
-    await paintTimeline(page);
-    await timeline.screenshot({
-      path: process.env.GHOST_TIMELINE_SHOT ?? testInfo.outputPath('timeline.png'),
-    });
+    if (process.env.GHOST_TIMELINE_SHOT) {
+      await paintTimeline(page);
+      await timeline.screenshot({ path: process.env.GHOST_TIMELINE_SHOT });
+    }
     expect(
       await timeline.locator('.tl-scroll').evaluate((n) => n.scrollWidth - n.clientWidth),
     ).toBeLessThanOrEqual(1);
@@ -166,13 +166,12 @@ test('folder opens the whole-song rows, pickup, gaps, waveform, contour and navi
     expect(await rulerClear()).toBe(true);
     await expect(timeline.locator('[data-uncovered]')).toHaveCSS('visibility', 'visible');
     await expect(timeline.locator('[data-gap]')).toHaveCSS('visibility', 'hidden');
-    await paintTimeline(page);
-    await timeline.screenshot({
-      path: (process.env.GHOST_TIMELINE_SHOT ?? testInfo.outputPath('timeline.png')).replace(
-        '.png',
-        '-zoom.png',
-      ),
-    });
+    if (process.env.GHOST_TIMELINE_SHOT) {
+      await paintTimeline(page);
+      await timeline.screenshot({
+        path: process.env.GHOST_TIMELINE_SHOT.replace('.png', '-zoom.png'),
+      });
+    }
     await page.locator('#settings').click();
     await page.getByLabel('Stem audio').uncheck();
     await page.getByRole('button', { name: 'Done', exact: true }).click();
@@ -271,10 +270,10 @@ test('folder opens the whole-song rows, pickup, gaps, waveform, contour and navi
     await page.mouse.up();
     await expect(timeline).toHaveAttribute('data-lens', '6:8');
     await expect(timeline).toHaveAttribute('data-animating', 'false');
-    await paintTimeline(page);
-    await timeline.screenshot({
-      path: process.env.GHOST_LENS_SHOT ?? testInfo.outputPath('lens.png'),
-    });
+    if (process.env.GHOST_LENS_SHOT) {
+      await paintTimeline(page);
+      await timeline.screenshot({ path: process.env.GHOST_LENS_SHOT });
+    }
     await expect(page.locator('#draft-context')).toContainText('Reference lens: bars 6–8');
     // A new selection in the squeezed outside context must remain visible.
     await page.getByRole('button', { name: 'Clear selection', exact: true }).click();
@@ -416,9 +415,8 @@ test('folder opens the whole-song rows, pickup, gaps, waveform, contour and navi
     expect(previews[0].notes).toEqual(previews[1].notes);
     expect(previews[1].notes).toEqual(previews[2].notes);
     expect(previews[0].bars).not.toEqual(previews[1].bars);
-    await question.screenshot({
-      path: process.env.GHOST_GRID_SHOT ?? testInfo.outputPath('tempo-meter.png'),
-    });
+    if (process.env.GHOST_GRID_SHOT)
+      await question.screenshot({ path: process.env.GHOST_GRID_SHOT });
     await question.getByRole('button', { name: 'Use 1×', exact: true }).click();
     await expect(question).toBeHidden();
     const changed = await page.evaluate((buffer) => {

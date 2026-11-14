@@ -225,3 +225,32 @@ edited row's own trigger value and cleared status. Identity is the document row 
 in Hap context, independently checked on identical voices and every real-house
 row. No score query is added to playback. The optional sync measurement now uses
 production latency forwarding; no test-only compensated wiring remains.
+
+## Timeline row wave: CI budget
+
+On row head `6d2de13`, local Chromium passed 77 tests in 134.643 s. Two CI
+attempts hit the unchanged 180 s limit at tests 65/78 and 69/78, without an
+assertion failure before cutoff. Recent main checks took 157.325 / 159.470 s.
+The failed runs remain evidence on #11; a rerun is not a fix.
+
+A constrained two-CPU diagnostic of 29 UI cases took 92.953 s with three
+workers and 94.735 s with two. These are single diagnostics, not a speedup or
+reliability comparison; the three-worker run also exceeded the 20 s guard on
+two tests. Existing phase marks identified repeated imports/questions and
+interactions as the large categories; screenshot capture itself was smaller.
+The selected three-worker/serial-audio configuration is unchanged.
+
+The five house rewrite cases now use `sharedProgram`, as the other house editor
+groups already do. They load the same accelerated 240 cpm score once. After
+each case the helper closes the editor, stops transport, undoes every change,
+checks the exact original document and queried answers, restores selection and
+viewport, and clears history. All five interaction/delivery cases and their
+assertions remain. Fresh query workers and independent audio-clock pages remain.
+
+Timeline captures are artifacts, with separate opt-ins: `GHOST_SECTION_SHOT`,
+`GHOST_ROWS_SHOT`, `GHOST_TIMELINE_SHOT`, `GHOST_LENS_SHOT` and `GHOST_GRID_SHOT`
+name local PNG output paths. Only those captures traverse every instrument to
+paint off-window canvases. Ordinary runs retain the waveform/contour pixel,
+pending/error, layout, focus, link, copy/reopen and view-switch assertions.
+The optional six-song measurement still paints every instrument for its captures
+and explicitly verifies a busy row's pixels before timed lens interaction.
