@@ -1,6 +1,7 @@
 import { defineConfig } from '@playwright/test';
-const optional = /\/(demo|edit-demo|shots|measure|online|timeline-measure)\.spec\.ts$/;
-const audio = /\/(engine|silent-swap|assumptions|reference|playback)\.spec\.ts$/;
+const optional =
+  /\/(demo|edit-demo|shots|measure|online|timeline-measure|playback-measure)\.spec\.ts$/;
+const audio = /\/(engine|silent-swap|assumptions|reference|playback|row-speakers)\.spec\.ts$/;
 export default defineConfig({
   testDir: './tests/browser',
   // Three UI workers passed the load/CI matrix; audio clocks run afterward.

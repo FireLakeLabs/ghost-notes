@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { expect, it } from 'vitest';
+import { expect, it, describe, beforeAll } from 'vitest';
 import { checkDoc, instruments, sections, type Doc } from '../src/document';
 import { importStrudel } from '../src/import';
 import { generate } from '../src/generate';
@@ -71,7 +71,7 @@ it('names the dependent instrument when a shared score is also its setting or so
   }
 });
 for (const file of ['piece-kiln', 'real-house-arranged'])
-  it(`${file}: delete each row without changing any other onset over the whole song; round trip`, async () => {
+  describe(`${file}: deleting one row`, () => {
     const doc = load(readFileSync(`corpus/programs/${file}.strudel`, 'utf8'));
     const original = structuredClone(doc),
       rows = instruments(doc);
@@ -80,30 +80,34 @@ for (const file of ['piece-kiln', 'real-house-arranged'])
       expect(r.error).toBeNull();
       return r.events.filter((e) => e.hasOnset);
     };
-    const baseline = await Promise.all(
-      rows.map((r) => queryEventsNode(generate(doc, { only: r.id }), 0, end)),
-    );
-    for (const removed of rows) {
-      const next = accept(removeInstrument(doc, removed.id));
-      expect(checkDoc(next)).toEqual([]);
-      expect(instruments(next).map((r) => r.id)).toEqual(
-        rows.filter((r) => r !== removed).map((r) => r.id),
+    let baseline: Awaited<ReturnType<typeof queryEventsNode>>[];
+    beforeAll(async () => {
+      baseline = await Promise.all(
+        rows.map((r) => queryEventsNode(generate(doc, { only: r.id }), 0, end)),
       );
-      expect(sections(next).map((s) => [s.start, s.cycles])).toEqual(
-        sections(doc).map((s) => [s.start, s.cycles]),
-      );
-      for (const [index, row] of rows.entries()) {
-        if (row === removed) continue;
-        expect(onsets(await queryEventsNode(generate(next, { only: row.id }), 0, end))).toEqual(
-          onsets(baseline[index]),
+    });
+    for (const removed of rows)
+      it(`${removed.name}: retain every other onset over the whole song and round trip`, async () => {
+        const next = accept(removeInstrument(doc, removed.id));
+        expect(checkDoc(next)).toEqual([]);
+        expect(instruments(next).map((r) => r.id)).toEqual(
+          rows.filter((r) => r !== removed).map((r) => r.id),
         );
-      }
-      const round = load(generate(next));
-      expect(onsets(await queryEventsNode(generate(round), 0, end))).toEqual(
-        onsets(await queryEventsNode(generate(next), 0, end)),
-      );
-    }
-    expect(doc).toEqual(original);
+        expect(sections(next).map((s) => [s.start, s.cycles])).toEqual(
+          sections(doc).map((s) => [s.start, s.cycles]),
+        );
+        for (const [index, row] of rows.entries()) {
+          if (row === removed) continue;
+          expect(onsets(await queryEventsNode(generate(next, { only: row.id }), 0, end))).toEqual(
+            onsets(baseline[index]),
+          );
+        }
+        const round = load(generate(next));
+        expect(onsets(await queryEventsNode(generate(round), 0, end))).toEqual(
+          onsets(await queryEventsNode(generate(next), 0, end)),
+        );
+        expect(doc).toEqual(original);
+      });
   });
 
 it('refuses whole-pattern rewrites on a shared ancestor, including callback bodies', () => {

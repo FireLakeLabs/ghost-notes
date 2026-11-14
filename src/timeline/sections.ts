@@ -17,6 +17,7 @@ export function mountSections(
   timeline: ReturnType<typeof mountTimeline>,
   current: () => OpenReference | null,
   settings: SessionSettings,
+  prepare: (doc: Doc) => Doc = (doc) => doc,
 ) {
   const controls = document.createElement('div');
   controls.className = 'tl-sections';
@@ -230,13 +231,17 @@ export function mountSections(
           dialog.close();
         };
         if (app.editor) {
-          app.editor.apply(next.doc, {}, next.sectionId);
-          finish();
+          try {
+            app.editor.apply(prepare(next.doc), {}, next.sectionId);
+            finish();
+          } catch (e) {
+            error.textContent = String(e instanceof Error ? e.message : e);
+          }
         } else {
           void app
             .load('')
             .then(() => {
-              app.editor?.apply(next.doc, {}, next.sectionId);
+              app.editor?.apply(prepare(next.doc), {}, next.sectionId);
               finish();
             })
             .catch((e) => {

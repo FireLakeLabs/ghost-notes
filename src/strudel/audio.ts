@@ -20,6 +20,7 @@ import { soundName } from '../engine/logic';
 import { createTap } from './audio-tap';
 import { instrumentIdentity } from './instrument-identity';
 import { guarded, schedulingBoundary, recoverSkipped } from './audio-pattern';
+import { playbackRows, type PlaybackRows } from './playback-rows';
 
 export const defaultCollections = [
   ...['tidal-drum-machines', 'piano', 'Dirt-Samples', 'EmuSP12', 'vcsl', 'mridangam'].map(
@@ -51,10 +52,12 @@ export async function createAudio({
   inspect,
   timing,
   onClockStart,
+  rows,
 }: {
   inspect?: (pattern: Pattern, cps: number) => void;
   timing?: SongTime;
   onClockStart?: (origin: number) => void;
+  rows?: () => PlaybackRows;
 } = {}): Promise<
   Omit<AudioBackend, 'preflight'> & {
     context: AudioContext;
@@ -129,7 +132,8 @@ export async function createAudio({
         repl.setCps(oldCps);
       }
       if (!candidate) throw Error('Strudel evaluation produced no pattern');
-      const warped = timing ? warpPattern(candidate, timing) : candidate;
+      const selected = rows ? playbackRows(candidate, rows()) : candidate;
+      const warped = timing ? warpPattern(selected, timing) : selected;
       const pattern = timing
         ? new Pattern((state) => {
             if (clockOrigin === undefined) {

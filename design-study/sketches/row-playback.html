@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" /><title>Row playback controls</title
+  ><style>
+    body {
+      background: #101216;
+      color: #eceae4;
+      font: 15px system-ui;
+      max-width: 860px;
+      margin: 40px auto;
+    }
+    button,
+    select {
+      background: #20242c;
+      color: inherit;
+      border: 1px solid #48505e;
+      border-radius: 6px;
+      padding: 9px;
+    }
+    button[aria-pressed='true'] {
+      border-color: #f1e6cc;
+      background: #343a44;
+    }
+    small {
+      display: block;
+      color: #a4aab5;
+      margin: 8px 0 24px;
+    }
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      height: 52px;
+      border-top: 1px solid #303641;
+    }
+    .label {
+      width: 110px;
+    }
+    .marks {
+      flex: 1;
+      color: #9dbce3;
+      letter-spacing: 12px;
+    }
+    .mine {
+      color: #f1e6cc;
+    }
+    header {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+    h1 {
+      font-size: 22px;
+    }
+    label {
+      margin-left: auto;
+    }
+  </style>
+  <h1>What Play plays</h1>
+  <nav aria-label="Presets">
+    <button>Recording</button> <button>Mine</button> <button aria-pressed="true">Both</button>
+    <button>Play</button> <button>Stop</button>
+  </nav>
+  <small
+    >Changing sources stops playback. Play uses the selected rows, including hidden rows.</small
+  >
+  <header>
+    <strong>Bass</strong><span>Rows ▾</span
+    ><label
+      >Sound
+      <select>
+        <option>Mine as written</option>
+        <option>Synth: triangle</option>
+        <option>Synth: sine</option>
+        <option>Sample: piano</option>
+      </select></label
+    >
+  </header>
+  <small
+    >A sound choice writes every Mine section for this instrument and supplies MIDI/Notes. Mine as
+    written keeps current document settings.</small
+  >
+  <div class="row">
+    <button aria-pressed="true" aria-label="Play bass audio">◖))</button
+    ><span class="label">Audio</span><span class="marks">▂▅▇▃▅▂▇▆▃▅▃</span>
+  </div>
+  <div class="row">
+    <button aria-pressed="false" aria-label="Play bass MIDI">◖))</button
+    ><span class="label">MIDI</span><span class="marks">▬ ▬ ▬▬ ▬ ▬</span>
+  </div>
+  <div class="row">
+    <button aria-pressed="false" aria-label="Play bass Notes">◖))</button
+    ><span class="label">Notes</span><span class="marks">▱ ▱ ▱▱ ▱ ▱</span>
+  </div>
+  <div class="row">
+    <button aria-pressed="true" aria-label="Play bass Mine">◖))</button
+    ><span class="label">Mine</span><span class="marks mine">▬ ▬ ▬▬ ▬ ▬</span>
+  </div>
+  <small
+    >Layers keeps a separate speaker for MIDI, Notes and Mine. Row choices remain separate from
+    range selection and note editing. This sketch uses invented marks only.</small
+  >
+</html>

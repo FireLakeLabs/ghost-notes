@@ -112,6 +112,11 @@ test('whole song warp, stems, live tempo edits, seek, restart and modes share on
       fromBar: 2,
     });
   });
+  await page.evaluate(() =>
+    window.playbackProof.playback.update(
+      'throw Error("Recording must not evaluate a document revision")',
+    ),
+  );
   const recording = await page.evaluate(() => {
     const p = window.playbackProof;
     const r = { triggers: [...p.triggers], stems: [...p.stems], state: p.playback.state() };

@@ -421,3 +421,24 @@ body .sheet-sections li {
 body .sheet-sections .sheet-current {
   background: var(--toggle-on);
 }
+.row-presets {
+  grid-column: 1 / -1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  max-width: 460px;
+}
+.row-presets[hidden] {
+  display: none;
+}
+.row-presets small {
+  flex-basis: 100%;
+  font-size: 11px;
+  color: var(--muted);
+}
+.row-presets button[aria-pressed='true'] {
+  background: var(--toggle-on);
+  border-color: var(--mine);
+}

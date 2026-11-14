@@ -484,7 +484,7 @@ by floating/rational conversion; comparison normalizes negative zero only.
 No timing assertions or suite limits were widened. UI behavior and perceived
 output were not assessed by these document tests.
 
-## 9. Playback and listening
+## 9. Playback and listening: done
 
 - A speaker on every row decides what Play plays, with presets for Recording,
   Mine and Both (G20).
@@ -503,8 +503,8 @@ Nobody judges by ear.
 
 ### Part 1 results (2026-11-13)
 
-The warp and transport are implemented; #7 stays open for part 2's row speakers
-and Recording/Mine/Both interface presets, which depend on step 7. The small
+Part 1 implemented the warp and transport and left #7 open for the row speakers
+and Recording/Mine/Both presets now delivered in part 2 below. The small
 [playback API and proof](playback.md) give parts 2 and step 10 a shared clock,
 bar start/stop, live revision swaps and bar/beat position.
 
@@ -521,6 +521,29 @@ song are in the API page. Musical quantization deliberately moves/merges notes
 (G67–G69); this precision proof selects exact mode. The warp maps written
 positions regardless of that setting. No G28 fallback is needed. No speaker,
 audio-device or perceived timing is established. G72–G73 record the choices.
+
+### Part 2 results (2026-11-14)
+
+Row speakers and Recording/Mine/Both now choose the actual sources. MIDI retains
+original times; Notes uses complete chosen-grid conversion; Mine filters tagged
+whole-program events after evaluation, preserving effects and cross-row context.
+All use G72/G73's clock; stems remain recorded buffers at rate 1. Instrument
+synth/sample choices write normal undoable Mine settings and feed reference rows.
+G122–G123 record choices for the absent owner.
+
+The complete four-second tempo-change fixture schedules exactly 0/24/24 note
+triggers and 2/0/2 stem starts for Recording/Mine/Both. Maximum added onset error
+is below 0.000001 ms, with positive lead. Individual MIDI/Notes speakers schedule
+40 expected events, distinguish original 0.28 s from written 0.25 s, survive
+Layers, stop active playback on source change and preserve the selected range.
+
+A full 123.979 s local recording with an eight-bar, six-instrument arrangement
+scheduled 362/362 expected triggers and six aligned native stem starts: zero
+missing/unexpected events or chord split, maximum added onset error
+0.000000000558 ms and minimum lead 183.300 ms. No listening or audio-device timing
+claim. The [contract, results and limits](row-playback.md) retain the first failed
+comparison and its repeated complete proof. Real pixels stay local; only the
+invented-fixture capture is committed.
 
 ## 10. Copy out and the app shell: done
 

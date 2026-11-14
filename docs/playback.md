@@ -1,7 +1,8 @@
 # Playback
 
-Step 9 part 1 implements beat-map scheduling; row speakers and presets in the
-interface belong to part 2. Issue #7 stays open.
+Step 9 implements beat-map scheduling and the row speakers/presets. The
+[row control contract and integrated proof](row-playback.md) cover part 2;
+the original transport evidence below remains part 1's measured scope.
 
 ## Node proof
 
@@ -61,7 +62,8 @@ encode export tempos. Step 10 still owns per-place tempo in copied Strudel.
 - `update(code)` preserves the clock and recording sources during a live Mine
   revision. Its revision promise and `swapped`/`committed` events have ODM's
   semantics. Rejected edits retain the previous revision. Call it only while
-  Mine or Both is playing.
+  playback is running. Recording commits silence without evaluating the new
+  code, so document editing remains possible while monitoring stems.
 - `stop()` cancels pending starts, stops the scheduler and stem sources, and
   clears the end timer. Previously scheduled voices/effect tails follow ODM's
   existing behavior. Playback ends at the full grid mapping's end, including
@@ -82,6 +84,14 @@ The warp precedes the inherited late-window recovery and safety guards. A new
 clock-start hook uses the scheduler's actual phase plus latency, including its
 rounding, to start every retained stem in Strudel's own AudioContext. Merely
 calling `currentTime` twice would not establish the same origin.
+
+Part 2 adds a canonical `fromCycle` start, mutually exclusive with `fromBar`,
+and a read-only canonical `clock` port for the existing editor/controller. The
+optional third constructor argument supplies selected Mine ids and finite
+reference voices. The audio seam filters tagged Mine after full evaluation,
+then adds MIDI/Notes before the same warp. Preflight checks selected values
+and refuses unattributed Mine onsets. The default API without that argument
+retains part 1's behavior.
 
 ## Browser proof
 
