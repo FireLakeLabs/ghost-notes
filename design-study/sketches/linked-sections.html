@@ -1,0 +1,50 @@
+<!doctype html><meta charset="utf-8" /><title>Linked section controls</title>
+<style>
+  body {
+    background: #101116;
+    color: #eee8da;
+    font: 15px system-ui;
+    max-width: 850px;
+    margin: 30px auto;
+  }
+  button,
+  input {
+    background: #222630;
+    color: inherit;
+    border: 1px solid #555;
+    padding: 8px;
+  }
+  section {
+    border: 1px solid #555;
+    padding: 20px;
+    margin: 15px 0;
+  }
+  small {
+    color: #aaa;
+  }
+  label {
+    display: block;
+    margin: 12px 0;
+  }
+</style>
+<h1>Make a section from the timeline</h1>
+<small>Control placement mockup; invented bars only. Timeline drawing follows Main.</small>
+<p>Bars 5 to 8 <button>Make section</button> <button>Look closer</button></p>
+<p>
+  <button>Verse · bars 1–4 · edited</button> <button>Split off</button>
+  <button>Verse · bars 9–12 · edited</button> <button>Split off</button>
+</p>
+<section>
+  <h2>Make section</h2>
+  <label>Name <input value="Chorus" /></label>
+  <h3>Use this section at these matching places</h3>
+  <label><input type="checkbox" checked /> Bars 13–16 · 96% match</label
+  ><label><input type="checkbox" checked /> Bars 21–24 · 93% match</label
+  ><label style="color: #f5a260"
+    ><input type="checkbox" /> Making this section takes over bars 5–8 (the whole place). Replace
+    these whole places.</label
+  ><button>Make section</button> <button>Cancel</button>
+</section>
+<p>
+  Each place opens the same section definition in the lens. Split off creates an independent copy.
+</p>

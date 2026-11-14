@@ -1,4 +1,10 @@
 import { convertInstrument, conversionSpans, type ConversionGrid } from '../../convert';
+import {
+  simplifyDrums,
+  simplifyPitched,
+  type SimplifySettings,
+  type MatchSettings,
+} from '../../simplify';
 import { importStrudel } from '../../import';
 import { sectionSource } from '../links';
 import { sectionRange, overlaps, type BarRange } from '../section-range';
@@ -18,6 +24,9 @@ export function makeSectionFromRange({
   beats,
   places = [],
   grid,
+  starting = 'literal',
+  simplify,
+  match,
 }: {
   doc: Doc;
   song: ReferenceSong;
@@ -28,6 +37,9 @@ export function makeSectionFromRange({
   beats?: { fromBeat: number; toBeat: number };
   places?: readonly BarRange[];
   grid?: ConversionGrid;
+  starting?: 'literal' | 'simplified' | 'silence';
+  simplify?: Partial<SimplifySettings>;
+  match?: Partial<MatchSettings>;
 }) {
   const source = sectionSource({ folder, ...range });
   if (!source || !name.trim()) throw Error('Supply a section name and local folder basename');
@@ -102,7 +114,19 @@ export function makeSectionFromRange({
     : song;
   for (const stem of song.stems.filter((s) => stemIds.includes(s.id))) {
     const c = convertInstrument({ song: filteredSong, stemId: stem.id, range, grid });
-    const entry = importStrudel(c.source).doc.body.find((n) => n.kind === 'shared');
+    const source =
+      starting === 'silence'
+        ? '/*@odm-shared {"purpose":"instrument"}*/ const literal = silence; $: literal;'
+        : starting === 'simplified'
+          ? ((stem.id === 'drums'
+              ? [simplifyDrums({ song: filteredSong, conversion: c, settings: simplify, match })]
+              : simplifyPitched({ song: filteredSong, conversion: c, settings: simplify, match })
+            )
+              .filter((p) => p.report.shorter)
+              .sort((a, b) => a.report.suggestedBytes - b.report.suggestedBytes)[0]?.source ??
+            c.source)
+          : c.source;
+    const entry = importStrudel(source).doc.body.find((n) => n.kind === 'shared');
     if (entry?.kind !== 'shared') throw Error('Literal converter did not provide an instrument');
     const pattern = entry.pattern;
     walk({ version: 2, body: [entry] }, (n) => {

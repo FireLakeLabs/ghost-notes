@@ -12,6 +12,7 @@ import {
   song as documentSong,
   replaceParts,
 } from '../document/edits/section-shared';
+import { freshIds } from '../document/edits/shared';
 import { sameContent } from '../document/content';
 import { importStrudel } from '../import';
 import { generatePattern, generateCopy } from '../generate';
@@ -44,9 +45,13 @@ export type CopyResult = {
   silentBars: number;
   warnings: string[];
   seconds: number | null;
+  unarrangedPlaceIds: string[];
 };
 
-export function copyArrangement({ doc, song, folder, options }: CopyInput): CopyResult {
+export function copyArrangement(
+  { doc, song, folder, options }: CopyInput,
+  coverageOnly = false,
+): CopyResult {
   if (!song) {
     if (!doc) throw Error('Open a song folder or load a Strudel program first.');
     return {
@@ -54,6 +59,7 @@ export function copyArrangement({ doc, song, folder, options }: CopyInput): Copy
       silentBars: 0,
       warnings: ['No reference open: copying the whole program as written.'],
       seconds: null,
+      unarrangedPlaceIds: [],
     };
   }
   const referenceSong = song;
@@ -83,11 +89,12 @@ export function copyArrangement({ doc, song, folder, options }: CopyInput): Copy
         'This whole-program draft has no complete place links. Copying it as written; reference fills and place tempos are unavailable.',
       ],
       seconds: null,
+      unarrangedPlaceIds: [],
     };
   }
-  let serial = 0;
+  const fresh = freshIds(doc ?? { version: 2, body: [] });
   const names = new Set(doc?.body.flatMap((n) => (n.kind === 'shared' ? [n.name] : [])) ?? []);
-  const id = () => `copy${++serial}`;
+  const id = () => fresh('copy');
   // Retain dependencies, setup, transforms and original section definitions.
   let output: Doc = doc ? structuredClone(doc) : { version: 2, body: [] };
   const definitions: Doc['body'] = [];
@@ -190,6 +197,9 @@ export function copyArrangement({ doc, song, folder, options }: CopyInput): Copy
     authoredFills.add(p.id);
     return false;
   });
+  const unarrangedPlaceIds = fills.map((p) => p.id);
+  if (coverageOnly)
+    return { text: '', silentBars: 0, warnings: [], seconds: null, unarrangedPlaceIds };
   const parts: GroupPart[] = [];
   let silentBars = 0,
     seconds = 0;
@@ -372,5 +382,5 @@ export function copyArrangement({ doc, song, folder, options }: CopyInput): Copy
     warnings.push(
       'Unnumbered edges have no source-bar links or detected beat map; reopened edges keep their written content. Stop and restart Strudel before replaying; do not loop.',
     );
-  return { text: generateCopy(output), silentBars, warnings, seconds };
+  return { text: generateCopy(output), silentBars, warnings, seconds, unarrangedPlaceIds };
 }

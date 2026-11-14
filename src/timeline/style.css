@@ -227,3 +227,31 @@
   gap: 12px;
   flex-wrap: wrap;
 }
+
+.tl-sections {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+}
+.tl-sections [data-places] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tl-sections [data-link-status] {
+  flex-basis: 100%;
+  color: var(--tl-muted);
+  margin: 0;
+}
+.section-dialog label {
+  display: block;
+  margin: 10px 0;
+}
+.section-dialog input[type='checkbox'] {
+  margin-right: 8px;
+}
+.section-dialog [data-warnings] {
+  color: var(--warning);
+}

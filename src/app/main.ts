@@ -10,6 +10,7 @@ import { sheetModel, mountSheet, setPlayhead, setCurrentSection } from '../sheet
 import { aboutControls, mountAbout } from './about';
 import './style.css';
 import { mountReference } from './reference';
+import { mountSections } from '../timeline/sections';
 import { mountTimeline } from '../timeline/render';
 
 const app = createApp();
@@ -40,7 +41,12 @@ const reference = mountReference(referenceRoot);
 function draftContext() {
   const note = document.getElementById('draft-context')!;
   note.hidden = !reference.current;
-  note.textContent = `${timeline.lens ? `Reference lens: bars ${timeline.lens.firstBar}–${timeline.lens.lastBar}. ` : ''}Your Strudel program and score below are one whole-program draft. They are not yet linked to reference bars; section links will bring the draft into the lens.`;
+  document.querySelector('.score-toolbar h2 small')!.textContent = sectionUI?.linked
+    ? '· selected place'
+    : '· whole-program draft';
+  note.textContent = sectionUI?.linked
+    ? 'Your arrangement is linked to reference bars. The score below shows the selected place.'
+    : `${timeline.lens ? `Reference lens: bars ${timeline.lens.firstBar}–${timeline.lens.lastBar}. ` : ''}Your Strudel program and score below are one whole-program draft. They are not yet linked to reference bars; section links will bring the draft into the lens.`;
 }
 referenceRoot.addEventListener('referencechange', () => {
   timeline.setReference(reference.current);
@@ -57,6 +63,14 @@ const play = get<HTMLButtonElement>('play'),
   stop = get<HTMLButtonElement>('stop');
 const follow = get<HTMLButtonElement>('follow');
 const settings = sessionSettings();
+const sectionUI = mountSections(
+  document.getElementById('timeline')!,
+  app,
+  timeline,
+  () => reference.current,
+  settings,
+);
+referenceRoot.addEventListener('referencechange', () => sectionUI?.refresh());
 const copyPanel = mountCopy(get<HTMLButtonElement>('copy'), () => ({
   doc: app.state.doc,
   song: reference.current?.song,
@@ -69,9 +83,11 @@ const copyPanel = mountCopy(get<HTMLButtonElement>('copy'), () => ({
     match: settings.match,
   },
 }));
-const settingsDialog = mountSettings(get<HTMLButtonElement>('settings'), settings, () =>
-  copyPanel.refresh(),
-);
+const settingsDialog = mountSettings(get<HTMLButtonElement>('settings'), settings, () => {
+  copyPanel.refresh();
+  sectionUI.settingsChanged();
+  draftContext();
+});
 settingsDialog.querySelector('[data-timeline-settings]')!.append(timeline.settingsHost);
 referenceRoot.addEventListener('referencechange', () => copyPanel.refresh());
 paste.onclick = () => {
@@ -235,6 +251,7 @@ let previousNotes: unknown;
 let previousSheet: unknown[] = [];
 app.subscribe((state) => {
   copyPanel.refresh();
+  draftContext();
   if (app.editor !== selectedSession) {
     targetId = null;
     selectedSession = app.editor;

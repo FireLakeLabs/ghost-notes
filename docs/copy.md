@@ -47,3 +47,8 @@ After pasting, a marked fill must still match bare silence or a freshly
 generated literal/simplified fill. Otherwise it becomes the user's own and
 survives every Unedited choice. This also keeps a literal fill when a changed
 grid or limit makes its previous content impossible to reproduce.
+
+`copyArrangement(input, true)` classifies saved fills without generating a new
+export. Its `unarrangedPlaceIds` powers timeline coverage; the ordinary call
+also returns those ids. Generated ids avoid every id in the current document,
+including split-copy ids, so making a copy cannot spuriously mark fills edited.
