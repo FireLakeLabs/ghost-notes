@@ -1,3 +1,4 @@
+import { markEdited } from '../edited';
 import { instruments, sections, shared, walk, type Arg, type Doc, type Pattern } from '../index';
 import type { Refusal } from './shared';
 
@@ -13,6 +14,7 @@ export function removeInstrument(doc: Doc, id: string): Doc | Refusal {
       reason:
         'This is the only instrument. Add another instrument before deleting it, or mute it instead.',
     };
+  const memberIds = new Set(row.patterns.map((p) => p.id));
   const parts = new Map(sections(doc).map((s) => [s.id, s]));
   const memo = new Map<Pattern, Pattern | null>(),
     changed = new Set<Pattern>();
@@ -27,11 +29,13 @@ export function removeInstrument(doc: Doc, id: string): Doc | Refusal {
     layers: [],
   });
   function prune(p: Pattern): Pattern | null {
-    if (p.id === row!.pattern.id || p.origin === row!.pattern.id) return null;
+    if (memberIds.has(p.id) || (p.origin && memberIds.has(p.origin))) return null;
     if (
       rows.some(
         (other) =>
-          other !== row && other.pattern.id === p.id && ['group', 'ref'].includes(p.core.kind),
+          other !== row &&
+          other.patterns.some((member) => member.id === p.id) &&
+          ['group', 'ref'].includes(p.core.kind),
       )
     )
       return p;
@@ -73,7 +77,11 @@ export function removeInstrument(doc: Doc, id: string): Doc | Refusal {
             },
           ];
         });
-        next = kept.length ? { ...p, core: { ...c, parts: kept } } : null;
+        next = kept.length
+          ? { ...p, core: { ...c, parts: kept } }
+          : p.source && p.edited !== undefined
+            ? { ...p, core: { kind: 'generator', name: 'silence', args: [] }, layers: [] }
+            : null;
       }
     }
     if (next && (next !== p || changed.has(p))) {
@@ -207,5 +215,5 @@ export function removeInstrument(doc: Doc, id: string): Doc | Refusal {
       reason: `Cannot delete ${row.name.replaceAll('$', '')}: ${names} ${dependency ? 'depends on it in a setting or source text' : `would change because ${problem}`}. Edit that shared part as source first, or mute this instrument instead.`,
     };
   }
-  return next;
+  return markEdited(doc, next);
 }

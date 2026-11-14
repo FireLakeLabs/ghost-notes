@@ -1,4 +1,4 @@
-import type { Generate } from '../contract';
+import type { Generate, GenerateOptions } from '../contract';
 import {
   instruments,
   shared,
@@ -39,12 +39,13 @@ function argument(arg: Arg, hole?: string, serialization?: Serialization): strin
 }
 interface Serialization {
   identities: Set<string>;
+  copyTempo?: number;
   instrumentTags?: Map<string, string>;
   mutedOrigins: Set<string>;
 }
 interface Isolation {
   doc: Doc;
-  selected: string;
+  selected: Set<string>;
   leaves: Set<string>;
   seen: Set<string>;
 }
@@ -55,7 +56,7 @@ export function generatePattern(
   serialization?: Serialization,
 ): string {
   const boundary = isolation?.leaves.has(pattern.origin ?? pattern.id);
-  const silenced = boundary && (pattern.origin ?? pattern.id) !== isolation?.selected;
+  const silenced = boundary && !isolation?.selected.has(pattern.origin ?? pattern.id);
   // An explicit instrument may itself be a group. Its descendants belong to
   // that row, even when they also have unused definitions in the inventory.
   if (boundary) isolation = undefined;
@@ -99,6 +100,11 @@ export function generatePattern(
       code = `${c.how}(${c.parts
         .map((part) => {
           let p = generatePattern(part.pattern, hole, isolation, serialization);
+          const scale =
+            c.how === 'arrange' && part.tempo && serialization?.copyTempo
+              ? serialization.copyTempo / part.tempo
+              : 1;
+          if (scale !== 1) p = `(${p}).slow(${scale})`;
           if (part.muted) p = `(${p}).filterWhen(()=>false)`;
           if (
             part.label !== undefined ||
@@ -107,8 +113,8 @@ export function generatePattern(
             part.source !== undefined ||
             part.tempo !== undefined
           )
-            p = `(${annotation('part', { label: part.label, labelSource: part.labelSource, muted: part.muted, source: part.source, tempo: part.tempo })} ${p})`;
-          return c.how === 'arrange' ? `[${part.cycles ?? 1}, ${p}]` : p;
+            p = `(${annotation('part', { label: part.label, labelSource: part.labelSource, muted: part.muted, source: part.source, tempo: part.tempo, tempoScale: scale !== 1 ? scale : undefined, songCycles: scale !== 1 ? (part.cycles ?? 1) : undefined })} ${p})`;
+          return c.how === 'arrange' ? `[${(part.cycles ?? 1) * scale}, ${p}]` : p;
         })
         .join(', ')})`;
       break;
@@ -140,20 +146,19 @@ export function generatePattern(
   if (instrument) code += `.tag(${literal(`odm:instrument:${instrument}`)})`;
   return code;
 }
-export const generate: Generate = (doc, options = {}) => {
+function generateDocument(doc: Doc, options: GenerateOptions = {}, copy = false): string {
   const identities = new Set<string>();
   walk(doc, (n) => {
     if ('core' in n && (n as Pattern).origin) identities.add((n as Pattern).origin!);
   });
   const serialization: Serialization = {
     identities,
+    copyTempo: copy ? (doc.body.filter((n) => n.kind === 'tempo').at(-1)?.cpm ?? 30) : undefined,
     instrumentTags: options.instrumentTags
-      ? new Map(instruments(doc).map((r) => [r.pattern.id, r.id]))
+      ? new Map(instruments(doc).flatMap((r) => r.patterns.map((p) => [p.id, r.id])))
       : undefined,
     mutedOrigins: new Set(
-      instruments(doc)
-        .filter((r) => r.pattern.muted)
-        .map((r) => r.pattern.id),
+      instruments(doc).flatMap((r) => r.patterns.filter((p) => p.muted).map((p) => p.id)),
     ),
   };
   const voiceOnly = doc.body.some((n) => n.kind === 'voice' && n.id === options.only);
@@ -163,12 +168,16 @@ export const generate: Generate = (doc, options = {}) => {
   const isolation = selected
     ? {
         doc,
-        selected: selected.pattern.id,
-        leaves: new Set(rows.map((row) => row.pattern.id)),
+        selected: new Set(selected.patterns.map((p) => p.id)),
+        leaves: new Set(rows.flatMap((row) => row.patterns.map((p) => p.id))),
         seen: new Set<string>(),
       }
     : undefined;
-  return doc.body
+  const body =
+    copy && !doc.body.some((n) => n.kind === 'tempo')
+      ? [{ kind: 'tempo' as const, id: 'copy-tempo', tier: 1 as const, cpm: 30 }, ...doc.body]
+      : doc.body;
+  return body
     .flatMap((node) => {
       switch (node.kind) {
         case 'setup':
@@ -189,4 +198,8 @@ export const generate: Generate = (doc, options = {}) => {
       }
     })
     .join('\n');
-};
+}
+/** Canonical song cycles for querying and G72 reference playback. */
+export const generate: Generate = (doc, options) => generateDocument(doc, options);
+/** Copy out at each place's steady tempo; paste normalizes back to song cycles. */
+export const generateCopy = (doc: Doc): string => generateDocument(doc, {}, true);

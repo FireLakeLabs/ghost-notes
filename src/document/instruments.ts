@@ -1,5 +1,5 @@
 import { shared, voices } from './index';
-import type { Doc, Layer, Pattern, Voice, GroupPart } from './types';
+import type { Doc, Layer, Pattern, Voice, GroupPart, SectionSource } from './types';
 
 export interface InstrumentUse {
   voiceId: string;
@@ -14,10 +14,15 @@ export interface Instrument {
   name: string;
   nameSource: 'author' | 'generated';
   pattern: Pattern;
+  /** Independent section patterns in this stem row; no note propagation is implied. */
+  patterns: Pattern[];
   uses: InstrumentUse[];
   muted: boolean;
 }
 export interface SongSection {
+  source?: SectionSource;
+  tempo?: number;
+  edited?: boolean;
   id: string;
   name: string;
   nameSource: 'author' | 'generated';
@@ -113,7 +118,11 @@ export function instruments(doc: Doc, { origins = true } = {}): Instrument[] {
     if (definition?.purpose === 'section') return;
     const actual = canonical ?? p;
     const id = actual.id;
-    let row = rows.get(id);
+    let row =
+      rows.get(id) ??
+      (origins && actual.stem
+        ? [...rows.values()].find((r) => r.pattern.stem === actual.stem)
+        : undefined);
     if (!row) {
       const direct = !!voice && resolve(doc, voice.pattern).id === actual.id;
       const entry = sharedNames.get(actual.id);
@@ -129,11 +138,13 @@ export function instruments(doc: Doc, { origins = true } = {}): Instrument[] {
         name: name ?? generated,
         nameSource: entry?.nameSource ?? (name ? 'author' : 'generated'),
         pattern: actual,
+        patterns: [actual],
         uses: [],
         muted: false,
       };
       rows.set(id, row);
     }
+    if (!row.patterns.includes(actual)) row.patterns.push(actual);
     row.uses.push({
       voiceId: voice.id,
       path,
@@ -143,16 +154,30 @@ export function instruments(doc: Doc, { origins = true } = {}): Instrument[] {
         .flatMap((node) => ('layers' in node ? node.layers : [])),
       muted,
     });
-    row.muted = !!actual.muted || row.uses.every((use) => use.muted);
+    row.muted = row.uses.every((use) => use.muted);
   }
   for (const voice of voices(doc)) descend(voice.pattern, voice, [voice], voice.muted);
   for (const entry of definitions) {
-    if (entry.purpose !== 'instrument' || rows.has(entry.pattern.id)) continue;
+    if (
+      entry.purpose !== 'instrument' ||
+      rows.has(entry.pattern.id) ||
+      (origins && entry.pattern.origin)
+    )
+      continue;
+    const existing =
+      origins && entry.pattern.stem
+        ? [...rows.values()].find((r) => r.pattern.stem === entry.pattern.stem)
+        : undefined;
+    if (existing) {
+      if (!existing.patterns.includes(entry.pattern)) existing.patterns.push(entry.pattern);
+      continue;
+    }
     rows.set(entry.pattern.id, {
       id: entry.pattern.id,
       name: entry.pattern.label ?? entry.name,
       nameSource: entry.nameSource,
       pattern: entry.pattern,
+      patterns: [entry.pattern],
       uses: [],
       muted: !!entry.pattern.muted,
     });
@@ -192,6 +217,11 @@ export function sections(doc: Doc): SongSection[] {
       author(part.pattern.label);
     const section: SongSection = {
       id: part.id,
+      ...(part.source ? { source: part.source } : {}),
+      ...(part.tempo !== undefined ? { tempo: part.tempo } : {}),
+      ...(resolve(doc, part.pattern).edited !== undefined
+        ? { edited: resolve(doc, part.pattern).edited }
+        : {}),
       name: name ?? `Section ${index + 1}`,
       nameSource:
         part.label !== undefined

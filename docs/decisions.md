@@ -115,3 +115,8 @@ check:docs`); when a topic file fills, start a new one.
 ## [Sections and links](decisions/sections.md)
 
 - G91: optional source, place tempo, edited flag and stem fields in ODM metadata.
+- G92: canonical song cycles for playback, per-place stretching only in copied text.
+- G93: whole-place takeover warnings and independent section copies.
+- G94: reference onset/pitch Jaccard offers with the prototype's match knobs.
+- G95: mark changed section content edited at the shared document mutation boundary.
+- G96: group independent section patterns into stem rows without note propagation.

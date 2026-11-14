@@ -374,6 +374,33 @@ export const importStrudel: ImportStrudel = (source): ImportResult => {
           text(n.arguments[0]).replace(/\s/g, '') === '()=>false'
         )
           n = n.callee.object;
+        const hasTempoWrapper = data?.tempoScale !== undefined || data?.songCycles !== undefined;
+        let restoredTempo = false;
+        // Only unwrap the exact tempo wrapper written by generateCopy. User code
+        // or edited arithmetic that no longer agrees stays executable code.
+        if (
+          name === 'arrange' &&
+          typeof data?.tempoScale === 'number' &&
+          data.tempoScale > 0 &&
+          typeof data.songCycles === 'number' &&
+          data.songCycles > 0 &&
+          cycles === data.tempoScale * data.songCycles &&
+          n.type === 'CallExpression' &&
+          n.callee.type === 'MemberExpression' &&
+          n.callee.property.type === 'Identifier' &&
+          n.callee.property.name === 'slow' &&
+          n.arguments.length === 1 &&
+          literal(n.arguments[0])?.value === data.tempoScale
+        ) {
+          restoredTempo = true;
+          cycles = data.songCycles;
+          n = n.callee.object;
+        }
+        if (hasTempoWrapper && !restoredTempo)
+          warning(
+            n,
+            'Edited tempo wrapper retained as code; its copied tempo link was removed to prevent repeated stretching',
+          );
         const part: GroupPart = {
           id: `n${++serial}`,
           pattern: pattern(n, hole),
@@ -385,7 +412,12 @@ export const importStrudel: ImportStrudel = (source): ImportResult => {
         if (data && typeof data.muted === 'boolean') part.muted = data.muted;
         const source = sectionSource(data?.source);
         if (source) part.source = source;
-        if (typeof data?.tempo === 'number' && Number.isFinite(data.tempo) && data.tempo > 0)
+        if (
+          (!hasTempoWrapper || restoredTempo) &&
+          typeof data?.tempo === 'number' &&
+          Number.isFinite(data.tempo) &&
+          data.tempo > 0
+        )
           part.tempo = data.tempo;
         parts.push(part);
       }

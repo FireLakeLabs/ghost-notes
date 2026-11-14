@@ -14,12 +14,16 @@ export function renameInstrument(doc: Doc, id: string, input: string): Doc | Ref
   // Promotion transfers the leaf id to the definition and allocates its use id.
   doc = shareInlineLeaves(doc, row.pattern.id);
   // A label wins over a shared binding's name without changing any references.
-  const found = findWithPath(doc, row.pattern.id)!;
-  let next = replaceAtPath(doc, found.path, { ...row.pattern, label: name });
+  let next = doc;
+  const memberIds = new Set(row.patterns.map((p) => p.id));
+  for (const p of row.patterns) {
+    const found = findWithPath(next, p.id);
+    if (found) next = replaceAtPath(next, found.path, { ...p, label: name });
+  }
   next = {
     ...next,
     body: next.body.map((n) =>
-      n.kind === 'shared' && n.pattern.id === row.pattern.id
+      n.kind === 'shared' && memberIds.has(n.pattern.id)
         ? { ...n, nameSource: 'author', purpose: 'instrument' }
         : n,
     ),

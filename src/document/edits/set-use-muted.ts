@@ -19,7 +19,8 @@ export function setUseMuted(
   doc = shareInlineLeaves(doc, sectionId);
   rows = instruments(doc);
   owner = sectionOwner(doc, sectionId)!;
-  const leaves = new Map(rows.map((r) => [r.pattern.id, r.pattern]));
+  const leaves = new Map(rows.flatMap((r) => r.patterns.map((p) => [p.id, p] as const)));
+  const belongs = (id: string) => row.patterns.some((p) => p.id === id);
   const fresh = freshIds(doc);
   let cyclic = false;
   function local(p: Pattern, seen = new Set<string>()): Pattern {
@@ -28,7 +29,7 @@ export function setUseMuted(
       return p;
     }
     seen = new Set(seen).add(p.id);
-    if (p.origin) return p.origin === row!.pattern.id ? { ...p, muted } : p;
+    if (p.origin) return belongs(p.origin) ? { ...p, muted } : p;
     if (p.core.kind === 'ref') {
       const target = shared(doc, p.core.name);
       if (target) {
@@ -36,7 +37,7 @@ export function setUseMuted(
           cyclic = true;
           return p;
         }
-        if (leaves.has(target.id)) return target.id === row!.pattern.id ? { ...p, muted } : p;
+        if (leaves.has(target.id)) return belongs(target.id) ? { ...p, muted } : p;
         const copy = local(copyPattern(doc, target, fresh), new Set(seen).add(target.id));
         return {
           ...copy,
