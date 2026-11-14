@@ -1,3 +1,4 @@
+import { paintTimeline } from './timeline-paint';
 import { existsSync } from 'node:fs';
 import { readdir, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
@@ -16,12 +17,16 @@ test('six local songs: first draw, scroll and zoom frame times', async ({ page, 
   const cdp = await context.newCDPSession(page);
   await cdp.send('Performance.enable');
   const report = [];
+  let ordinal = 0;
+  const selected = process.env.GHOST_TIMELINE_SONG;
   for (const source of ['first-test-session', 'diversity-1', 'diversity-2']) {
     let number = 0;
     for (const name of (await readdir(join(root, source, 'songs'))).sort()) {
       const folder = join(root, source, 'songs', name);
       if (!existsSync(join(folder, 'song.json'))) continue;
       number++;
+      ordinal++;
+      if (selected && ordinal !== Number(selected)) continue;
       const input = source === 'first-test-session' ? `first test session, song ${number}` : source;
       try {
         // Reload releases the previous PCM and makes each first draw a fresh mount.
@@ -74,8 +79,74 @@ test('six local songs: first draw, scroll and zoom frame times', async ({ page, 
             rows: document.querySelectorAll('#timeline [data-row]').length,
           };
         });
-        expect(shape.rows).toBe(12);
+        expect(shape.rows).toBe(24);
         expect(shape.stems).toBe(6);
+        let arrangement: unknown = null;
+        if (process.env.GHOST_ARRANGEMENT_MEASURE) {
+          await page.getByLabel('First bar', { exact: true }).fill('1');
+          await page.getByLabel('Last bar', { exact: true }).fill('8');
+          await page
+            .locator('#timeline')
+            .getByRole('button', { name: 'Select', exact: true })
+            .click();
+          await page
+            .locator('.tl-sections')
+            .getByRole('button', { name: 'Make section', exact: true })
+            .click();
+          const dialog = page.getByRole('dialog', { name: 'Make section', exact: true });
+          await dialog.getByLabel('Name', { exact: true }).fill('First eight');
+          await dialog.getByRole('button', { name: 'Make section', exact: true }).click();
+          await page.waitForFunction(
+            () =>
+              window.odmApp.canPlay &&
+              window.odmApp.state.rows.length === 6 &&
+              Object.keys(window.odmApp.state.events).length === 6,
+          );
+          await expect(page.locator('#timeline')).toHaveAttribute('data-animating', 'false');
+          const proof = await page.evaluate(() => ({
+            queryErrors: Object.values(window.odmApp.state.events).filter((r) => r.error).length,
+            queriedNotes: Object.values(window.odmApp.state.events).reduce(
+              (n, r) => n + r.events.filter((e) => e.hasOnset).length,
+              0,
+            ),
+            places: document.querySelectorAll('[data-place]').length,
+            notes: [...document.querySelectorAll('[data-layer="mine"]')].map((n) =>
+              Number(n.getAttribute('aria-description')?.split(' ')[0]),
+            ),
+          }));
+          arrangement = proof;
+          expect(proof.queryErrors).toBe(0);
+          expect(proof.notes.reduce((n, v) => n + v, 0)).toBe(proof.queriedNotes);
+          await page.getByRole('button', { name: 'Close the lens', exact: true }).click();
+          await expect(page.locator('#timeline')).toHaveAttribute('data-animating', 'false');
+        }
+        const visibleStem = await page.evaluate(() => {
+          const s = window.ghostReference.current!.song;
+          const end = s.bars.find((b) => b.number === 8)?.endSeconds ?? s.durationSeconds;
+          return [...s.stems].sort(
+            (a, b) =>
+              b.notes.filter((n) => n.startSeconds < end).length -
+              a.notes.filter((n) => n.startSeconds < end).length,
+          )[0].id;
+        });
+        const shown = page.getByRole('img', {
+          name: `${visibleStem} Mine queried arrangement`,
+          exact: true,
+        });
+        await shown.scrollIntoViewIfNeeded();
+        await page.evaluate(
+          () =>
+            new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+        );
+        expect(
+          await shown.evaluate((c: HTMLCanvasElement) =>
+            c
+              .getContext('2d')!
+              .getImageData(0, 0, c.width, c.height)
+              .data.some((v) => v !== 0),
+          ),
+        ).toBe(true);
+        const visibleKind = visibleStem === 'drums' ? 'drums' : 'pitch';
         let lensFrames: Record<string, number[]> = {};
         if (process.env.GHOST_LENS_MEASURE) {
           const chunks: unknown[] = [];
@@ -89,14 +160,14 @@ test('six local songs: first draw, scroll and zoom frame times', async ({ page, 
             await cdp.send('Profiler.enable');
             await cdp.send('Profiler.start');
           }
-          lensFrames = await page.evaluate(async () => {
+          lensFrames = await page.evaluate(async (arranged) => {
             const first = document.querySelector<HTMLInputElement>('[data-first]')!,
               last = document.querySelector<HTMLInputElement>('[data-last]')!;
             const song = window.ghostReference.current!.song;
             const bars = song.bars.filter((b) => b.number > 0 && b.endSeconds > b.startSeconds);
             let best = 0,
               bestCount = -1;
-            for (let i = 0; i + 4 < bars.length; i++) {
+            for (let i = 0; i + 4 < bars.length && (!arranged || i < 5); i++) {
               const count = song.stems.reduce(
                 (n, s) =>
                   n +
@@ -148,7 +219,7 @@ test('six local songs: first draw, scroll and zoom frame times', async ({ page, 
             );
             if (window.ghostTimeline.lens !== null) throw Error('Lens did not close');
             return { open, move, close };
-          });
+          }, !!process.env.GHOST_ARRANGEMENT_MEASURE);
           if (process.env.GHOST_LENS_PROFILE) {
             const cpu = await cdp.send('Profiler.stop');
             await writeFile(
@@ -169,6 +240,7 @@ test('six local songs: first draw, scroll and zoom frame times', async ({ page, 
           );
           await page.getByRole('button', { name: 'Look closer', exact: true }).click();
           await expect(page.locator('#timeline')).toHaveAttribute('data-animating', 'false');
+          await paintTimeline(page);
           await page
             .locator('.tl-scroll')
             .screenshot({ path: `/tmp/ghost-lens-local-${report.length + 1}.png` });
@@ -212,6 +284,7 @@ test('six local songs: first draw, scroll and zoom frame times', async ({ page, 
         expect(frames.traveled).toBeGreaterThan(1000);
         const after = await cdp.send('Performance.getMetrics');
         // Anonymous local-only pixels: omit the song-name summary above this region.
+        await paintTimeline(page);
         await page
           .locator('.tl-scroll')
           .screenshot({ path: `/tmp/ghost-timeline-local-${report.length + 1}.png` });
@@ -223,6 +296,8 @@ test('six local songs: first draw, scroll and zoom frame times', async ({ page, 
         const metric = (rows: typeof before.metrics, name: string) =>
           rows.find((r) => r.name === name)?.value ?? 0;
         report.push({
+          arrangement,
+          visibleKind,
           input,
           ...shape,
           openMs,
@@ -244,7 +319,7 @@ test('six local songs: first draw, scroll and zoom frame times', async ({ page, 
   }
   await cdp.detach();
   await page.goto('about:blank');
-  expect(report).toHaveLength(6);
+  expect(report).toHaveLength(selected ? 1 : 6);
   expect(errors).toHaveLength(0);
   await writeFile(
     process.env.GHOST_TIMELINE_REPORT ?? '/tmp/ghost-timeline-report.json',

@@ -347,8 +347,14 @@ This is a headless observation, not physical display measurement. Initial cache
 costs, earlier failed experiments and per-song results remain in the
 [lens report](lens-measurements.md). `npm run check` passed 608 Node tests;
 `npm run test:browser` passed 75 in 128.218 s / 180 s. #5 stays open for part 3.
-Part 3: Notes/Mine rows, six difference marks, unarranged bars, match strip,
-and rows-or-layers. Their original requirements follow.
+Part 3 rows now provide independently converted Notes and queried Mine, explicit
+unarranged ranges and per-instrument/global row/layer views (G114). A single
+six-song pass with first-eight-bar arrangements checked 513 lens intervals,
+all at most 16.8 ms, with a busy row visibly painted, after profiling and
+caching the overview as well as off-window drawing. Initial
+costs and limits are in [rows measurements](rows-measurements.md). Six
+difference marks, the match strip and editing inside the lens remain; the
+complete wave will repeat the timing proof. Their original requirements follow.
 
 The whole-song view, with the section sheet as a lens inside it (G9). This
 merges the old timeline step and the old "reference marks in the sheet" step.
@@ -397,6 +403,10 @@ stays under its time budget.
 
 **Done when:** making a section, copying out, pasting back and reopening the
 reference restores every link and tempo.
+
+Timeline creation/reuse/split controls landed in #38, with fixture and private
+copy/paste/reopen proof in [sections](sections.md). The final combined walk
+with editing in the lens remains part of this wave before #6 closes.
 
 ### Step 8 part 1 results (2026-11-13)
 

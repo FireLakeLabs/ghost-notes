@@ -6,6 +6,7 @@ export type TimelineSettings = {
   selectionScope: SelectionScope['kind'];
   selectionSnap: 'bars' | 'beats';
   showAudio: boolean;
+  viewMode: 'rows' | 'layers';
 };
 /** Half-open note interval and inclusive containing bars, ready for Make section. */
 export type TimelineSelection = {

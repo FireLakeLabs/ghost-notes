@@ -73,7 +73,7 @@ export function timelineFixture(): Map<string, Uint8Array> {
                   start,
                   Math.min(duration, start + (id === 'drums' ? 0.08 : 0.4)),
                   id === 'drums'
-                    ? [36, 42, 38, 42, 45, 49][i % 6]
+                    ? [35, 42, 38, 42, 47, 49][i % 6]
                     : (id === 'bass' ? 36 : 55 + k) + [0, 3, 7, 3, 5, 8, 7, 3][i % 8],
                   70 + (i % 50),
                 ];

@@ -81,14 +81,19 @@ export function timelineAxis(map: BeatMap, bars: readonly ReferenceBar[]) {
   };
 }
 export type TimelineAxis = ReturnType<typeof timelineAxis>;
-export type TimelineRow = { kind: 'audio' | 'midi'; height: number };
+export type TimelineRow = { kind: 'audio' | 'midi' | 'notes' | 'mine' | 'layers'; height: number };
+export type ViewMode = 'rows' | 'layers';
 export type TimelineInstrument = {
   stem: ReferenceStem;
   drums: boolean;
   quiet: boolean;
   rows: TimelineRow[];
 };
-export function timelineRows(song: ReferenceSong, showAudio: boolean): TimelineInstrument[] {
+export function timelineRows(
+  song: ReferenceSong,
+  showAudio: boolean,
+  mode: (stemId: string) => ViewMode = () => 'rows',
+): TimelineInstrument[] {
   const order = ['drums', 'bass', 'keys', 'other'];
   const rank = (id: string) => {
     const n = order.indexOf(id);
@@ -102,7 +107,13 @@ export function timelineRows(song: ReferenceSong, showAudio: boolean): TimelineI
       quiet: stem.transcription === 'skipped_quiet' || stem.levelDb < -30,
       rows: [
         ...(showAudio ? [{ kind: 'audio' as const, height: 32 }] : []),
-        { kind: 'midi', height: 44 },
+        ...(mode(stem.id) === 'layers'
+          ? [{ kind: 'layers' as const, height: 100 }]
+          : [
+              { kind: 'midi' as const, height: 44 },
+              { kind: 'notes' as const, height: 44 },
+              { kind: 'mine' as const, height: 58 },
+            ]),
       ],
     }));
 }

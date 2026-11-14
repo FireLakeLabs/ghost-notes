@@ -79,6 +79,7 @@ export async function scoreReady(page: Page) {
       page,
       () =>
         window.odmApp.canPlay &&
+        window.odmApp.pendingRows.size === 0 &&
         Object.keys(window.odmApp.state.events).length === window.odmApp.state.rows.length,
     );
   });

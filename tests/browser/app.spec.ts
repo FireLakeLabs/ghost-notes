@@ -1,5 +1,5 @@
 import { test } from './helpers';
-import { scoreReady, play, appSignal, signal } from './helpers';
+import { scoreReady, play, appSignal, signal, openProgram } from './helpers';
 import { expect } from '@playwright/test';
 import { playbackSafety } from './playback-safety';
 import { instruments, sections } from '../../src/document';
@@ -205,4 +205,34 @@ test('engine errors appear in the top bar', async ({ page }) => {
     page.evaluate(() => window.odmApp.history.filter((e) => e.type === 'error').length),
   ).toBeGreaterThan(0);
   await expect(page.locator('#message')).not.toContainText('Preparing');
+});
+
+test('a query in progress preserves sheet answers during two quick edits', async ({ page }) => {
+  await openProgram(page, { source: '$: s("bd*2").gain(0.6); $: note("c3*4").s("triangle");' });
+  const observed = await page.evaluate(() => {
+    const app = window.odmApp;
+    let id = '';
+    function find(n: unknown) {
+      if (!n || typeof n !== 'object') return;
+      if ('name' in n && n.name === 'gain' && 'id' in n && typeof n.id === 'string') id = n.id;
+      for (const v of Object.values(n)) if (typeof v === 'object') find(v);
+    }
+    find(app.state.doc);
+    if (!id) throw Error('Fixture needs a gain setting');
+    app.editor!.edit(id, 0.4);
+    app.editor!.edit(id, 0.5);
+    return {
+      pending: app.pendingRows.size,
+      settled: Object.keys(app.settledEvents).length,
+      rows: app.state.rows.length,
+      notes: Object.values(app.state.events).reduce(
+        (n, r) => n + r.events.filter((e) => e.hasOnset).length,
+        0,
+      ),
+    };
+  });
+  // Keep two plus four onsets per cycle for the sheet. G115 refreshes both
+  // rows in full context, so Mine waits for both instead of using old answers.
+  expect(observed).toEqual({ rows: 2, notes: 24, pending: 2, settled: 0 });
+  await scoreReady(page);
 });

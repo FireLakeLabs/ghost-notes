@@ -255,3 +255,23 @@
 .section-dialog [data-warnings] {
   color: var(--warning);
 }
+
+.tl-heading select {
+  margin-left: auto;
+}
+.tl-layered {
+  display: grid;
+}
+.tl-layered canvas {
+  grid-area: 1 / 1;
+}
+.tl-row-warning {
+  position: absolute;
+  left: 6px;
+  top: 2px;
+  max-width: calc(var(--tl-viewport) - 170px);
+  background: var(--tl-background);
+  color: var(--tl-muted);
+  z-index: 1;
+  pointer-events: none;
+}

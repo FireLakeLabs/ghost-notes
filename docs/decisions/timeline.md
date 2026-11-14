@@ -69,3 +69,17 @@ Decided for the owner during step 7 part 2, 2026-11-13:
   viewport only while its region is visible; combine overlapping explanations
   in the retained label's tooltip, prioritising uncovered edges. The same
   [mockup](../../design-study/sketches/tempo-meter.html) records this treatment.
+
+- **G114 (2026-11-13) Draw Mine from queried score values.** The Strudel seam
+  resolves queried pitch/sample values and scored duration; the timeline maps
+  canonical cycles through the converter's full reference map. It never parses
+  program text to draw Mine. Conversion stays independently cached on the
+  chosen grid. Missing links, pending/failed questions and unmapped events are
+  explicit states. Unarranged describes link ownership; queried notes still draw
+  there after rewrites or copied fills. Unarranged bars have dashed borders and labels; an arranged
+  silent place retains its border/name. Row/layer heights follow Main, with
+  18 px inside Mine/layers reserved for labels. A setting switches all views;
+  each stem can override it for the session. The 200-event cap applies per
+  source/bar and never to query or conversion input. Only rows near the window
+  are rasterized, with scroll-triggered redraw; every row retains its source
+  data and animated height. Decided for the absent owner.

@@ -27,6 +27,9 @@ export function createApp() {
     engine: Engine | null = null;
   let editor: EditSession | null = null;
   const dirtyRows = new Set<string>();
+  let pendingRows = new Set<string>();
+  let visiblePending = pendingRows;
+  let settledEvents = state.events;
   let epoch = 0,
     windowRevision = 0,
     transportRevision = 0;
@@ -38,6 +41,12 @@ export function createApp() {
   const listeners = new Set<(state: AppState) => void>();
   const history: EngineEvent[] = [];
   const update = (next: AppState) => {
+    if (next.events !== state.events || visiblePending !== pendingRows) {
+      settledEvents = pendingRows.size
+        ? Object.fromEntries(Object.entries(next.events).filter(([id]) => !pendingRows.has(id)))
+        : next.events;
+      visiblePending = pendingRows;
+    }
     state = next;
     for (const listener of listeners) listener(state);
   };
@@ -70,9 +79,15 @@ export function createApp() {
     const from = length && fromCycle < length ? 0 : fromCycle;
     const to = length && fromCycle < length ? length : toCycle;
     if (!affected && cachedWindow?.from === from && cachedWindow.to === to) {
+      pendingRows = new Set();
       update({ ...state, events: cachedWindow.events, sounds: sounds() });
       return;
     }
+    // The sheet and editor keep their last answers; the timeline hides pending rows.
+    pendingRows = new Set(
+      rows.filter((row) => !affected || affected.includes(row.id)).map((row) => row.id),
+    );
+    update({ ...state });
     let answers: Record<string, EventResult> | null = null;
     if (!affected && rows.length > 1) {
       const answer = await queries.query(generate(doc, { instrumentTags: true }), from, to);
@@ -95,6 +110,7 @@ export function createApp() {
     }
     if (piece !== epoch || revision !== windowRevision) return;
     dirtyRows.clear();
+    pendingRows = new Set();
     cachedWindow = {
       from,
       to,
@@ -188,6 +204,12 @@ export function createApp() {
     get warning() {
       return !!state.message && state.message === playbackNotice;
     },
+    get pendingRows(): ReadonlySet<string> {
+      return pendingRows;
+    },
+    get settledEvents() {
+      return settledEvents;
+    },
     get state() {
       return state;
     },
@@ -216,6 +238,7 @@ export function createApp() {
       }
       editor?.dispose();
       dirtyRows.clear();
+      pendingRows = new Set();
       editor = createEditSession(imported.doc, {
         playing: () => !!engine?.playing,
         play: (doc) => replacePlayback(doc, { discoverCycles: sections(doc).map((s) => s.start) }),

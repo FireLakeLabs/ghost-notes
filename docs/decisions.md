@@ -103,6 +103,7 @@ check:docs`); when a topic file fills, start a new one.
 - G65: affected bars show the chosen grid's inference reasons.
 - G85: reference lens hosts the future linked sheet; current program/score are one unlinked draft.
 - G86: session selection shares a half-open note interval and containing bars with sections.
+- G114: queried Mine rows, independent Notes, explicit unarranged/query states and session views.
 - G88: neutral inference underlines and separate ruler lines supersede G65.
 
 ## [Playback](decisions/playback.md)

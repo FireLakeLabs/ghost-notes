@@ -1,8 +1,8 @@
 # Whole-song timeline
 
 `src/timeline/layout.ts` owns pure coordinates, row order, drum lanes and
-per-bar drawing samples. `render.ts` mounts recording rows from the reference
-port; it never imports Strudel or retains another copy of PCM. The app listens
+per-bar drawing samples. `render.ts` combines reference rows with the app-supplied arrangement answers;
+it never imports Strudel or retains another copy of PCM. The app listens
 for `referencechange`, including clearing the reference before a new decode.
 A failed open hides the prior timeline. The existing sheet stays in place for
 the lens in part 2.
@@ -16,8 +16,8 @@ keep positions, not pixels, in selection state. Positions come from the chosen
 map, including gap and uncovered variants. Reopening or changing grids resets
 fit and rebuilds coordinate caches. `destroy()` releases observers and data.
 
-Each instrument has optional audio then MIDI. Rows are explicit data, so parts
-2/3 can add Notes/Mine without inventing fake controls now. Contours are a
+Each instrument has optional audio then MIDI, Notes and Mine. Rows remain
+explicit data, independently of the chosen row/layer view. Contours are a
 summary; full notes remain in the reference port for the lens. Per-bar drawing
 caps never change conversion input. Tokens `--tl-recording`, `--tl-mine` and
 `--tl-difference` carry G22's roles; surface, text and line tokens carry theme.
@@ -49,8 +49,9 @@ in event detail. Selection endpoints are half-open positions in the chosen
 map; containing bars stay inclusive even for beat selections. The source
 coordinates exposed by part 1 remain whole-song pixels, before lens projection.
 Session controls are not persisted. New references reset ranges and lens state.
-The host is reserved for the linked sheet/editor; the program/score are
-explicitly an unlinked draft for now (G85). `?inspect` exposes `ghostTimeline`.
+The host is reserved for moving the linked sheet/editor into the lens. Linked
+places currently select the score below; programs without resolved links remain
+an explained whole-program draft (G85). `?inspect` exposes `ghostTimeline`.
 
 ## Session settings and the shell
 
@@ -80,3 +81,72 @@ G88 replaces G65's orange grid inferences with neutral dotted ruler underlines,
 explained on hover. Numbers and uncertainty labels occupy separate lines;
 crowded numbers are hidden, and overlapping uncertainty descriptions share a
 tooltip. No per-row inference stripes compete with part 3's difference marks.
+
+## Notes and Mine (part 3, rows)
+
+The default rows are audio (optional), MIDI, Notes, Mine. `settings.viewMode`
+is `rows` or `layers`; `setSettings` can switch all instruments and clear
+per-stem overrides. Each heading has an override. Main's closed/open heights
+are retained: audio 32/44, MIDI 44/58, Notes 44/50, Mine 58/100, layers 100/150.
+Layers share a pitch range: faint MIDI, outlined Notes, solid Mine. Closed
+pitched rows show contours; the lens shows piano-roll positions. Drum rows
+keep five lanes. Mine reserves a footer for its place labels.
+
+`setScore(TimelineScore)` receives the document's instruments, resolved authored
+places, current query answers, link status and conversion grid. The app's
+controller questions through `src/strudel/`; `scoredNotes` reads those answers,
+including the pinned duration/clip rule, note names, frequencies and known drum
+samples. Failed or unmapped answers say so. The controller keeps existing sheet/editor
+answers while `pendingRows` identifies new questions. `settledEvents` masks
+those rows for Mine until their answers arrive; wait for `pendingRows.size === 0`
+when checking the latest score. G115 asks multi-row documents in full context,
+including after edits, because group rewrites can couple neighbouring rows.
+`createMaterial` caches Notes by reference/grid independently of Mine. It maps
+queried canonical cycles back to seconds through the full conversion map and
+keeps copied fill provenance in coverage. Queried notes remain visible even
+when a rewrite moves them beyond a linked place, or a copied fill plays in an
+unarranged range. It never derives Mine from the input text.
+
+Unarranged ranges have dashed borders and a label when width permits. Arranged
+silence retains its named place border. Canvas descriptions give full note
+counts and unarranged-range counts; drawing samples retain the per-source,
+per-bar 200-event cap. Cached drawing buffers are reused when data is unchanged.
+Only rows near the window are painted; page scrolling and changes to the
+reference/header height request a redraw through `observeLayout`.
+Whole-timeline screenshots must visit each instrument before capture.
+
+`materialFor(stemId)` supplies unsampled Notes/Mine, conversion change records
+and authored places independently of view mode. This is the hook for row
+speakers (step 9 part 2), simplify proposals (step 11 part 2), and differences.
+A Mine/layers click dispatches `placeopen` with the place id; the app selects
+that occurrence and opens its source bars. One editor still belongs to the
+app; moving it into the lens follows in the editing PR.
+
+The row PR passed `npm run check` (611 Node tests, seven opt-in skips) and
+`npm run test:browser` (77 passed, one skip; 134.643 s / 180 s). The fixture
+walk switches both view controls and checks that changing keys' view leaves
+an unchanged drums canvas intact. Pure integration checks query pinned Strudel
+rewrites and durations, keep Mine unchanged when the Notes grid changes, and
+show failed questions explicitly. A private production-browser save/reopen
+walk retained all 362 Mine notes on the first test session, song 1, with zero
+runtime errors. Both synthetic views and the private rows were inspected.
+[Frame evidence and limits](rows-measurements.md) include the failed first
+experiment; this intermediate PR does not claim the final repeated proof.
+
+Inspected synthetic captures: [rows](../design-study/sketches/arrangement-rows.png)
+and [layers](../design-study/sketches/arrangement-layers.png). The additional
+[state mockup](../design-study/sketches/row-states.html) records the waiting,
+failed and unarranged states for later owner review.
+
+A second private walk selected literal unarranged fills: 1,357 queried notes
+were also 1,357 Mine notes, before and after a second copy/paste, with zero
+runtime errors. The authored place/tempo remained and fills remained unarranged.
+An explicit stem on an imported pattern group now preserves that instrument
+boundary, as G96 requires. Fixture regressions first failed and then passed
+for notes shifted beyond linked bars and for copied literal fills.
+
+Captures are opt-in artifacts. Set `GHOST_ROWS_SHOT=/tmp/rows.png` for the
+arrangement walk (also writes `-rows` and `-places` views), or set
+`GHOST_TIMELINE_SHOT`, `GHOST_LENS_SHOT`, `GHOST_SECTION_SHOT`, `GHOST_GRID_SHOT`
+to local PNG paths. Default browser checks retain their real canvas-pixel and
+interaction assertions without taking whole-page images.
