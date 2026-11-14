@@ -26,7 +26,7 @@ export interface GenerateOptions {
    * This is how a row of the sheet gets its own events.
    */
   only?: string;
-  /** Playback-only row identity in Hap context; event values are unchanged. */
+  /** Row identity in Hap context for playback and score queries; values are unchanged. */
   instrumentTags?: boolean;
 }
 /** Fresh Strudel for document v2 (D2). Metadata carries names, provenance,
@@ -127,7 +127,7 @@ export interface SheetInput {
   /** The window of cycles the cells are drawn from. */
   fromCycle: number;
   toCycle: number;
-  /** Events per instrument, keyed by `instruments(doc)` id, from `generate({ only })`. */
+  /** Queried events per instrument, keyed by `instruments(doc)` id. */
   events: Record<string, EventResult>;
   sounds: SheetSoundState[];
   playhead: number | null;

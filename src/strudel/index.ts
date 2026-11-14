@@ -1,6 +1,7 @@
 import { Pattern, State, TimeSpan, silence } from '@strudel/core';
 import type { Hap } from '@strudel/core';
 import { transpiler } from '@strudel/transpiler';
+import { instrumentIdentity } from './instrument-identity';
 export { isPattern } from '@strudel/core';
 export type { Pattern, State, TimeSpan, Hap } from '@strudel/core';
 
@@ -12,6 +13,8 @@ export const query = (
   controls: Record<string, unknown> = {},
 ) => pattern.query(new State(new TimeSpan(begin, end), controls));
 export interface PlainEvent {
+  /** Generated row identity from Hap context, outside the event's sound values. */
+  instrumentId?: string;
   whole: [number, number] | null;
   part: [number, number];
   value: unknown;
@@ -19,7 +22,9 @@ export interface PlainEvent {
 }
 export function plainEvent(hap: Hap): PlainEvent {
   const span = (s: TimeSpan): [number, number] => [Number(s.begin), Number(s.end)];
+  const instrumentId = instrumentIdentity(hap);
   return {
+    ...(instrumentId ? { instrumentId } : {}),
     whole: hap.whole ? span(hap.whole) : null,
     part: span(hap.part),
     value: hap.value,
