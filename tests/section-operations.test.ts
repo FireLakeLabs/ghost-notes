@@ -431,3 +431,21 @@ test('selectedPlaceId identifies a later selected range; edited tempo wrappers w
   expect(generateCopy(importStrudel(copied).doc)).toBe(copied);
   expect(await events(copied, 20)).toEqual(await events(altered, 20));
 });
+
+test('session starting content can leave a new linked section deliberately silent', async () => {
+  const song = await sectionFixture();
+  for (const starting of ['literal', 'simplified', 'silence'] as const) {
+    const made = makeSectionFromRange({
+      doc: empty,
+      song,
+      folder,
+      name: 'Verse',
+      range: { fromBar: 1, toBar: 3 },
+      starting,
+    });
+    expect(checkDoc(made.doc)).toEqual([]);
+    expect((await events(generate(made.doc))).length > 0).toBe(starting !== 'silence');
+    expect(referenceLinks(made.doc, folder, song).links.every((l) => l.restored)).toBe(true);
+    expect(sectionOwner(made.doc, made.selectedPlaceId)?.content.edited).toBe(false);
+  }
+});

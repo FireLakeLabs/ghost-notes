@@ -4,6 +4,7 @@ import { sectionRange, overlaps, type BarRange } from './section-range';
 export interface MatchSettings {
   timingBeats: number;
   quiet: 'count' | 'ignore';
+  quietVelocity?: number;
   pitch: 'exact' | 'class';
 }
 export const defaultMatchSettings: MatchSettings = {
@@ -53,7 +54,7 @@ export function findSectionMatches({
         if (
           n.startSeconds < span.startSeconds ||
           n.startSeconds >= span.endSeconds ||
-          (settings.quiet === 'ignore' && n.velocity < 40)
+          (settings.quiet === 'ignore' && n.velocity < (settings.quietVelocity ?? 40))
         )
           continue;
         const beat = secondsToPosition(song.beatMap, n.startSeconds).beat;

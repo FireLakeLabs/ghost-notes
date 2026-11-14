@@ -123,6 +123,7 @@ check:docs`); when a topic file fills, start a new one.
 - G93: whole-place takeover warnings and independent section copies.
 - G94: reference onset/pitch Jaccard offers with the prototype's match knobs.
 - G95: mark changed section content edited at the shared document mutation boundary.
+- G113: review section offers and whole-place takeover before applying; session starting content.
 - G96: group independent section patterns into stem rows without note propagation.
 
 ## [Hosting](decisions/hosting.md)

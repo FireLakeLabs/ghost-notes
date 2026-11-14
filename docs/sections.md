@@ -81,3 +81,42 @@ It separately plants two known copies of each song's real reference notes in
 memory and measures recovery. This tests controlled recall; actual song form
 has no independent ground-truth labels. Native-offer precision and recall,
 UI warnings/selection, speaker output and perceived results are unmeasured.
+
+## Timeline controls (part 2)
+
+Make section consumes the timeline selection, session grid and starting-content
+preference. Its dialog preselects matching places; the user can untick any.
+A takeover lists every authored whole place and requires acknowledgment before applying.
+A pickup selection is accepted alone. Each place chip opens its bars in the
+lens. Split off makes independent content using the same reference link and
+place tempo. All these edits use the existing history.
+
+`mountSections` exposes resolved authored `places`, `linked` and
+`selectedPlace()`. Copied unarranged fills are classified by the same function
+as the copy panel, including its protection for externally edited fills.
+Missing bars/stems, a different folder, or incompatible canonical cycles keep
+the draft unresolved. Reference-grid changes refresh this state. The UI never
+claims unresolved music is silence. The session match tolerance in seconds is
+converted to beat tolerance using the selection's mean beat duration (G113).
+
+The [invented-fixture dialog](../design-study/sketches/make-section.png) was
+visually inspected. Real-song screenshots remain local.
+
+Part-2 UI proof (2026-11-13): `npm run check` passed 609 Node tests (seven
+local-material skips); `npm run test:browser` passed 76 (one skip) in 129.360 s
+of the unchanged 180 s budget. The synthetic browser walk makes three shared
+Chorus places, splits one, checks the takeover gate, then copies/pastes/reopens
+and verifies the places and tempos. It reproduces the split/copy id collision
+that previously promoted silent fills to edited sections.
+
+A production browser walk on the first test session, song 1 selected eight
+bars, made a section, copied/pasted and reopened its folder: one place and
+362 queried onsets retained, tempo metadata identical, zero runtime errors.
+The separate local Node section proof also passed (373 source notes, 362
+emitted plus converter merges, six stem links). Real screenshots stayed local;
+the recording rows were inspected. Notes/Mine, difference drawing and editing
+inside the lens follow in step 7 part 3. No speaker or perceived-output claim.
+
+Opus approved after two review rounds. The browser walk first reproduced and
+then passed both the stale acknowledgment path and false takeover warnings on
+reopened unarranged fills. Settings changes invalidate fill classification.

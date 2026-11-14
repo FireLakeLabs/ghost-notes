@@ -58,3 +58,13 @@
   `origin` semantics for imported ODM copies; creating or splitting a linked
   reference section does not assign an origin. This prevents first-made section
   notes becoming a template that changes unrelated sections.
+
+- **G113 (2026-11-13) Review section places before applying.** The timeline's
+  Make section dialog shows pre-ticked offers and requires an explicit checkbox
+  for whole-place takeover. Place chips open their linked bars; Split off makes
+  an independent copy through the existing edit. Starting content consumes the
+  session preference, default literal. Match offers use the session quiet
+  threshold and pitch rule; seconds tolerance becomes beats using the selected
+  range's mean beat duration, since G94 compares musical positions. Missing
+  folder/grid links remain an explained draft. The controls mockup is
+  `design-study/sketches/linked-sections.html`. Decided for the absent owner.
