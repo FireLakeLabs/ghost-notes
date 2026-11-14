@@ -1,5 +1,13 @@
 import { test } from './helpers';
-import { signal, openProgram, play, selectNode, waitForPending, sharedProgram } from './helpers';
+import {
+  signal,
+  openProgram,
+  play,
+  selectNode,
+  waitForPending,
+  sharedProgram,
+  scoreReady,
+} from './helpers';
 import { expect, type Page } from '@playwright/test';
 import { instruments } from '../../src/document';
 import { readFile } from 'node:fs/promises';
@@ -154,4 +162,33 @@ test('pattern parsing refuses invalid text; callback/source stay read-only and s
   await expect(editor(page).getByRole('spinbutton')).toHaveValue('0.8');
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
   await expect(editor(page).getByRole('spinbutton')).toHaveValue('0.2');
+});
+
+test('removing a use rewrite returns to an instrument that accepts a new rewrite', async ({
+  page,
+}) => {
+  await openProgram(page, {
+    source: 'const line=note("c3 e3").s("sine"); $: arrange([2,line.fast(2)],[2,line]);',
+  });
+  await page.locator('.sheet-use-note').filter({ hasText: 'fast' }).first().click();
+  const initialButtons = await editor(page)
+    .getByRole('button', { name: 'Edit fast', exact: true })
+    .count();
+  await editor(page).getByRole('button', { name: 'Remove rewrite', exact: true }).click();
+  await scoreReady(page);
+  await editor(page).getByRole('button', { name: 'Add rev', exact: true }).click();
+  await scoreReady(page);
+  await expect(
+    editor(page).getByRole('button', { name: 'Remove rewrite', exact: true }),
+  ).toBeVisible();
+  expect(initialButtons).toBe(1);
+  expect(
+    await page.evaluate(
+      () =>
+        Object.values(window.odmApp.state.events)
+          .flatMap((r) => r.events)
+          .filter((e) => e.hasOnset)
+          .sort((a, b) => a.part[0] - b.part[0])[0].value,
+    ),
+  ).toMatchObject({ note: 'e3' });
 });

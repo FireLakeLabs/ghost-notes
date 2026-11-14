@@ -119,7 +119,12 @@ export function createMaterial() {
     );
     const ids = new Set(instruments.map((row) => row.id));
     const places = score.places.filter(
-      (p) => p.source && p.instrumentIds.some((id) => ids.has(id)),
+      (p) =>
+        p.source &&
+        (p.instrumentIds.some((id) => ids.has(id)) ||
+          instruments.some((row) =>
+            row.uses.some((use) => use.path.some((node) => node.id === p.id)),
+          )),
     );
     try {
       result.places = places.flatMap((p) => {

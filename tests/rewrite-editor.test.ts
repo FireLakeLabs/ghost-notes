@@ -2,10 +2,12 @@ import { readFileSync } from 'node:fs';
 import { expect, it } from 'vitest';
 import { checkDoc, instruments, type Doc, type RewriteLayer } from '../src/document';
 import { describeTarget } from '../src/document/edit';
-import { addRewrite, rewriteChoices } from '../src/document/edits/rewrite-add';
+import { addRewrite, rewriteChoices, scorePart } from '../src/document/edits/rewrite-add';
 import { setRewriteArgument } from '../src/document/edits/rewrite-argument';
 import { moveRewrite } from '../src/document/edits/rewrite-move';
 import { removeRewrite } from '../src/document/edits/rewrite-remove';
+import { rewriteOwner } from '../src/document/edits/rewrite-shared';
+import { walk } from '../src/document';
 import { importStrudel } from '../src/import';
 import { generate } from '../src/generate';
 import { queryEventsNode } from './node-query';
@@ -206,4 +208,21 @@ it('preserves argument metadata and refuses layered, opaque and nonnumeric sourc
   if (arg.kind === 'pattern')
     arg.pattern.layers.push({ id: 'nested', tier: 1, kind: 'rewrite', name: 'rev', args: [] });
   expect(setRewriteArgument(d, layer.id, 0, 3)).toMatchObject({ ok: false });
+});
+
+it('score-part rewrite targets exclude inherited uses and callback bodies', () => {
+  for (const source of [
+    'const line=note("c3 e3").s("sine"); $: arrange([2,line.fast(2)],[2,line]);',
+    'note("c3 e3").s("sine").off(.5,p=>p.rev())',
+  ]) {
+    const doc = load(source),
+      row = instruments(doc)[0];
+    let layerId = '';
+    walk(doc, (node) => {
+      if ('name' in node && ['fast', 'rev'].includes(String(node.name))) layerId = node.id;
+    });
+    const owner = rewriteOwner(doc, layerId)!;
+    expect(scorePart(doc, row, row.pattern.id)).toBe(row.pattern);
+    expect(scorePart(doc, row, owner.pattern.id)).toBeUndefined();
+  }
 });

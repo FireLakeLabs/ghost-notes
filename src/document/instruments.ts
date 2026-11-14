@@ -256,3 +256,16 @@ export function sections(doc: Doc): SongSection[] {
     return section;
   });
 }
+
+/** Keep score row ids, but address the independent definition used at this place. */
+export function sectionInstruments(doc: Doc, placeId: string): Instrument[] {
+  return instruments(doc).flatMap((row) => {
+    const uses = row.uses.filter((use) => use.path.some((node) => node.id === placeId));
+    const patterns = row.patterns.filter((p) =>
+      uses.some((use) => use.path.some((node) => node.id === p.id)),
+    );
+    return patterns.length
+      ? [{ ...row, pattern: patterns[0], patterns, uses, muted: uses.every((use) => use.muted) }]
+      : [];
+  });
+}

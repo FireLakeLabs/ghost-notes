@@ -64,3 +64,17 @@
   Decided for the absent owner after repeated CI budget failures. The
   [score-query report](../score-query-measurements.md) records the measured
   scope and full-program limitation; no visual design changes.
+
+- **G119 (2026-11-14) Keep shared evaluation for a one-instrument score too.**
+  Decided for the absent owner; supersedes G115's single-row exception. Ask one
+  tagged whole-program question for any nonempty score, including every edit.
+  Isolating a reused instrument expands its definition at each place: a shared
+  initializer then runs repeatedly and can give different notes from playback.
+  A synthetic canary returned 62/63 instead of the actual 61/61 before this fix.
+  The real lens walk also exposed the five-second limit after accepting 21
+  native reuse offers for one drum bar. Full questions keep the shared bindings;
+  the existing isolated fallback, cancellation and per-question budget remain.
+  A failed one-row answer is already that row's error; publish it without
+  repeating the question. Successful opaque/unattributed answers can still fall
+  back. Multi-row failures retain G115's fallback and its possible extra five
+  seconds. No new worker or data limit is introduced.

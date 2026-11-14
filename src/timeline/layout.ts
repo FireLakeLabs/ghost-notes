@@ -11,14 +11,7 @@ export const LABEL_WIDTH = 150;
 export const CELL_CAP = 200;
 // Prototype order, top to bottom (Main.dc.html KINDS).
 export const DRUM_LANES = ['Crash', 'Hi-hat', 'Snare', 'Tom', 'Kick'] as const;
-export function drumLane(pitch: number): number | null {
-  if ([49, 51, 52, 55, 57, 59].includes(pitch)) return 0;
-  if ([42, 44, 46].includes(pitch)) return 1;
-  if ([37, 38, 39, 40].includes(pitch)) return 2;
-  if ([41, 43, 45, 47, 48, 50].includes(pitch)) return 3;
-  if ([35, 36].includes(pitch)) return 4;
-  return null;
-}
+export { drumLane } from '../strudel/drums';
 /** Beat spacing inside the map; unnumbered seconds at either edge. No inferred grid here. */
 export function timelineAxis(map: BeatMap, bars: readonly ReferenceBar[]) {
   const first = map.beats[0] ?? 0;

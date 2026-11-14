@@ -5,6 +5,8 @@ import {
   type InstrumentMaterial,
 } from './material';
 import { defaultMatch } from '../simplify';
+import { drumGrid, mountDrumGrid } from './drum-grid';
+import { drumCellIssue } from '../document/edits/drum-cell';
 import { compareMaterial, differenceNames, type Differences, type BarMatch } from './differences';
 import {
   differenceDrawing,
@@ -284,6 +286,10 @@ export function mountTimeline(root: HTMLElement) {
   const scroll = root.querySelector<HTMLElement>('.tl-scroll')!;
   const content = root.querySelector<HTMLElement>('.tl-content')!;
   const overview = root.querySelector<HTMLCanvasElement>('.tl-overview canvas')!;
+  const drumEditor = mountDrumGrid(
+    (cell) => root.dispatchEvent(new CustomEvent('drumedit', { detail: cell })),
+    () => schedule(),
+  );
   const differenceTip = mountDifferenceTip(root, (canvas, fresh) => {
     const row = rows.find((r) => r.canvas === canvas);
     const sources =
@@ -399,6 +405,7 @@ export function mountTimeline(root: HTMLElement) {
   function openLens(range: BarRange | null) {
     if (!reference || !axis || (!lens && !range)) return;
     differenceTip.hide();
+    drumEditor.hide();
     const bars = reference.song.bars.filter((b) => b.endSeconds > b.startSeconds);
     const a = bars.find((b) => b.number === range?.firstBar),
       b = bars.find((b) => b.number === range?.lastBar);
@@ -597,6 +604,8 @@ export function mountTimeline(root: HTMLElement) {
   }
   function rebuild() {
     differenceTip.hide();
+    drumEditor.retainFocus();
+    drumEditor.set([]);
     clearLayerContexts();
     overviewWidth = 0;
     const gridColor = getComputedStyle(root).getPropertyValue('--tl-line').trim();
@@ -849,10 +858,35 @@ export function mountTimeline(root: HTMLElement) {
             `${stem.id} ${kind === 'audio' ? 'waveform' : kind === 'midi' ? (instrument.drums ? 'drum lanes: Crash, Hi-hat, Snare, Tom, Kick' : 'pitch contour') : kind === 'notes' ? 'Notes literal conversion' : 'Mine queried arrangement'}`,
           );
           track.append(canvas);
-          if (kind !== 'audio' && (source.message || drawing.drawn < drawing.total)) {
+          let cellHint = '';
+          if (kind === 'mine' && instrument.drums) {
+            if (reference && score.linked && score.doc) {
+              const row = score.instruments.find((r) => r.patterns.some((p) => p.stem === stem.id));
+              const editable = data.places.filter(
+                (place) => !drumCellIssue(score.doc!, row, place.id),
+              );
+              if (editable.length !== data.places.length)
+                cellHint =
+                  'Some places need unmuting or source edits before drum cells can change them.';
+              drumEditor.set(
+                drumGrid(
+                  reference.song,
+                  { ...data, places: editable },
+                  score.grid,
+                  score.match ?? defaultMatch,
+                ),
+              );
+            }
+            track.append(drumEditor.host);
+          }
+          const editHint =
+            kind === 'mine' && instrument.drums && data.places.length && score.grid === 'exact'
+              ? 'Choose a musical grid in Settings for drum cells, or edit the exact source below.'
+              : cellHint;
+          if (kind !== 'audio' && (source.message || drawing.drawn < drawing.total || editHint)) {
             const warning = element(
               'span',
-              `${kind}: ${source.message || `${drawing.drawn} of ${drawing.total} note/ghost events drawn · at most 200 per bar cell`}`,
+              `${kind}: ${source.message || (drawing.drawn < drawing.total ? `${drawing.drawn} of ${drawing.total} note/ghost events drawn · at most 200 per bar cell` : editHint)}`,
               'tl-row-warning',
             );
             warning.dataset.rowStatus = kind;
@@ -1150,6 +1184,13 @@ export function mountTimeline(root: HTMLElement) {
     }
     viewport = Math.max(1, scroll.clientWidth - LABEL_WIDTH);
     width = viewport * zoom;
+    // Shrinking rows can reveal a cold neighbour during the animation. Prepare
+    // its static waveform/context in the settled view rather than that frame.
+    if (!transition) {
+      for (const row of rows) backdrop(row, viewport, color);
+      for (const row of rows)
+        if (row.layered && row.kind === 'mine') layerContext(row, viewport, color);
+    }
     root.style.setProperty('--tl-viewport', `${scroll.clientWidth}px`);
     content.style.width = `${width + LABEL_WIDTH}px`;
     const left = Math.min(scroll.scrollLeft, Math.max(0, width - viewport));
@@ -1260,6 +1301,7 @@ export function mountTimeline(root: HTMLElement) {
       ctx.rect(0, band[0], viewport, band[1] - band[0]);
       ctx.clip();
       const overlays = !row.layered || row.kind === 'mine';
+      const drumCells = row.kind === 'mine' && row.instrument.drums && lens && expanded === 1;
       if (!expanded && zoom === 1) {
         ctx.drawImage(row.outsidePlain, 0, 0, viewport, height);
         row.hits = row.outsideHits;
@@ -1370,7 +1412,7 @@ export function mountTimeline(root: HTMLElement) {
           color,
           expanded,
         );
-        if (overlays)
+        if (overlays && !drumCells)
           hatching.paint(
             ctx,
             regions.map((r) => ({
@@ -1447,6 +1489,27 @@ export function mountTimeline(root: HTMLElement) {
             );
         }
         ctx.restore();
+      }
+      if (drumCells && lens) {
+        drumEditor.paint(ctx, {
+          first: lens.firstBar,
+          last: lens.lastBar,
+          x,
+          a,
+          b,
+          height: row.openHeight,
+          scaledHeight: height,
+          recording: color('recording'),
+          mine: color('mine'),
+          difference: color('difference'),
+        });
+        hatching.paint(
+          ctx,
+          regions.map((r) => ({ a: Math.max(a, x(r.a)), b: Math.min(b, x(r.b)) })),
+          viewport,
+          height,
+          color('muted'),
+        );
       }
       if (
         overlays &&

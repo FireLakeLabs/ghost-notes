@@ -3,7 +3,8 @@
 Step 7 part 3, 2026-11-14. One production-browser pass per view, before lens
 editing, with pointer movement during all three lens operations. These are
 callback measurements, not a physical display or listening
-claim. The complete wave still owes five final passes per view.
+claim. The later [editing report](lens-editing-measurements.md) records the complete
+wave's five final passes per view and the earlier shared-machine failure.
 
 The strengthened protocol uses a literal first-eight-bar arrangement for all
 six stems, selects a busy four-bar range within it and scrolls its busiest
@@ -80,4 +81,4 @@ npm run measure:timeline`. Add `GHOST_TIMELINE_LAYERS=1` and use run
 
 Not measured: physical presentation, active playback plus editing, touch,
 phone memory, a view switch's latency, or perceived/audio timing. Lens editing
-and the final repeated qualification remain work for the next PR.
+and the final repeated qualification are recorded in that later report.

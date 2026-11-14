@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" /><meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  /><title>Linked lens editing — invented fixture</title>
+  <style>
+    body {
+      margin: 24px;
+      background: #0f1115;
+      color: #f1e6cc;
+      font:
+        14px/1.5 system-ui,
+        sans-serif;
+    }
+    main {
+      max-width: 1180px;
+      margin: auto;
+    }
+    h1 {
+      font-size: 22px;
+    }
+    h2 {
+      font-size: 18px;
+    }
+    button,
+    select {
+      background: #161920;
+      color: #eceae4;
+      border: 1px solid #2a2f3a;
+      border-radius: 4px;
+      padding: 6px 10px;
+    }
+    p,
+    small {
+      color: #a4aab5;
+    }
+    .places {
+      display: flex;
+      gap: 8px;
+      margin: 18px 0;
+    }
+    .lens {
+      margin-left: 150px;
+      background: #1f242e;
+      border: 1px solid #3a4150;
+      border-radius: 8px;
+      padding: 6px;
+      text-align: center;
+      width: 68%;
+      box-sizing: border-box;
+    }
+    .row {
+      display: flex;
+      border-bottom: 1px solid #2a2f3a;
+    }
+    .label {
+      width: 150px;
+      flex: none;
+      display: flex;
+      align-items: center;
+    }
+    .mine {
+      height: 100px;
+      flex: 1;
+      position: relative;
+      background: repeating-linear-gradient(
+        90deg,
+        transparent 0 24%,
+        #2a2f3a 24% 24.2%,
+        transparent 24.2% 25%
+      );
+    }
+    .grid {
+      position: absolute;
+      left: 1%;
+      width: 68%;
+      top: 6px;
+      height: 76px;
+      display: grid;
+      grid-template: repeat(5, 1fr) / repeat(16, 1fr);
+      gap: 2px;
+    }
+    .cell {
+      padding: 0;
+      border: 0;
+      border-radius: 2px;
+      background: #1e222b;
+    }
+    .both {
+      background: #f1e6cc;
+      box-shadow: inset 0 0 0 2px #6f9fd8;
+    }
+    .ours {
+      background: #ff8a5b;
+    }
+    .recording {
+      box-shadow: inset 0 0 0 2px #6f9fd8;
+    }
+    .active {
+      outline: 2px solid #f1e6cc;
+    }
+    .name {
+      position: absolute;
+      bottom: 7px;
+      left: 1%;
+      font-size: 11px;
+    }
+    .strip {
+      position: absolute;
+      bottom: 2px;
+      height: 4px;
+      left: 1%;
+      width: 68%;
+      background: #ff8a5b;
+      border-radius: 2px;
+    }
+    .outside {
+      position: absolute;
+      left: 72%;
+      top: 6px;
+      color: #a4aab5;
+      opacity: 0.5;
+      filter: blur(1px);
+    }
+    .controls {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .workspace {
+      margin-top: 16px;
+      border: 1px solid #2a2f3a;
+      border-radius: 8px;
+      padding: 16px;
+      background: #161920;
+    }
+    .native {
+      display: grid;
+      grid-template-columns: 150px repeat(3, 1fr);
+      margin: 12px 0;
+    }
+    .native > * {
+      padding: 12px;
+      border: 1px solid #2a2f3a;
+    }
+    .editor {
+      padding: 16px;
+      border: 1px solid #3a4150;
+    }
+    .steps {
+      display: flex;
+      gap: 4px;
+      margin: 12px 0;
+    }
+    .steps button {
+      flex: 1;
+    }
+    code {
+      color: #eceae4;
+    }
+    footer {
+      margin-top: 22px;
+      font-size: 12px;
+      color: #a4aab5;
+    }
+  </style>
+  <main>
+    <h1>Editing the linked section in the lens</h1>
+    <p>
+      G117–G118 · invented notes · sizes and drum cells follow Main. The bar and part selectors
+      adapt ODM's existing editors.
+    </p>
+    <div class="places">
+      <button>Chorus · bars 2–3 · edited</button><button>Chorus · bars 6–7 · edited</button
+      ><button>Chorus · bars 10–11 · edited</button>
+    </div>
+    <div class="lens">‹ &nbsp; Bars 2–3 &nbsp; ×</div>
+    <div class="row">
+      <div class="label">drums · Mine</div>
+      <div class="mine">
+        <div class="grid" id="cells" aria-label="Illustration of five drum lanes"></div>
+        <span class="name">Chorus · edited</span>
+        <div class="strip"></div>
+        <span class="outside">The rest of the song stays in view</span>
+      </div>
+    </div>
+    <p>
+      Click a drum cell. Keyboard: Tab to the grid, arrows to move, Enter or Space to change it. A
+      cell reads the queried arrangement. Every place using this section changes; an own copy stays
+      independent.
+    </p>
+    <section class="workspace">
+      <h2>The score · selected place</h2>
+      <p>Chorus · edited. Editing bar 2; every place using this section changes with it.</p>
+      <div class="controls">
+        <label
+          >Edit instrument
+          <select>
+            <option>bass</option>
+            <option>keys</option>
+            <option>drums</option>
+          </select></label
+        >
+        <label
+          >Bar
+          <select>
+            <option>2</option>
+            <option>3</option>
+          </select></label
+        >
+        <label
+          >Part
+          <select>
+            <option>Part 1</option>
+            <option>Part 2</option>
+          </select></label
+        >
+      </div>
+      <div class="native">
+        <small>Instrument</small><small>rhythm</small><small>note</small><small>gain</small>
+        <strong>bass</strong><button>Open rhythm</button><button>48 to 55</button
+        ><button>0.6 to 0.7</button>
+      </div>
+      <div class="editor">
+        <strong>bass › Rhythm</strong>
+        <p>
+          The existing ODM editor targets this bar's definition. Its preview uses actual queried
+          values; the 200-event drawing cap remains.
+        </p>
+        <div class="steps">
+          <button>48</button><button>rest</button><button>55</button><button>rest</button>
+        </div>
+        <div class="controls"><button>Edit as source</button><button>Done</button></div>
+      </div>
+    </section>
+    <footer>
+      Changing bar, part or lens closes the active editor. Unapplied source text stays in memory at
+      that address while the same piece is loaded. Copy includes applied edits. Exact conversion
+      offers source editing and an explicit musical-grid hint for drum cells.
+    </footer>
+  </main>
+  <script>
+    const grid = document.getElementById('cells');
+    for (let lane = 0; lane < 5; lane++)
+      for (let step = 0; step < 16; step++) {
+        const cell = document.createElement('button');
+        cell.className =
+          'cell' +
+          (step === lane * 2
+            ? ' both'
+            : lane === 4 && step === 12
+              ? ' ours'
+              : lane === 2 && step === 8
+                ? ' recording'
+                : '') +
+          (lane === 4 && step === 0 ? ' active' : '');
+        cell.setAttribute(
+          'aria-label',
+          ['Crash', 'Hi-hat', 'Snare', 'Tom', 'Kick'][lane] + ', step ' + (step + 1),
+        );
+        grid.append(cell);
+      }
+  </script>
+</html>

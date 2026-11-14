@@ -120,3 +120,8 @@ inside the lens follow in step 7 part 3. No speaker or perceived-output claim.
 Opus approved after two review rounds. The browser walk first reproduced and
 then passed both the stale acknowledgment path and false takeover warnings on
 reopened unarranged fills. Settings changes invalidate fill classification.
+
+The [lens editing contract](lens-editing.md) now addresses the definition used
+at the selected place, including split copies. Its fixture walk changes shared
+drum and bass notes, keeps the independent place unchanged, and repeats
+copy/paste/reopen with applied edits, source links and tempos compared separately.

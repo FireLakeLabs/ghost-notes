@@ -1,4 +1,11 @@
-import { instruments, type Doc, type Pattern, type RewriteLayer } from '../index';
+import {
+  instruments,
+  shared,
+  type Doc,
+  type Instrument,
+  type Pattern,
+  type RewriteLayer,
+} from '../index';
 import { patternMethods } from '../../import/registry';
 import { freshIds, replaceNode, type Refusal } from './shared';
 const choices = [
@@ -16,11 +23,33 @@ const choices = [
 export const rewriteChoices = choices
   .filter(([name]) => patternMethods.has(name))
   .map(([name, description, defaults]) => ({ name, description, defaults }));
-/** New layers append to the instrument definition, never to a setting or a use. */
+/** Parts editable by the score, excluding setting drivers and arrangement uses. */
+export function scorePart(doc: Doc, row: Instrument, patternId: string): Pattern | undefined {
+  const seen = new Set<string>();
+  function owned(p: Pattern): Pattern | undefined {
+    if (p.id === patternId) return p;
+    if (seen.has(p.id)) return;
+    seen.add(p.id);
+    if (p.core.kind === 'ref') {
+      const target = shared(doc, p.core.name);
+      if (target) return owned(target);
+    }
+    if (p.core.kind === 'group') {
+      for (const part of p.core.parts) {
+        const found = owned(part.pattern);
+        if (found) return found;
+      }
+    }
+  }
+  return row.patterns.map(owned).find((p) => !!p);
+}
+/** Append to a score part, never a setting's driver or an arrangement use. */
 export function addRewrite(doc: Doc, patternId: string, name: string): Doc | Refusal {
-  const row = instruments(doc).find((r) => r.pattern.id === patternId);
+  const source = instruments(doc)
+    .map((row) => scorePart(doc, row, patternId))
+    .find((p) => !!p);
   const choice = rewriteChoices.find((c) => c.name === name);
-  if (!row || !choice) return { ok: false, reason: 'Choose an instrument and a listed rewrite' };
+  if (!source || !choice) return { ok: false, reason: 'Choose an instrument and a listed rewrite' };
   const layer: RewriteLayer = {
     id: freshIds(doc)('rewrite'),
     tier: 1,
@@ -28,6 +57,6 @@ export function addRewrite(doc: Doc, patternId: string, name: string): Doc | Ref
     name,
     args: choice.defaults.map((value) => ({ kind: 'literal', value })),
   };
-  const pattern: Pattern = { ...row.pattern, layers: [...row.pattern.layers, layer] };
+  const pattern: Pattern = { ...source, layers: [...source.layers, layer] };
   return replaceNode(doc, patternId, pattern);
 }

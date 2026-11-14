@@ -4,6 +4,7 @@ import { pendingWords } from '../editor/pending';
 import { describeTarget } from '../document/edit';
 import { definitionMuted, setMuted } from '../document/edits/set-muted';
 import { createPanel } from '../editor/panel';
+import { clearSourceDrafts } from '../editor/kinds/source';
 import { createApp } from './controller';
 import { examples } from './examples';
 import { sheetModel, mountSheet, setPlayhead, setCurrentSection } from '../sheet';
@@ -12,6 +13,9 @@ import './style.css';
 import { mountReference } from './reference';
 import { mountSections } from '../timeline/sections';
 import { mountTimeline } from '../timeline/render';
+import { setDrumCell } from '../document/edits/drum-cell';
+import type { DrumCell } from '../timeline/drum-grid';
+import { lensScore } from '../timeline/lens-score';
 
 const app = createApp();
 document.body.innerHTML = `
@@ -32,8 +36,10 @@ document.body.innerHTML = `
       <p id="load-error" role="alert"></p>
     </section>
     <details id="notes" hidden><summary>Notes</summary><ul></ul></details>
-    <p id="draft-context" hidden></p><div class="score-toolbar"><h2>The score <small>· whole-program draft</small></h2><button id="follow" aria-pressed="true">Follow</button><output id="window"></output></div>
+    <div id="score-home"><section id="score-panel"><p id="draft-context" hidden></p><div class="score-toolbar"><h2>The score <small>· whole-program draft</small></h2><button id="follow" aria-pressed="true">Follow</button><output id="window"></output></div>
+    <div id="lens-edit-controls" hidden><label>Edit instrument <select id="lens-edit-instrument" aria-label="Instrument to edit"></select></label><label>Bar <select id="lens-edit-bar" aria-label="Bar to edit"></select></label><div id="lens-voices"></div></div>
     <div id="score-workspace"><div id="score"><p class="welcome">Paste a Strudel program or choose an original to see its score. Press Play when you're ready.</p></div><aside id="editor" hidden></aside></div>
+    </section></div>
   </main><footer>Your music stays on this device. Copy your Strudel to keep it.</footer>`;
 const timeline = mountTimeline(document.getElementById('timeline')!);
 const referenceRoot = document.getElementById('reference-panel')!;
@@ -47,10 +53,14 @@ function draftContext() {
     ? '· selected place'
     : '· whole-program draft';
   note.textContent = sectionUI?.linked
-    ? 'Your arrangement is linked to reference bars. The score below shows the selected place.'
+    ? 'Drums: click a Mine cell in the lens. Bass and keys: choose a bar below, then open a rhythm, value or source editor. A section edit changes every place that uses it.'
     : `${timeline.lens ? `Reference lens: bars ${timeline.lens.firstBar}–${timeline.lens.lastBar}. ` : ''}Your Strudel program and score below are one whole-program draft. They are not yet linked to reference bars; section links will bring the draft into the lens.`;
 }
-document.getElementById('timeline')!.addEventListener('lenschange', draftContext);
+document.getElementById('timeline')!.addEventListener('lenschange', () => {
+  draftContext();
+  renderScore();
+  renderEditor();
+});
 const aboutDialog = mountAbout();
 const get = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id)! as T;
 const source = get<HTMLTextAreaElement>('source'),
@@ -73,6 +83,8 @@ referenceRoot.addEventListener('referencechange', () => {
   sectionUI.refresh();
   updateTimelineScore();
   draftContext();
+  renderScore();
+  renderEditor();
 });
 document.getElementById('timeline')!.addEventListener('placeopen', (event) => {
   const id: unknown = (event as CustomEvent).detail;
@@ -80,6 +92,29 @@ document.getElementById('timeline')!.addEventListener('placeopen', (event) => {
   if (!place?.source || !sectionUI.linked) return;
   app.select(place.id);
   timeline.openLens({ firstBar: place.source.fromBar, lastBar: place.source.toBar - 1 });
+});
+document.getElementById('timeline')!.addEventListener('drumedit', (event) => {
+  if (!app.state.doc || !sectionUI.linked || !app.editor || app.pendingRows.size) return;
+  if (
+    Object.values(app.editor.state.entries).some(
+      (entry) => entry.status === 'pending' && entry.revision === undefined,
+    )
+  ) {
+    get('message').textContent = 'Waiting for the last change to reach playback.';
+    return;
+  }
+  if (targetId) {
+    get('message').textContent = 'Finish the open editor before changing a drum cell.';
+    return;
+  }
+  const cell = (event as CustomEvent<DrumCell>).detail;
+  const next = setDrumCell(app.state.doc, { ...cell, on: !cell.on });
+  if ('ok' in next) get('message').textContent = next.reason;
+  else {
+    app.select(cell.placeId);
+    editNotice = { doc: next, text: 'Drum cell changed in every place using this section.' };
+    app.editor.apply(next);
+  }
 });
 const copyPanel = mountCopy(get<HTMLButtonElement>('copy'), () => ({
   doc: app.state.doc,
@@ -98,6 +133,8 @@ const settingsDialog = mountSettings(get<HTMLButtonElement>('settings'), setting
   sectionUI.settingsChanged();
   updateTimelineScore();
   draftContext();
+  renderScore();
+  renderEditor();
 });
 settingsDialog.querySelector('[data-timeline-settings]')!.append(timeline.settingsHost);
 referenceRoot.addEventListener('referencechange', () => copyPanel.refresh());
@@ -128,6 +165,8 @@ follow.onclick = () => app.follow(!app.state.follow);
 let editNotice: { doc: unknown; text: string } | undefined;
 let targetId: string | null = null,
   selectedSession: typeof app.editor;
+let nativeScope = 'draft',
+  editorScope = 'draft';
 let origin: { id: string; control?: string; row?: string } | null = null;
 function originCell() {
   return Array.from(score.querySelectorAll<HTMLElement>('[data-editor-target]')).find(
@@ -144,7 +183,8 @@ function closeEditor() {
 }
 const renderPanel = createPanel(get('editor'), closeEditor);
 function renderEditor() {
-  const { doc, playing, fromCycle, toCycle } = app.state;
+  const { doc, playing } = app.state;
+  const { fromCycle, toCycle } = scoreWindow();
   const target = doc && targetId ? describeTarget(doc, targetId) : null;
   get('score-workspace').classList.toggle('editing', !!target);
   const entry = targetId ? app.editor?.state.entries[targetId] : undefined;
@@ -165,7 +205,7 @@ function renderEditor() {
                 events: events.events.filter((e) => e.part[0] < toCycle && e.part[1] > fromCycle),
               }
             : undefined,
-          window: { fromCycle: app.state.fromCycle, toCycle: app.state.toCycle },
+          window: { fromCycle, toCycle },
           pending: entry?.status ?? 'none',
           apply: (next, options) => {
             const oldRows = app.state.rows;
@@ -225,6 +265,7 @@ function openEditor(id: string, cell: HTMLElement) {
     row: cell.closest<HTMLElement>('tr')?.dataset.nodeId,
   };
   targetId = id;
+  editorScope = nativeScope;
   renderEditor();
   originCell()?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   if (matchMedia('(max-width: 760px)').matches)
@@ -271,11 +312,173 @@ function updateTimelineScore() {
 }
 let previousNotes: unknown;
 let previousSheet: unknown[] = [];
+let editBar = 1;
+let editPlace = '';
+let editStem = 'bass';
+const partChoices = new Map<string, string>();
+let lensView: ReturnType<typeof lensScore> | undefined;
+function scoreWindow() {
+  return lensView ?? app.state;
+}
+function renderScore() {
+  const state = app.state;
+  const lens = timeline.lens;
+  const selectedPlace = targetId ? editPlace : state.selected;
+  const place =
+    sectionUI.linked && lens
+      ? (sectionUI.places.find(
+          (p) =>
+            p.id === selectedPlace &&
+            p.source &&
+            p.source.fromBar <= lens.lastBar &&
+            p.source.toBar > lens.firstBar,
+        ) ??
+        sectionUI.places.find(
+          (p) => p.source && p.source.fromBar <= lens.lastBar && p.source.toBar > lens.firstBar,
+        ))
+      : undefined;
+  const workspace = get('score-panel');
+  const linked = !!(sectionUI.linked && reference.current);
+  const host = linked ? timeline.lensHost : get('score-home');
+  if (workspace.parentElement !== host) host.append(workspace);
+  workspace.hidden = linked && !place;
+  timeline.lensHost.hidden = !linked || !lens;
+  get('lens-edit-controls').hidden = !place;
+  lensView = undefined;
+  if (place?.source && state.doc && reference.current && lens) {
+    const bars = reference.current.song.bars.filter(
+      (b) =>
+        b.number >= Math.max(lens.firstBar, place.source!.fromBar) &&
+        b.number <= Math.min(lens.lastBar, place.source!.toBar - 1),
+    );
+    if (editPlace !== place.id || !bars.some((b) => b.number === editBar)) {
+      editPlace = place.id;
+      editBar = bars[0]?.number ?? place.source.fromBar;
+    }
+    const select = get<HTMLSelectElement>('lens-edit-bar');
+    const key = bars.map((b) => b.number).join(',');
+    if (select.dataset.bars !== key) {
+      select.replaceChildren(...bars.map((b) => new Option(String(b.number), String(b.number))));
+      select.dataset.bars = key;
+    }
+    select.value = String(editBar);
+    select.onchange = () => {
+      editBar = Number(select.value);
+      renderScore();
+      renderEditor();
+    };
+    lensView = lensScore({
+      doc: state.doc,
+      song: reference.current.song,
+      place,
+      bar: editBar,
+      choices: partChoices,
+    });
+    const instrument = get<HTMLSelectElement>('lens-edit-instrument');
+    const stems = lensView.options.map((o) => [o.row.pattern.stem ?? o.row.id, o.row.name]);
+    const stemsKey = JSON.stringify(stems);
+    if (!stems.some(([id]) => id === editStem)) editStem = stems[0]?.[0] ?? '';
+    if (instrument.dataset.stems !== stemsKey) {
+      instrument.replaceChildren(
+        ...stems.map(([id, name]) => new Option(name.replaceAll('$', ''), id)),
+      );
+      instrument.dataset.stems = stemsKey;
+    }
+    instrument.value = editStem;
+    instrument.onchange = () => {
+      editStem = instrument.value;
+      renderScore();
+      renderEditor();
+    };
+    get('draft-context').textContent =
+      `${place.name}${place.edited ? ' · edited' : ''}. Editing bar ${editBar}; every place using this section changes with it. Drums are edited directly in the Mine lanes.`;
+    const voices = get('lens-voices');
+    const voiceKey = JSON.stringify([
+      editStem,
+      lensView.options.map((o) => [o.row.id, o.parts.map((p) => p.pattern.id), o.part?.pattern.id]),
+    ]);
+    if (voices.dataset.choices !== voiceKey) {
+      voices.replaceChildren();
+      for (const option of lensView.options) {
+        if ((option.row.pattern.stem ?? option.row.id) !== editStem) continue;
+        if (option.parts.length <= 1) continue;
+        const label = document.createElement('label'),
+          picker = document.createElement('select');
+        const stem = option.row.pattern.stem ?? option.row.id;
+        picker.setAttribute('aria-label', `${stem} part to edit`);
+        picker.replaceChildren(
+          ...option.parts.map((p, i) => new Option(`Part ${i + 1}`, p.pattern.id)),
+        );
+        picker.value = option.part?.pattern.id ?? '';
+        picker.onchange = () => {
+          partChoices.set(stem, picker.value);
+          renderScore();
+          renderEditor();
+        };
+        label.append(`${stem} `, picker);
+        voices.append(label);
+      }
+      voices.dataset.choices = voiceKey;
+    }
+  }
+  const window = scoreWindow();
+  nativeScope =
+    lensView && place
+      ? `${place.id}:${editStem}:${editBar}:${lens?.firstBar}-${lens?.lastBar}:${JSON.stringify([...partChoices])}`
+      : linked
+        ? 'closed'
+        : 'draft';
+  if (targetId && editorScope !== nativeScope) targetId = null;
+  get('window').textContent = state.doc ? `Cycles ${window.fromCycle}–${window.toCycle}` : '';
+  // Linked music has no hidden whole-program sheet to rebuild when its lens closes.
+  if (linked && !place) return;
+  const inputs = [
+    state.doc,
+    state.events,
+    state.sounds,
+    window.fromCycle,
+    window.toCycle,
+    state.selected,
+    state.playing,
+    nativeScope,
+    editPlace,
+    editBar,
+    JSON.stringify([...partChoices]),
+  ];
+  if (state.doc && inputs.some((value, i) => value !== previousSheet[i])) {
+    previousSheet = inputs;
+    const model = sheetModel(
+      { ...state, ...window, doc: state.doc, playhead: app.engine?.now() ?? null },
+      lensView?.rows.filter((r) => (r.patterns[0]?.stem ?? r.id) === editStem),
+    );
+    if (lensView) {
+      model.sections = [];
+      model.caption = `Bar ${editBar} · queried score · at most 200 events drawn per cell`;
+    }
+    mountSheet(score, model, {
+      sectionControls: !lensView,
+      selected: state.selected,
+      definitionMuted: (id) => definitionMuted(state.doc!, id),
+      onMute: (id, muted) => {
+        if (targetId || state.doc !== app.state.doc) return;
+        const next = setMuted(state.doc!, id, muted);
+        if (!('ok' in next)) app.editor?.apply(next, {}, id);
+      },
+      onSelect: (id) => app.select(id),
+      onEdit: (id, _summary, cell) => openEditor(id, cell),
+    });
+  }
+}
 app.subscribe((state) => {
   copyPanel.refresh();
   updateTimelineScore();
   draftContext();
   if (app.editor !== selectedSession) {
+    renderPanel(null, undefined, false);
+    clearSourceDrafts();
+    partChoices.clear();
+    editPlace = '';
+    editStem = 'bass';
     targetId = null;
     selectedSession = app.editor;
   }
@@ -306,33 +509,7 @@ app.subscribe((state) => {
       }),
     );
   }
-  const inputs = [
-    state.doc,
-    state.events,
-    state.sounds,
-    state.fromCycle,
-    state.toCycle,
-    state.selected,
-    state.playing,
-  ];
-  if (state.doc && inputs.some((value, i) => value !== previousSheet[i])) {
-    previousSheet = inputs;
-    mountSheet(
-      score,
-      sheetModel({ ...state, doc: state.doc, playhead: app.engine?.now() ?? null }),
-      {
-        selected: state.selected,
-        definitionMuted: (id) => definitionMuted(state.doc!, id),
-        onMute: (id, muted) => {
-          if (targetId || state.doc !== app.state.doc) return;
-          const next = setMuted(state.doc!, id, muted);
-          if (!('ok' in next)) app.editor?.apply(next, {}, id);
-        },
-        onSelect: (id) => app.select(id),
-        onEdit: (id, _summary, cell) => openEditor(id, cell),
-      },
-    );
-  }
+  renderScore();
   renderEditor();
 });
 function revealEditedRow() {
@@ -359,8 +536,14 @@ window.addEventListener('resize', () => {
 });
 function frame() {
   const now = app.frame(),
-    { fromCycle, toCycle, sections } = app.state;
-  setPlayhead(score, now === null ? null : ((now - fromCycle) / (toCycle - fromCycle)) * 100);
+    { sections } = app.state,
+    { fromCycle, toCycle } = scoreWindow();
+  setPlayhead(
+    score,
+    now === null || now < fromCycle || now >= toCycle
+      ? null
+      : ((now - fromCycle) / (toCycle - fromCycle)) * 100,
+  );
   const last = sections.at(-1);
   setCurrentSection(score, now, last ? last.start + last.cycles : 0);
   requestAnimationFrame(frame);

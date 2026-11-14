@@ -39,6 +39,10 @@ the last cpm value. Validation checks shared-name existence, not JavaScript scop
 Rooms, sound loading and pending state are derived outside the document. Control
 units and ranges also belong outside it.
 
+Score rewrite targets use `scorePart` in both the editor and mutation. It follows
+instrument references/groups, excluding inherited uses and callback bodies;
+their existing rewrites remain editable, while Add returns to the instrument.
+
 `check:boundaries` parses static imports, exports, dynamic literal imports and
 literal `require` calls. It rejects Strudel imports outside the seam and spike
 imports in source/tests. Its pragmatic port pattern catches positive literal
