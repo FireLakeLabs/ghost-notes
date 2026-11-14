@@ -65,26 +65,38 @@ export function matchNotes(
   written: readonly SimplifyNote[],
   match: MatchSettings,
 ): number {
+  return matchNotePairs(original, written, match).length;
+}
+/** Original/written indices preserve duplicates and identify unmatched notes. */
+export function matchNotePairs(
+  original: readonly { pitch: number; startSeconds: number }[],
+  written: readonly { pitch: number; startSeconds: number }[],
+  match: MatchSettings,
+): [number, number][] {
   const key = (pitch: number) => (match.pitch === 'exact' ? pitch : pitch % 12);
-  let matched = 0;
-  const pitches = new Set(original.map((n) => key(n.pitch)));
-  for (const pitch of pitches) {
-    const a = original
-      .filter((n) => key(n.pitch) === pitch)
-      .map((n) => n.startSeconds)
-      .sort((a, b) => a - b);
-    const b = written
-      .filter((n) => key(n.pitch) === pitch)
-      .map((n) => n.startSeconds)
-      .sort((a, b) => a - b);
+  const matched: [number, number][] = [];
+  function groups(notes: typeof original) {
+    const result = new Map<number, { startSeconds: number; index: number }[]>();
+    notes.forEach((note, index) => {
+      const pitch = key(note.pitch);
+      const list = result.get(pitch) ?? [];
+      list.push({ startSeconds: note.startSeconds, index });
+      result.set(pitch, list);
+    });
+    for (const list of result.values()) list.sort((a, b) => a.startSeconds - b.startSeconds);
+    return result;
+  }
+  const writtenGroups = groups(written);
+  for (const [pitch, a] of groups(original)) {
+    const b = writtenGroups.get(pitch) ?? [];
     let i = 0,
       j = 0;
     while (i < a.length && j < b.length) {
-      if (Math.abs(a[i] - b[j]) <= match.timingToleranceSeconds + 1e-9) {
-        matched++;
+      if (Math.abs(a[i].startSeconds - b[j].startSeconds) <= match.timingToleranceSeconds + 1e-9) {
+        matched.push([a[i].index, b[j].index]);
         i++;
         j++;
-      } else if (a[i] < b[j]) i++;
+      } else if (a[i].startSeconds < b[j].startSeconds) i++;
       else j++;
     }
   }

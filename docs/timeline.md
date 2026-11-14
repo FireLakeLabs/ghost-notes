@@ -111,7 +111,7 @@ Unarranged ranges have dashed borders and a label when width permits. Arranged
 silence retains its named place border. Canvas descriptions give full note
 counts and unarranged-range counts; drawing samples retain the per-source,
 per-bar 200-event cap. Cached drawing buffers are reused when data is unchanged.
-Only rows near the window are painted; page scrolling and changes to the
+Only visible vertical bands are painted; page scrolling and changes to the
 reference/header height request a redraw through `observeLayout`.
 Whole-timeline screenshots must visit each instrument before capture.
 
@@ -150,3 +150,10 @@ arrangement walk (also writes `-rows` and `-places` views), or set
 `GHOST_TIMELINE_SHOT`, `GHOST_LENS_SHOT`, `GHOST_SECTION_SHOT`, `GHOST_GRID_SHOT`
 to local PNG paths. Default browser checks retain their real canvas-pixel and
 interaction assertions without taking whole-page images.
+
+The [difference contract](differences.md) adds converter evidence, same-bar
+matches and shared hover regions in Layers. Its sources retain separate data,
+but use one visible canvas per instrument. The
+[intermediate timing report](difference-measurements.md) qualifies one pass per
+view with the working row still in view after every operation. Set
+`GHOST_DIFFERENCES_SHOT` to capture the invented six-mark walk.

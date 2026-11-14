@@ -74,6 +74,10 @@ test('six local songs: first draw, scroll and zoom frame times', async ({ page, 
             bars: r.song.bars.filter((b) => b.number > 0).length,
             notes: r.song.stems.reduce((n, s) => n + s.notes.length, 0),
             stems: r.song.stems.length,
+            gapRegions: r.song.beatMap.coverage.gaps.length,
+            barBreaks: r.song.bars.filter(
+              (b, i, bars) => i > 0 && Math.abs(b.startSeconds - bars[i - 1].endSeconds) > 1e-8,
+            ).length,
             pcmMiB: [...r.audio.values()].reduce((n, a) => n + a.pcmBytes, 0) / 1024 ** 2,
             firstDrawMs: performance.getEntriesByName('Ghost:timeline-first-draw').at(-1)!.duration,
             rows: document.querySelectorAll('#timeline [data-row]').length,
@@ -99,6 +103,7 @@ test('six local songs: first draw, scroll and zoom frame times', async ({ page, 
           await page.waitForFunction(
             () =>
               window.odmApp.canPlay &&
+              window.odmApp.pendingRows.size === 0 &&
               window.odmApp.state.rows.length === 6 &&
               Object.keys(window.odmApp.state.events).length === 6,
           );
@@ -112,6 +117,11 @@ test('six local songs: first draw, scroll and zoom frame times', async ({ page, 
             places: document.querySelectorAll('[data-place]').length,
             notes: [...document.querySelectorAll('[data-layer="mine"]')].map((n) =>
               Number(n.getAttribute('aria-description')?.split(' ')[0]),
+            ),
+            unarrangedRanges: [...document.querySelectorAll('[data-layer="mine"]')].map((n) =>
+              Number(
+                n.getAttribute('aria-description')?.match(/(\d+) unarranged ranges/)?.[1] ?? 0,
+              ),
             ),
           }));
           arrangement = proof;
@@ -129,6 +139,12 @@ test('six local songs: first draw, scroll and zoom frame times', async ({ page, 
               a.notes.filter((n) => n.startSeconds < end).length,
           )[0].id;
         });
+        if (process.env.GHOST_TIMELINE_LAYERS) {
+          await page.locator('#settings').click();
+          await page.getByLabel('All instrument views', { exact: true }).selectOption('layers');
+          await page.getByRole('button', { name: 'Done', exact: true }).click();
+          await expect(page.locator('[data-row="layers"]')).toHaveCount(6);
+        }
         const shown = page.getByRole('img', {
           name: `${visibleStem} Mine queried arrangement`,
           exact: true,
@@ -138,89 +154,125 @@ test('six local songs: first draw, scroll and zoom frame times', async ({ page, 
           () =>
             new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
         );
-        expect(
-          await shown.evaluate((c: HTMLCanvasElement) =>
-            c
-              .getContext('2d')!
-              .getImageData(0, 0, c.width, c.height)
-              .data.some((v) => v !== 0),
-          ),
-        ).toBe(true);
         const visibleKind = visibleStem === 'drums' ? 'drums' : 'pitch';
         let lensFrames: Record<string, number[]> = {};
+        let lensPointerMoves = 0;
         if (process.env.GHOST_LENS_MEASURE) {
           const chunks: unknown[] = [];
           const collect = (event: { value: unknown[] }) => chunks.push(...event.value);
           cdp.on('Tracing.dataCollected', collect);
           await cdp.send('Tracing.start', {
-            categories: 'devtools.timeline,blink.user_timing',
+            categories:
+              'devtools.timeline,blink.user_timing' +
+              (process.env.GHOST_LENS_PROFILE
+                ? ',cc,gpu,viz,toplevel,renderer.scheduler' +
+                  (process.env.GHOST_LENS_PROFILE === 'pipeline'
+                    ? ',blink'
+                    : ',disabled-by-default-skia')
+                : ''),
             transferMode: 'ReportEvents',
           });
-          if (process.env.GHOST_LENS_PROFILE) {
+          if (process.env.GHOST_LENS_PROFILE && process.env.GHOST_LENS_PROFILE !== 'pipeline') {
             await cdp.send('Profiler.enable');
             await cdp.send('Profiler.start');
           }
-          lensFrames = await page.evaluate(async (arranged) => {
-            const first = document.querySelector<HTMLInputElement>('[data-first]')!,
-              last = document.querySelector<HTMLInputElement>('[data-last]')!;
-            const song = window.ghostReference.current!.song;
-            const bars = song.bars.filter((b) => b.number > 0 && b.endSeconds > b.startSeconds);
-            let best = 0,
-              bestCount = -1;
-            for (let i = 0; i + 4 < bars.length && (!arranged || i < 5); i++) {
-              const count = song.stems.reduce(
-                (n, s) =>
-                  n +
-                  s.notes.filter(
-                    (note) =>
-                      note.startSeconds >= bars[i].startSeconds &&
-                      note.startSeconds < bars[i + 3].endSeconds,
-                  ).length,
-                0,
-              );
-              if (count > bestCount) {
-                best = i;
-                bestCount = count;
+          const measured = await page.evaluate(
+            async ({ arranged, stemId, pointer }) => {
+              const first = document.querySelector<HTMLInputElement>('[data-first]')!,
+                last = document.querySelector<HTMLInputElement>('[data-last]')!;
+              const song = window.ghostReference.current!.song;
+              const bars = song.bars.filter((b) => b.number > 0 && b.endSeconds > b.startSeconds);
+              let best = 0,
+                bestCount = -1;
+              for (let i = 0; i + 4 < bars.length && (!arranged || i < 5); i++) {
+                const count = song.stems.reduce(
+                  (n, s) =>
+                    n +
+                    s.notes.filter(
+                      (note) =>
+                        note.startSeconds >= bars[i].startSeconds &&
+                        note.startSeconds < bars[i + 3].endSeconds,
+                    ).length,
+                  0,
+                );
+                if (count > bestCount) {
+                  best = i;
+                  bestCount = count;
+                }
               }
-            }
-            const firstBar = bars[best].number;
-            first.value = String(firstBar);
-            last.value = String(bars[best + 3].number);
-            document.querySelector<HTMLButtonElement>('[data-select]')!.click();
-            const next = () => new Promise<number>((resolve) => requestAnimationFrame(resolve));
-            const record = async (name: string, action: () => void) => {
-              const result: number[] = [];
-              let before = await next();
-              performance.mark(`Ghost:lens-${name}-start`, { detail: { timestamp: before } });
-              action();
-              do {
-                const now = await next();
-                result.push(now - before);
-                performance.mark(`Ghost:lens-${name}-frame`, { detail: { timestamp: now } });
-                before = now;
-              } while (document.getElementById('timeline')!.dataset.animating === 'true');
-              const tail = await next();
-              result.push(tail - before);
-              performance.mark(`Ghost:lens-${name}-frame`, { detail: { timestamp: tail } });
-              performance.mark(`Ghost:lens-${name}-end`);
-              return result;
-            };
-            const open = await record('open', () =>
-              document.querySelector<HTMLButtonElement>('[data-closer]')!.click(),
-            );
-            if (window.ghostTimeline.lens?.firstBar !== firstBar) throw Error('Lens did not open');
-            const move = await record('move', () =>
-              document.querySelector<HTMLButtonElement>('[data-later]')!.click(),
-            );
-            if (Number(window.ghostTimeline.lens?.firstBar) !== firstBar + 1)
-              throw Error('Lens did not move');
-            const close = await record('close', () =>
-              document.querySelector<HTMLButtonElement>('[data-close]')!.click(),
-            );
-            if (window.ghostTimeline.lens !== null) throw Error('Lens did not close');
-            return { open, move, close };
-          }, !!process.env.GHOST_ARRANGEMENT_MEASURE);
-          if (process.env.GHOST_LENS_PROFILE) {
+              const firstBar = bars[best].number;
+              first.value = String(firstBar);
+              last.value = String(bars[best + 3].number);
+              document.querySelector<HTMLButtonElement>('[data-select]')!.click();
+              const next = () => new Promise<number>((resolve) => requestAnimationFrame(resolve));
+              const stillVisible = () => {
+                const canvas = document.querySelector<HTMLCanvasElement>(
+                  `[data-stem="${CSS.escape(stemId)}"] [data-layer="mine"]`,
+                )!;
+                const box = canvas.getBoundingClientRect();
+                if (box.bottom <= 0 || box.top >= innerHeight)
+                  throw Error('Measured Mine row left the viewport');
+              };
+              let pointerFrame = 0;
+              const record = async (name: string, action: () => void) => {
+                const result: number[] = [];
+                let before = await next();
+                performance.mark(`Ghost:lens-${name}-start`, { detail: { timestamp: before } });
+                action();
+                do {
+                  const now = await next();
+                  result.push(now - before);
+                  performance.mark(`Ghost:lens-${name}-frame`, { detail: { timestamp: now } });
+                  before = now;
+                  if (pointer) {
+                    const canvas = document.querySelector<HTMLCanvasElement>(
+                      `[data-stem="${CSS.escape(stemId)}"] [data-layer="mine"]`,
+                    )!;
+                    const box = canvas.getBoundingClientRect();
+                    canvas.dispatchEvent(
+                      new PointerEvent('pointermove', {
+                        bubbles: true,
+                        pointerType: 'mouse',
+                        clientX: box.left + box.width * (0.15 + (pointerFrame++ % 30) / 40),
+                        clientY: box.bottom - 3,
+                      }),
+                    );
+                  }
+                } while (document.getElementById('timeline')!.dataset.animating === 'true');
+                const tail = await next();
+                result.push(tail - before);
+                performance.mark(`Ghost:lens-${name}-frame`, { detail: { timestamp: tail } });
+                performance.mark(`Ghost:lens-${name}-end`);
+                return result;
+              };
+              const open = await record('open', () =>
+                document.querySelector<HTMLButtonElement>('[data-closer]')!.click(),
+              );
+              if (window.ghostTimeline.lens?.firstBar !== firstBar)
+                throw Error('Lens did not open');
+              stillVisible();
+              const move = await record('move', () =>
+                document.querySelector<HTMLButtonElement>('[data-later]')!.click(),
+              );
+              if (Number(window.ghostTimeline.lens?.firstBar) !== firstBar + 1)
+                throw Error('Lens did not move');
+              stillVisible();
+              const close = await record('close', () =>
+                document.querySelector<HTMLButtonElement>('[data-close]')!.click(),
+              );
+              if (window.ghostTimeline.lens !== null) throw Error('Lens did not close');
+              stillVisible();
+              return { frames: { open, move, close }, pointerMoves: pointerFrame };
+            },
+            {
+              arranged: !!process.env.GHOST_ARRANGEMENT_MEASURE,
+              stemId: visibleStem,
+              pointer: !!process.env.GHOST_LENS_POINTER,
+            },
+          );
+          lensFrames = measured.frames;
+          lensPointerMoves = measured.pointerMoves;
+          if (process.env.GHOST_LENS_PROFILE && process.env.GHOST_LENS_PROFILE !== 'pipeline') {
             const cpu = await cdp.send('Profiler.stop');
             await writeFile(
               `/tmp/ghost-lens-cpu-${report.length + 1}.json`,
@@ -238,14 +290,6 @@ test('six local songs: first draw, scroll and zoom frame times', async ({ page, 
             `/tmp/ghost-lens-trace-${process.env.GHOST_LENS_RUN ?? '1'}-${report.length + 1}.json`,
             JSON.stringify({ traceEvents: chunks }),
           );
-          await page.getByRole('button', { name: 'Look closer', exact: true }).click();
-          await expect(page.locator('#timeline')).toHaveAttribute('data-animating', 'false');
-          await paintTimeline(page);
-          await page
-            .locator('.tl-scroll')
-            .screenshot({ path: `/tmp/ghost-lens-local-${report.length + 1}.png` });
-          await page.getByRole('button', { name: 'Close the lens', exact: true }).click();
-          await expect(page.locator('#timeline')).toHaveAttribute('data-animating', 'false');
         }
         const before = await cdp.send('Performance.getMetrics');
         if (process.env.GHOST_TIMELINE_PROFILE && source === 'first-test-session' && number === 4) {
@@ -295,8 +339,29 @@ test('six local songs: first draw, scroll and zoom frame times', async ({ page, 
         }
         const metric = (rows: typeof before.metrics, name: string) =>
           rows.find((r) => r.name === name)?.value ?? 0;
+        // Read canvas pixels only after timing: a readback can change its rendering path.
+        expect(
+          await shown.evaluate((c: HTMLCanvasElement) =>
+            c
+              .getContext('2d')!
+              .getImageData(0, 0, c.width, c.height)
+              .data.some((v) => v !== 0),
+          ),
+        ).toBe(true);
+        if (process.env.GHOST_LENS_MEASURE) {
+          await page.getByRole('button', { name: 'Look closer', exact: true }).click();
+          await expect(page.locator('#timeline')).toHaveAttribute('data-animating', 'false');
+          await paintTimeline(page);
+          await page
+            .locator('.tl-scroll')
+            .screenshot({ path: `/tmp/ghost-lens-local-${report.length + 1}.png` });
+          await page.getByRole('button', { name: 'Close the lens', exact: true }).click();
+          await expect(page.locator('#timeline')).toHaveAttribute('data-animating', 'false');
+        }
         report.push({
           arrangement,
+          viewMode: process.env.GHOST_TIMELINE_LAYERS ? 'layers' : 'rows',
+          pointerMoves: lensPointerMoves,
           visibleKind,
           input,
           ...shape,
