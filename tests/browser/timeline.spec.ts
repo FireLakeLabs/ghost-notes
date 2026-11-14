@@ -136,15 +136,24 @@ test('folder opens the whole-song rows, pickup, gaps, waveform, contour and navi
         '-zoom.png',
       ),
     });
+    await page.locator('#settings').click();
     await page.getByLabel('Stem audio').uncheck();
+    await page.getByRole('button', { name: 'Done', exact: true }).click();
     await expect(timeline.locator('[data-row="audio"]')).toHaveCount(0);
     await page.getByRole('button', { name: 'Fit song' }).click();
     await expect(page.getByLabel('Timeline zoom')).toHaveValue('1');
+    await page.locator('#settings').click();
     await page.getByLabel('Stem audio').check();
+    await page.getByRole('button', { name: 'Done', exact: true }).click();
     for (const mode of ['band', 'instrument'])
       for (const snap of ['bars', 'beats']) {
+        await page.locator('#settings').click();
+        await expect(
+          page.getByRole('dialog', { name: 'Settings', exact: true }).getByLabel('Selection scope'),
+        ).toHaveCount(1);
         await page.getByLabel('Selection scope').selectOption(mode);
         await page.getByLabel('Selection snap').selectOption(snap);
+        await page.getByRole('button', { name: 'Done', exact: true }).click();
         const canvas = timeline.locator('[data-row="midi"][data-stem="bass"] canvas');
         const box = await canvas.boundingBox();
         if (!box) throw Error('Missing MIDI canvas');

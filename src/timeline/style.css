@@ -1,7 +1,7 @@
 .timeline {
-  --tl-recording: #6f9fd8;
-  --tl-mine: #f1e6cc;
-  --tl-difference: #ff8a5b;
+  --tl-recording: var(--recording, #6f9fd8);
+  --tl-mine: var(--mine, #f1e6cc);
+  --tl-difference: var(--difference, #ff8a5b);
   --tl-background: #0f1115;
   --tl-panel: #161920;
   --tl-text: #eceae4;

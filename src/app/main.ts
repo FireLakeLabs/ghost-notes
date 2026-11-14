@@ -14,7 +14,7 @@ import { mountTimeline } from '../timeline/render';
 
 const app = createApp();
 document.body.innerHTML = `
-  <header class="topbar"><h1>Ghost Notes</h1><div class="transport">
+  <header class="topbar"><div class="brand"><h1><img src="/icons/ghost-notes.svg" alt="" width="32" height="32">Ghost Notes</h1><small>From the recording to your arrangement</small></div><div class="transport">
     <button id="play" disabled>Play</button><button id="stop" disabled>Stop</button>
     <output id="tempo" aria-label="Tempo">Tempo —</output>
     <button id="undo" disabled>Undo</button><button id="redo" disabled>Redo</button>
@@ -33,7 +33,7 @@ document.body.innerHTML = `
     <details id="notes" hidden><summary>Notes</summary><ul></ul></details>
     <p id="draft-context" hidden></p><div class="score-toolbar"><h2>The score <small>· whole-program draft</small></h2><button id="follow" aria-pressed="true">Follow</button><output id="window"></output></div>
     <div id="score-workspace"><div id="score"><p class="welcome">Paste a Strudel program or choose an original to see its score. Press Play when you're ready.</p></div><aside id="editor" hidden></aside></div>
-  </main><footer>Read the score. Follow the cycles.</footer>`;
+  </main><footer>Your music stays on this device. Copy your Strudel to keep it.</footer>`;
 const timeline = mountTimeline(document.getElementById('timeline')!);
 const referenceRoot = document.getElementById('reference-panel')!;
 const reference = mountReference(referenceRoot);
@@ -69,7 +69,10 @@ const copyPanel = mountCopy(get<HTMLButtonElement>('copy'), () => ({
     match: settings.match,
   },
 }));
-mountSettings(get<HTMLButtonElement>('settings'), settings, () => copyPanel.refresh());
+const settingsDialog = mountSettings(get<HTMLButtonElement>('settings'), settings, () =>
+  copyPanel.refresh(),
+);
+settingsDialog.querySelector('[data-timeline-settings]')!.append(timeline.settingsHost);
 referenceRoot.addEventListener('referencechange', () => copyPanel.refresh());
 paste.onclick = () => {
   panel.hidden = !panel.hidden;

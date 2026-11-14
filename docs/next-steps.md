@@ -475,7 +475,39 @@ song are in the API page. Musical quantization deliberately moves/merges notes
 positions regardless of that setting. No G28 fallback is needed. No speaker,
 audio-device or perceived timing is established. G72–G73 record the choices.
 
-## 10. Copy out and the app shell
+## 10. Copy out and the app shell: done
+
+Implemented in #35 and the installable-shell follow-up. The copy panel uses
+the session grid and simplify limits, retains per-place tempos and links, and
+preserves app edits and externally pasted edits. Generated fills stay
+unarranged on reopening. The pickup is first-pass only; the panel says to
+stop and restart before replaying.
+
+Measured: the invented fixture's silence/literal/simplified modes schedule
+6/9/9 expected onset events, including chords, a reused section and pickup.
+Maximum added schedule error is below 0.000000001 ms. Queried events, written
+durations/gains, metadata, repeated copies and external edits are checked
+through the pinned Strudel seam. A local real-material arrangement retains
+all 1,211 onsets over 123.979 s and its complete queried event list through
+copy/import/regeneration (34.576 s command); no music was retained.
+
+Chromium reports zero installability errors with the standalone manifest and
+192/512 icons, with no service worker or music cache. The 25 shell text/surface
+pairs have minimum contrast 4.6707:1. Desktop, lens, copy, Settings, About and
+phone screenshots were inspected using invented material. G85's draft
+explanation and the live timeline settings host are retained. See
+[copy](copy.md) and [shell](shell.md).
+
+Native operating-system installation, speaker/audio-device timing and
+perceived output were not measured. Starting content awaits the planned
+section-creation UI; metadata-only external mute editing is a follow-up on #11.
+
+Final combined gates: npm run check passed 605 Node tests (seven expected
+local-material skips); npm run test:browser passed 75 tests (one skip) in
+127.476 s / 180 s. The live settings-host move is exercised in the timeline
+browser test. No test deadline, retry or worker count was changed.
+
+What was planned:
 
 - A copy panel (G18) that asks how to write unedited sections (as made,
   literal or simplified) and unarranged bars (silence, literal or simplified)

@@ -29,3 +29,21 @@ The marker alone is not trusted after a paste: only bare silence or content
 matching a current literal/simplified fill remains unarranged. Mismatches are
 kept as the user's own, including when changed settings caused the mismatch.
 Names given to gap places are retained.
+
+- **G110 (2026-11-13) Keep the lens and draft relationship from G85.** The
+  shell has one timeline and the explicitly unlinked whole-program draft below
+  it until section links reach the UI. Move the timeline's live settings host
+  into Settings, preserving its handlers. Selection, snap and stem-audio state
+  stay with the timeline; conversion, match, simplify and starting-content state
+  stay with their owner. This refines G109's single-object detail: there is one
+  settings place, with no cloned controls or persistence.
+- **G111 (2026-11-13) Install through the browser without a service worker.**
+  A standalone manifest, original blue lines and cream note marks, and 192/512
+  PNG icons identify the app. Chromium's installability check reports no
+  errors without a worker, so none is added. Installing does not add offline
+  music storage; the existing retained folder handle remains G48's exception.
+- **G112 (2026-11-13) Use the prototype palette across the shell.** Near-black
+  canvas, gray panels, cream text, blue recording and orange differences share
+  CSS tokens. Gold identifies transport/focus actions. The original icon repeats
+  the recording/arrangement colors. Text tokens must meet AA contrast on each
+  shell surface; disabled controls are exempt as inactive controls.
