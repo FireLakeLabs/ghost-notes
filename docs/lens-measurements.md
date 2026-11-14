@@ -62,7 +62,7 @@ Raw intervals: `/tmp/ghost-lens-{40..44}.json`; matching CDP traces:
 The ordinary synthetic case checks the corrected contour span, no blue border,
 selection feedback outside the lens, both drag handles and session controls.
 
-## Final lens rendering (2026-11-13)
+## Lens/selection PR results (2026-11-13)
 
 Five successive production-build runs (50–54), with the same browser, viewport,
 input sizes and unchanged 16.9 ms limit. All 2,581 sampled intervals matched the
@@ -91,3 +91,54 @@ Rebased local gates: `CI=1 npm run check` passed 582 Node tests (five skipped),
 Node portion 27.878 s / 60 s; `npm run test:browser` passed 70 tests (one skipped)
 in 114.779 s / 180 s. The moved settings-host case is part of that lean
 synthetic test. Tempo/meter and ruler/inference fixes follow in the second PR.
+
+## Complete part 2 verification (2026-11-13)
+
+After the tempo/meter question and neutral ruler changes, five fresh production
+runs (90–94), rebased onto shell #36 (c38e828) opened all six real folders. The question appeared on flagged
+inputs, and independently on diversity-1's 87 two-beat / 70 four-beat detected
+bars. Through the actual controls, four beats/bar and beat one one beat later
+changed diversity-1 from 243 to 121 chosen bars. Detection and 3,947 source
+notes remain intact. Tests also verify retained audio/folder identity, updated
+note coordinates, identical source marks across previews, and no guessed bar
+lines between a gap and the next reliable phase restart (G87).
+
+All 2,580 opening/moving/closing intervals matched the numeric callback
+timestamps in the CDP User Timing traces one for one. All were at most 16.8 ms,
+with zero runtime errors and zero intervals over the unchanged 16.9 ms limit
+(60 Hz, allowing clock rounding). Each action includes the callback after its
+last drawing frame. This measures browser rendering callbacks, not GPU/display
+presentation. The browser/version/viewport and six retained stems match the
+protocol above. The final host-load snapshot was 0.69 on 16 cores; no per-run load series
+was captured. The machine-wide lock excluded other test suites.
+
+| Input                      | Chosen bars | First draw median (range), ms | Open max, ms | Move max, ms | Close max, ms | Missed / frames |
+| -------------------------- | ----------: | ----------------------------: | -----------: | -----------: | ------------: | --------------: |
+| first test session, song 1 |          35 |           105.4 (102.3–114.9) |         16.8 |         16.8 |          16.8 |         0 / 435 |
+| first test session, song 2 |          76 |           157.8 (154.1–162.3) |         16.8 |         16.8 |          16.8 |         0 / 427 |
+| first test session, song 3 |          82 |           175.3 (173.9–176.8) |         16.8 |         16.8 |          16.8 |         0 / 429 |
+| first test session, song 4 |          62 |           165.2 (163.8–166.5) |         16.8 |         16.8 |          16.8 |         0 / 430 |
+| diversity-1                |         121 |           222.5 (220.0–227.8) |         16.8 |         16.8 |          16.8 |         0 / 431 |
+| diversity-2                |          51 |             92.8 (90.0–104.4) |         16.8 |         16.8 |          16.8 |         0 / 428 |
+
+First draw includes cache construction and excludes file read/decode. For
+diversity-1 it is the first redraw after applying the grouping; the other five
+retain the default grid. No speedup comparison is claimed. The earlier 50–54
+series covers diversity-1's default 243-bar grid as well. Raw reports remain
+local in `/tmp/ghost-lens-{90..94}.json`, traces in
+`/tmp/ghost-lens-trace-{90..94}-{1..6}.json`, and the aggregate in
+`/tmp/ghost-lens-summary-shellbase.json`. The pre-shell 80–84 series also had zero misses in 2,583 intervals;
+its local reports remain available. Diagnostic 60–74 attempts predate the final
+gap correction and are not final evidence. No real musical data or pixels are
+committed. Synthetic question/ruler and all six local lens screenshots were
+inspected; physical touch, display presentation, mobile memory and perceived
+output remain unmeasured.
+
+Reproduce with `GHOST_LENS_MEASURE=1 GHOST_GRID_REVIEW_MEASURE=1
+GHOST_LENS_RUN=90 GHOST_TIMELINE_REPORT=/tmp/ghost-lens-90.json npm run
+measure:timeline`, repeating with distinct run numbers. The optional six-song
+case takes about 48 s and is excluded from the ordinary suite. Final full local
+gates: `npm run check` passed 608 Node tests (seven skipped; 13.752 s / 60 s);
+`npm run test:browser` passed 75 (one skipped) in 128.218 s / 180 s. No budgets
+were raised. Opus approved the behavior after three rounds; gap-phase and stale
+inference findings were reproduced and fixed.

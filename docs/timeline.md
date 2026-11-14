@@ -66,3 +66,17 @@ Settings survive reference changes, and `destroy()` removes the moved host.
 The instrument picker, range, zoom and lens actions stay on the timeline.
 Conversion grid, match and simplify settings use their owning modules' types;
 they are not duplicate timeline preferences. Tempo/meter review is song-specific.
+
+## Tempo, grouping and ruler labels
+
+`grid-review.ts` asks once on opening a flagged tempo or substantially split
+detected meter, and keeps a session control. Three 300×96 previews share the
+same seconds and source marks; group size and beat-one phase apply together
+with the chosen tempo. `grid-choice.ts` owns the pure transformation; the
+reference mount dispatches the same `referencechange` used by the timeline,
+converter and copy panel. The folder link and decoded audio are retained.
+
+G88 replaces G65's orange grid inferences with neutral dotted ruler underlines,
+explained on hover. Numbers and uncertainty labels occupy separate lines;
+crowded numbers are hidden, and overlapping uncertainty descriptions share a
+tooltip. No per-row inference stripes compete with part 3's difference marks.

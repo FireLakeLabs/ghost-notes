@@ -59,3 +59,13 @@ Decided for the owner during step 7 part 2, 2026-11-13:
   can call the lens's bar-range port directly. Changing settings clears the
   previous selection. Uncovered tails cannot invent selectable bars. The
   coordinate cache is bounded at 50,000 entries before handling live pointers.
+
+- **G88: quiet inference marks and two ruler lines.** Supersede G65's orange
+  approximation labels and dotted lines through every row. A neutral dotted
+  underline on the bar number explains the inference on hover; row grid lines
+  stay neutral. Orange remains reserved for recording/arrangement differences
+  (G22, part 3). Numbers use the ruler's upper 12 px; uncertainty labels use the
+  lower 11 px at y=15. Skip crowded numbers. Clamp uncertainty text within the
+  viewport only while its region is visible; combine overlapping explanations
+  in the retained label's tooltip, prioritising uncovered edges. The same
+  [mockup](../../design-study/sketches/tempo-meter.html) records this treatment.

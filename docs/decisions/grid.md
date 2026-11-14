@@ -39,3 +39,24 @@ and the detected evidence of G42 remain settled.
   bars while retaining decoded audio. The choice lasts for that opened song,
   following G23; no new persistence. The timeline owns inference drawing.
   The [mockup](../../design-study/sketches/consistent-grid.html) records this.
+
+Decided for the owner during step 7 part 2, 2026-11-13:
+
+- **G87: compare tempo and grouping together, once per opened song.** Replace
+  G56's bare buttons with three grids over the same source seconds and notes.
+  Ask when tempo is flagged, or at least two detected complete-bar lengths each
+  occur twice and account for 20% of detected complete bars. This catches
+  diversity-1's 87 two-beat and 70 four-beat bars independently of tempo range.
+  A persistent “Tempo and bars…” control reopens the question. Keep the detected
+  grouping by default; explicit grouping offers 1–12 beats (the six-song corpus
+  spans 1–8), with beat one offset 0–N−1 from the candidate's first downbeat.
+  After each gap, restart grouping at the candidate's first following downbeat
+  plus the same offset. Beats between the gap and that restart remain in the
+  crossing bar; never infer how many beats were lost. Explicit grouping
+  replaces automatic bar-line explanations, retaining beat fill/thin evidence.
+  Preview changes are applied with “Use ½×/1×/2×”; “Keep current grid” dismisses
+  without applying them. Regroup the candidate's beats, preserving their times,
+  gaps and uncovered edges. Original detection, note seconds and decoded audio
+  remain intact; all downstream positions use the chosen map. This is a session
+  choice, not saved analysis. Preview marks are capped at 200 with their real
+  count. The [mockup](../../design-study/sketches/tempo-meter.html) records it.
