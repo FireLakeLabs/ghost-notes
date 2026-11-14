@@ -200,6 +200,43 @@ export function mountTimeline(root: HTMLElement) {
     return image;
   }
   let reference: OpenReference | null = null;
+  let audition: AuditionState = { choices: new Map(), sounds: new Map(), disabled: false };
+  function updateAudition() {
+    for (const button of root.querySelectorAll<HTMLButtonElement>('[data-speaker]')) {
+      const kind = rowKinds.find((k) => k === button.dataset.speaker);
+      const stem = button.dataset.stemId ?? '';
+      if (!kind) continue;
+      button.setAttribute(
+        'aria-pressed',
+        String(audition.choices.get(stem)?.[kind] ?? (kind === 'audio' || kind === 'mine')),
+      );
+      button.disabled = audition.disabled || (kind === 'audio' && !reference?.audio.has(stem));
+    }
+    for (const picker of root.querySelectorAll<HTMLSelectElement>('[data-row-sound]')) {
+      const stem = picker.dataset.rowSound ?? '';
+      picker.disabled = audition.disabled;
+      picker.value = audition.sounds.get(stem) ?? 'as-written';
+    }
+  }
+  function speaker(stemId: string, kind: RowKind) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'tl-speaker';
+    button.dataset.speaker = kind;
+    button.dataset.stemId = stemId;
+    button.setAttribute(
+      'aria-label',
+      `Play ${stemId} ${kind === 'midi' ? 'MIDI' : kind === 'notes' ? 'Notes' : kind === 'mine' ? 'Mine' : 'audio'}`,
+    );
+    button.title = 'Include this row when Play starts';
+    button.innerHTML =
+      '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 6h3l4-3v10l-4-3H2zM11.5 5.5a3.5 3.5 0 0 1 0 5M13.5 3.5a6.5 6.5 0 0 1 0 9"/></svg>';
+    button.onclick = (event) => {
+      event.stopPropagation();
+      root.dispatchEvent(new CustomEvent('speakerchange', { detail: { stemId, kind } }));
+    };
+    return button;
+  }
   let score: TimelineScore = {
     doc: null,
     instruments: [],
@@ -689,16 +726,18 @@ export function mountTimeline(root: HTMLElement) {
     )) {
       const { stem } = instrument;
       const heading = element('div', '', 'tl-heading');
+      const stemLabel = element('div', '', 'tl-stem-label');
       heading.dataset.stem = stem.id;
-      heading.append(
+      stemLabel.append(
         element('strong', stem.id),
         element(
           'span',
           `${stem.notes.length.toLocaleString()} notes · ${stem.levelDb.toFixed(1)} dB`,
         ),
       );
+      heading.append(stemLabel);
       if (instrument.quiet)
-        heading.append(
+        stemLabel.append(
           element(
             'span',
             stem.transcription === 'skipped_quiet'
@@ -720,6 +759,20 @@ export function mountTimeline(root: HTMLElement) {
           ?.focus({ preventScroll: true });
       };
       heading.append(view);
+      const soundLabel = element('label', 'Sound ');
+      const sound = document.createElement('select');
+      sound.dataset.rowSound = stem.id;
+      sound.setAttribute('aria-label', `${stem.id} sound`);
+      sound.add(new Option('Mine as written', 'as-written'));
+      for (const option of soundsFor(stem.id)) sound.add(new Option(option.label, option.value));
+      sound.title =
+        'MIDI/Notes and every Mine section for this instrument. Mine changes are included in Copy.';
+      sound.onchange = () =>
+        root.dispatchEvent(
+          new CustomEvent('soundchange', { detail: { stemId: stem.id, sound: sound.value } }),
+        );
+      soundLabel.append(sound);
+      heading.append(soundLabel);
       const data = material(reference.song, stem, score);
       let comparison = comparisons.get(data);
       const key = matchKey(score);
@@ -732,7 +785,7 @@ export function mountTimeline(root: HTMLElement) {
       }
       const marks = noteMarks(stem, axis);
       if (marks.length < stem.notes.length)
-        heading.append(
+        stemLabel.append(
           element(
             'span',
             `${marks.length} of ${stem.notes.length} drawn · at most 200 per bar cell`,
@@ -776,7 +829,19 @@ export function mountTimeline(root: HTMLElement) {
                   : 'Mine',
           'tl-label',
         );
-        if (instrument.drums && row.kind !== 'audio') {
+        if (layered) {
+          label.replaceChildren();
+          for (const kind of ['midi', 'notes', 'mine'] as const) {
+            const item = element(
+              'span',
+              kind === 'midi' ? 'MIDI' : kind === 'notes' ? 'Notes' : 'Mine',
+              'tl-layer-speaker',
+            );
+            item.prepend(speaker(stem.id, kind));
+            label.append(item);
+          }
+        } else if (row.kind !== 'layers') label.prepend(speaker(stem.id, row.kind));
+        if (instrument.drums && row.kind !== 'audio' && !layered) {
           const lanes = element('div', '', 'tl-drums');
           for (const lane of DRUM_LANES) lanes.append(element('span', lane));
           label.append(lanes);
@@ -927,6 +992,7 @@ export function mountTimeline(root: HTMLElement) {
         }
       }
     }
+    updateAudition();
     schedule();
   }
   function paintRowDifferences(
@@ -1690,6 +1756,10 @@ export function mountTimeline(root: HTMLElement) {
         `${value.song.name} · ${value.song.bars.filter((b) => b.number > 0).length} bars${value.song.bars.some((b) => b.number === 0) ? ' + pickup bar 0' : ''} · Blue: recording · Dotted underline: grid inference · Hatching: gap or no beat map`;
       rebuild();
     },
+    setAudition(value: AuditionState) {
+      audition = value;
+      updateAudition();
+    },
     observeLayout(element: Element) {
       observer.observe(element);
     },
@@ -1754,3 +1824,5 @@ export function mountTimeline(root: HTMLElement) {
     },
   };
 }
+import { rowKinds, soundsFor, type RowKind } from '../engine/rows';
+import type { AuditionState } from '../app/row-playback';

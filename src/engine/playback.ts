@@ -1,4 +1,5 @@
-import type { EngineEvent } from '../contract';
+import type { Engine, EngineEvent } from '../contract';
+import type { PlaybackRows } from '../strudel/playback-rows';
 import type { StemAudio } from '../reference/audio';
 import type { Position, ReferenceSong } from '../reference/types';
 import { secondsToPosition } from '../reference/beats';
@@ -9,15 +10,17 @@ import { PREFLIGHT_TIMEOUT } from './playback-limits';
 import { songTime } from './song-time';
 
 export type PlaybackMode = 'recording' | 'mine' | 'both';
+export type SongPlayOptions = {
+  code: string;
+  mode?: PlaybackMode;
+  stemIds?: readonly string[];
+} & ({ fromBar?: number; fromCycle?: never } | { fromCycle: number; fromBar?: never });
 export interface SongPlayback {
+  /** Canonical-cycle clock and diagnostics for the shared editor/controller. */
+  clock: Omit<Engine, 'play' | 'stop'>;
   /** Full song code, cycle zero as in conversionSpans; omitted bar includes edges. */
-  play(options: {
-    code: string;
-    fromBar?: number;
-    mode?: PlaybackMode;
-    stemIds?: readonly string[];
-  }): Promise<number>;
-  /** Swap code without restarting the recording clock. */
+  play(options: SongPlayOptions): Promise<number>;
+  /** Retain the clock; Recording commits silence without evaluating Mine. */
   update(code: string): Promise<number>;
   stop(): void;
   /** Release this transport before replacing its song or grid. */
@@ -35,6 +38,7 @@ export interface SongPlayback {
 export async function createSongPlayback(
   song: ReferenceSong,
   buffers: ReadonlyMap<string, StemAudio<AudioBuffer>>,
+  rows?: () => PlaybackRows,
 ): Promise<SongPlayback> {
   const timing = songTime(song);
   const sources = new Map<string, AudioBufferSourceNode>();
@@ -53,6 +57,7 @@ export async function createSongPlayback(
   };
   const audio = await createAudio({
     timing,
+    rows,
     onClockStart(origin) {
       for (const id of selection) {
         const buffer = buffers.get(id)?.buffer;
@@ -92,7 +97,17 @@ export async function createSongPlayback(
               ? PREFLIGHT_TIMEOUT
               : 'This program could not be checked, so it was not played.',
           );
-        return result.events.map((e) => e.value);
+        const selected = rows?.();
+        if (selected?.mineIds.length && result.events.some((e) => e.hasOnset && !e.instrumentId))
+          throw Error('Cannot identify this Mine voice. Link its instrument before playback.');
+        return selected
+          ? [
+              ...result.events
+                .filter((e) => e.instrumentId && selected.mineIds.includes(e.instrumentId))
+                .map((e) => e.value),
+              ...selected.reference.flatMap((r) => r.events.map((e) => e.value)),
+            ]
+          : result.events.map((e) => e.value);
       },
     },
     audio.connect,
@@ -103,9 +118,29 @@ export async function createSongPlayback(
   function stop() {
     engine.stop();
   }
+  const subscribe: Engine['subscribe'] = (listener) =>
+    engine.subscribe((event) =>
+      listener('cycle' in event ? { ...event, cycle: timing.toCycle(event.cycle) } : event),
+    );
   return {
-    async play({ code, fromBar, mode = 'both', stemIds = song.stems.map((s) => s.id) }) {
+    clock: {
+      get playing() {
+        return engine.playing;
+      },
+      now: () => {
+        const seconds = engine.now();
+        return seconds === null ? null : timing.toCycle(seconds);
+      },
+      audioTime: engine.audioTime,
+      outputLatency: engine.outputLatency,
+      sounds: engine.sounds,
+      tap: engine.tap,
+      subscribe,
+    },
+    async play({ code, fromBar, fromCycle, mode = 'both', stemIds = song.stems.map((s) => s.id) }) {
       if (disposed) throw Error('Playback is disposed');
+      if (fromBar !== undefined && fromCycle !== undefined)
+        throw Error('Choose one playback start');
       const bar =
         fromBar === undefined
           ? undefined
@@ -118,7 +153,10 @@ export async function createSongPlayback(
       stop();
       selection = selected;
       mine = mode !== 'recording';
-      from = bar?.startSeconds ?? timing.start;
+      from =
+        fromCycle === undefined ? (bar?.startSeconds ?? timing.start) : timing.toSeconds(fromCycle);
+      if (!Number.isFinite(from) || from < timing.start || from >= timing.end)
+        throw Error('Choose a playback start inside this song');
       try {
         return await engine.play(mine ? code : 'silence', { fromCycle: from });
       } catch (error) {
@@ -128,9 +166,8 @@ export async function createSongPlayback(
     },
     update(code) {
       if (disposed) return Promise.reject(Error('Playback is disposed'));
-      if (!engine.playing || !mine)
-        return Promise.reject(Error('Start Mine or Both before updating its code'));
-      return engine.play(code);
+      if (!engine.playing) return Promise.reject(Error('Start playback before updating its code'));
+      return engine.play(mine ? code : 'silence');
     },
     stop,
     dispose() {
@@ -152,10 +189,6 @@ export async function createSongPlayback(
             : secondsToPosition(song.beatMap, Math.max(from, Math.min(timing.end, seconds))),
       };
     },
-    subscribe(listener) {
-      return engine.subscribe((event) =>
-        listener('cycle' in event ? { ...event, cycle: timing.toCycle(event.cycle) } : event),
-      );
-    },
+    subscribe,
   };
 }

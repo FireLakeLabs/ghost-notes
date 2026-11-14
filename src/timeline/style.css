@@ -300,3 +300,82 @@
   outline: 2px solid var(--tl-mine);
   outline-offset: 1px;
 }
+.tl-speaker {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  padding: 3px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--tl-muted);
+}
+.tl-speaker[aria-pressed='true'] {
+  color: var(--tl-mine);
+  background: var(--toggle-on);
+  border-color: var(--tl-line);
+}
+.tl-layer-speaker {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.tl-row .tl-label:has(.tl-layer-speaker) {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+}
+.tl-row .tl-label:not(:has(.tl-layer-speaker)) {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.tl-heading label {
+  margin-left: auto;
+  font-size: 12px;
+}
+.tl-heading select {
+  max-width: 170px;
+}
+.tl-row .tl-label:not(:has(.tl-layer-speaker)) {
+  flex-direction: row;
+  justify-content: flex-start;
+}
+.tl-row .tl-drums {
+  flex-basis: 100%;
+}
+.tl-stem-label {
+  flex: 0 0 136px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.tl-stem-label .tl-warning {
+  font-size: 9px;
+  line-height: 10px;
+}
+@media (max-width: 600px) {
+  .tl-heading {
+    gap: 6px;
+  }
+  .tl-heading > select {
+    width: 60px;
+    font-size: 10.5px;
+  }
+  .tl-heading label {
+    display: flex;
+    flex-direction: column;
+    width: 120px;
+    flex: 0 0 120px;
+    font-size: 10px;
+  }
+  .tl-heading label select {
+    width: 120px;
+    min-width: 0;
+    font-size: 10.5px;
+  }
+  .tl-stem-label > span {
+    font-size: 9.5px;
+  }
+}

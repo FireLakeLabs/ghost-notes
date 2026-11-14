@@ -100,7 +100,12 @@ test('reopening Copy shows a changed arrangement, including linked fills', async
         ),
       );
     await page.locator('#load').click();
-    await expect(page.locator('#play')).toBeEnabled();
+    await page.waitForFunction(
+      () =>
+        window.odmApp.state.doc &&
+        window.odmApp.pendingRows.size === 0 &&
+        window.odmApp.state.message !== 'Asking the score…',
+    );
     await page.locator('#copy').click();
     const dialog = page.getByRole('dialog', { name: 'Copy arrangement', exact: true });
     await expect(dialog).toContainText('first pass only');

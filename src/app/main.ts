@@ -16,6 +16,7 @@ import { mountTimeline } from '../timeline/render';
 import { setDrumCell } from '../document/edits/drum-cell';
 import type { DrumCell } from '../timeline/drum-grid';
 import { lensScore } from '../timeline/lens-score';
+import { mountRowPlayback } from './row-playback';
 
 const app = createApp();
 document.body.innerHTML = `
@@ -77,11 +78,13 @@ const sectionUI = mountSections(
   timeline,
   () => reference.current,
   settings,
+  (doc) => rowPlayback.applySounds(doc),
 );
 referenceRoot.addEventListener('referencechange', () => {
   timeline.setReference(reference.current);
   sectionUI.refresh();
   updateTimelineScore();
+  rowPlayback.referenceChanged();
   draftContext();
   renderScore();
   renderEditor();
@@ -469,6 +472,14 @@ function renderScore() {
     });
   }
 }
+const rowPlayback = mountRowPlayback({
+  app,
+  timeline,
+  root: get('timeline'),
+  current: () => reference.current,
+  linked: () => sectionUI.linked,
+  editing: () => !!targetId,
+});
 app.subscribe((state) => {
   copyPanel.refresh();
   updateTimelineScore();
@@ -484,15 +495,18 @@ app.subscribe((state) => {
   }
   play.disabled = !app.canPlay || state.playing;
   stop.disabled = !state.playing && !state.message.includes('Preparing');
-  get('tempo').textContent =
-    state.cps === null ? 'Tempo —' : `${Number((state.cps * 60).toFixed(2))} cycles/min`;
+  get('tempo').textContent = reference.current
+    ? 'Following the beat map'
+    : state.cps === null
+      ? 'Tempo —'
+      : `${Number((state.cps * 60).toFixed(2))} cycles/min`;
   get('message').textContent =
     state.message || (editNotice?.doc === state.doc ? editNotice.text : '');
   get('message').dataset.kind = app.warning ? 'warning' : 'error';
   get('sound-notice').hidden = !state.soundNotice.visible;
   get('solo-banner').hidden = !state.solo;
   get('solo-banner').querySelector('span')!.textContent =
-    `Solo: ${state.rows.find((r) => r.id === state.solo)?.name.replaceAll('$', '') ?? ''} —`;
+    `${reference.current ? 'Mine solo' : 'Solo'}: ${state.rows.find((r) => r.id === state.solo)?.name.replaceAll('$', '') ?? ''} —`;
   get('load-error').textContent = state.loadError;
   follow.setAttribute('aria-pressed', String(state.follow));
   get('window').textContent = state.doc ? `Cycles ${state.fromCycle}–${state.toCycle}` : '';
@@ -511,6 +525,7 @@ app.subscribe((state) => {
   }
   renderScore();
   renderEditor();
+  rowPlayback.refresh();
 });
 function revealEditedRow() {
   const row = originCell()?.closest('tr');

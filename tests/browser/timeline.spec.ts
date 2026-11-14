@@ -108,6 +108,10 @@ test('folder opens the whole-song rows, pickup, gaps, waveform, contour and navi
       'bass pitch contour',
       'drums drum lanes: Crash, Hi-hat, Snare, Tom, Kick',
     ]) {
+      await page.getByRole('img', { name: label, exact: true }).scrollIntoViewIfNeeded();
+      await page.evaluate(
+        () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+      );
       const blue = await page
         .getByRole('img', { name: label, exact: true })
         .evaluate((canvas: HTMLCanvasElement) => {
@@ -191,6 +195,8 @@ test('folder opens the whole-song rows, pickup, gaps, waveform, contour and navi
         await page.getByLabel('Selection snap').selectOption(snap);
         await page.getByRole('button', { name: 'Done', exact: true }).click();
         const canvas = timeline.locator('[data-row="midi"][data-stem="bass"] canvas');
+        await canvas.scrollIntoViewIfNeeded();
+        await expect(canvas).toBeInViewport();
         const box = await canvas.boundingBox();
         if (!box) throw Error('Missing MIDI canvas');
         await page.mouse.move(box.x + box.width * 0.12, box.y + 15);
@@ -233,6 +239,7 @@ test('folder opens the whole-song rows, pickup, gaps, waveform, contour and navi
     await head.press('ArrowRight');
     await expect(timeline).toHaveAttribute('data-lens', '4:6');
     await expect(timeline).toHaveAttribute('data-animating', 'false');
+    await head.scrollIntoViewIfNeeded();
     const hb = await head.boundingBox();
     if (!hb) throw Error('Missing lens header');
     await page.mouse.move(hb.x + hb.width / 2, hb.y + 15);
