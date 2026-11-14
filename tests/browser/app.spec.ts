@@ -231,7 +231,8 @@ test('a query in progress preserves sheet answers during two quick edits', async
       ),
     };
   });
-  // Two plus four onsets per cycle, in the initial four-cycle question.
-  expect(observed).toEqual({ rows: 2, notes: 24, pending: 1, settled: 1 });
+  // Keep two plus four onsets per cycle for the sheet. G115 refreshes both
+  // rows in full context, so Mine waits for both instead of using old answers.
+  expect(observed).toEqual({ rows: 2, notes: 24, pending: 2, settled: 0 });
   await scoreReady(page);
 });

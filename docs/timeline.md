@@ -99,7 +99,8 @@ including the pinned duration/clip rule, note names, frequencies and known drum
 samples. Failed or unmapped answers say so. The controller keeps existing sheet/editor
 answers while `pendingRows` identifies new questions. `settledEvents` masks
 those rows for Mine until their answers arrive; wait for `pendingRows.size === 0`
-when checking the latest score.
+when checking the latest score. G115 asks multi-row documents in full context,
+including after edits, because group rewrites can couple neighbouring rows.
 `createMaterial` caches Notes by reference/grid independently of Mine. It maps
 queried canonical cycles back to seconds through the full conversion map and
 keeps copied fill provenance in coverage. Queried notes remain visible even
